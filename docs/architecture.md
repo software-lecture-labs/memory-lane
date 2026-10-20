@@ -43,6 +43,12 @@ Yerel profil ayarları backend/config/application-local.properties içinde, clas
 
 Mobil modülün Android SDK 35, AGP 8.7.3 ve Gradle 8.9 sürümleri korunur. Lint uyarıları hatadır ve bağımlılıklar da kontrol edilir. Tek istisna OldTargetApi güncellik bildirimidir: SDK 35 bilinçli olarak sabitlendiği için bu kural kapalıdır. Diğer lint kuralları, bağımlılık kontrolleri ve warningsAsErrors etkin kalır. Hedef API yükseltmesi ayrı uyumluluk çalışması gerektirir. CI'da SDK/build-tools sürümleri tekrar yazılmaz; setup-android lisansları kabul eder, Gradle eksik bileşenleri build tanımına göre indirir. Push kontrolü yalnızca main üzerinde; diğer dal değişiklikleri PR kontrolüyle doğrulanır ve eski çalışmalar concurrency ile iptal edilir.
 
-## Yedekleme kapsamı
+## Veri saklama ve yedekleme kararı
 
-Mobil modülde henüz anı verisi, senkronizasyon veya veri saklama uygulaması yoktur. Mevcut kapalı yedekleme ayarı iskelet aşamasında korunmuştur; kalıcı ürün kararı değildir. Bulut/device-transfer kapsamı ve oturum anahtarlarının yedekten dışlanması, veri modeli ve senkronizasyon işiyle birlikte açıkça seçilmelidir. Bu PR anıların backend'de saklandığını veya geri yüklenebildiğini iddia etmez.
+Anıların kalıcı ve asıl kaydı backend'de tutulacak. Mobil cihazda sunucudan tekrar alınabilen veriler önbellek olarak ele alınacak; yeni cihazda yeniden giriş yapılıp sunucudaki kayıtlar getirilecek. Henüz sunucuya gönderilmemiş anılar ise önbellek sayılmayacak: başarılı sunucu onayı alınana kadar korunmalı ve kullanıcıya senkronizasyon durumları gösterilmelidir.
+
+Parola, erişim/yenileme anahtarı ve cihaza özel kimlik bilgileri bulut yedeğine veya device-transfer'a dahil edilmeyecek. Mobil oturum saklama geliştirilirken Android Keystore ve yedek dışı depolama kullanılmalı; yeni cihaza geçişte kullanıcı yeniden giriş yapmalıdır. Anıların backend'de tutulması tek başına yedek değildir: sunucu veritabanı ve varsa fotoğraf depolaması için yedekleme, saklama süresi ve geri yükleme testleri ayrıca hazırlanmalıdır.
+
+Bu iskelet aşamasında allowBackup=false ve mevcut yedekleme dosyaları korunur; device-transfer bu PR'da açılmaz. Mevcut XML'deki root dışlamasının bütün veri alanlarını veya her üreticinin cihaz transferi davranışını kapsadığı varsayılmaz. Yedek dışı hassas depolama, çevrimdışı kuyruk ve senkronizasyon uygulandığında izin verilen veri alanları tek tek belirlenip yedekleme/geri yükleme testiyle doğrulanmalıdır.
+
+Bu bölüm hedef mimariyi belirler. Bu PR'da anı API'si, anı veritabanı, mobil veri saklama veya geri yükleme akışı henüz uygulanmadı; mevcut veriler için kayıpsız kurtarma garantisi verilmez.
