@@ -1,0 +1,4 @@
+# Copy to application-local.properties in this external config directory.
+# Activate only when needed: SPRING_PROFILES_ACTIVE=local
+server.port=8080
+# Supply real credentials through environment variables; never commit them.

@@ -1,4 +1,0 @@
-# Copy to application-local.properties; never commit real credentials.
-server.port=8080
-# Persistence is not configured in this setup task.
-# When added, bind database credentials through environment variables.
