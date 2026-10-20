@@ -31,7 +31,6 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools'
-      - run: sdkmanager "platforms;android-35" "build-tools;34.0.0"
       - uses: gradle/actions/wrapper-validation@v4
       - run: ./gradlew assembleDebug lintDebug testDebugUnitTest --no-daemon
         working-directory: mobile

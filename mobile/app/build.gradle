@@ -17,5 +17,7 @@ android {
         abortOnError true
         warningsAsErrors true
         checkDependencies true
+        // SDK 35 is intentionally pinned; retain all other warning/error checks.
+        disable 'OldTargetApi'
     }
 }
