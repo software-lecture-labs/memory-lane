@@ -48,4 +48,4 @@ Ayrıntılar: [mimari](docs/architecture.md), [Git çalışma biçimi](docs/git-
 
 Varsayılan açılış datasource oluşturmaz ve migration çalıştırmaz; yerel veritabanı kurulması gerekmez. Ekip veritabanı hazır olduğunda DB_HOST, DB_PORT, DB_NAME, DB_USER ve DB_PASSWORD ortam değişkenlerini verip `database` profilini etkinleştirin. Profil yalnız mevcut PostgreSQL şemasını doğrular; tablo veya veritabanı oluşturmaz. Şema/migration teslimi ve bu profille bağlantı doğrulaması ayrıca tamamlanmalıdır.
 
-Harici yerel dosya ile birlikte kullanım: backend dizininde `gradlew.bat bootRun --args="--spring.profiles.active=local,database --spring.config.additional-location=optional:file:./config/"`. `backend/.env.example` değişken örneğidir; otomatik yüklenmez. Bağlantı bilgisi gelene kadar yalnız `local` profili veya varsayılan profil kullanılabilir.
+Harici yerel dosya ile birlikte kullanım: backend dizininde `.\gradlew.bat bootRun --args="--spring.profiles.active=local,database"`. `backend/.env.example` değişken örneğidir; otomatik yüklenmez. Bağlantı bilgisi gelene kadar yalnız `local` profili veya varsayılan profil kullanılabilir.
