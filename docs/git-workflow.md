@@ -11,3 +11,5 @@ GitHub yönetim erişimi olduğunda main için PR, en az bir onay ve CI kontroll
 Trello kanıtı yalnızca gerçekten oluşturulmuş issue, PR ve CI/analiz çalıştırması bağlantılarını içermelidir. Yerel commitler yayınlanana kadar GitHub kanıt bağlantısı sayılmaz. Tarih, yazar veya test sonucu uydurulmaz.
 
 Anlık doğrulama sonuçları ayrı repo raporları yerine PR açıklamasında komut, gerçek sonuç ve ilgili commit için CI bağlantısıyla paylaşılır. Kalıcı kurulum adımları README içinde tutulur.
+
+CI her iki bağımsız build için Gradle önbelleğini kullanır; yalnızca `main` çalıştırmaları önbelleğe yazar. Test ve lint raporları başarısız çalıştırmalarda da Actions sayfasında `backend-reports` ve `mobile-reports` artifact adlarıyla 14 gün saklanır. Derleme rapor üretmeden durursa artifact bulunamayabilir; bu durum başarılı test anlamına gelmez.
