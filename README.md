@@ -49,3 +49,9 @@ Ayrıntılar: [mimari](docs/architecture.md), [Git çalışma biçimi](docs/git-
 Varsayılan açılış datasource oluşturmaz ve migration çalıştırmaz; yerel veritabanı kurulması gerekmez. Ekip veritabanı hazır olduğunda DB_HOST, DB_PORT, DB_NAME, DB_USER ve DB_PASSWORD ortam değişkenlerini verip `database` profilini etkinleştirin. Profil yalnız mevcut PostgreSQL şemasını doğrular; tablo veya veritabanı oluşturmaz. Şema/migration teslimi ve bu profille bağlantı doğrulaması ayrıca tamamlanmalıdır.
 
 Harici yerel dosya ile birlikte kullanım: backend dizininde `.\gradlew.bat bootRun --args="--spring.profiles.active=local,database"`. `backend/.env.example` değişken örneğidir; otomatik yüklenmez. Bağlantı bilgisi gelene kadar yalnız `local` profili veya varsayılan profil kullanılabilir.
+
+## CI raporları
+
+GitHub Actions içindeki Verify çalıştırmasının Artifacts bölümünden `backend-reports` ve `mobile-reports` raporlarına ulaşabilirsiniz. Test ve lint raporları, ilgili adım başarısız olsa da 14 gün saklanır. Derleme rapor üretemeden durursa artifact oluşmayabilir; rapor bulunmaması testlerin başarılı olduğu anlamına gelmez. Sonuç için ilgili işin durumunu ve loglarını kontrol edin.
+
+Her iki build Gradle önbelleğini kullanır; yalnızca main çalıştırmaları önbelleğe yazar.
