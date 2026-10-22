@@ -1,0 +1,23 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.memorylane'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.memorylane'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint {
+        abortOnError true
+        warningsAsErrors true
+        checkDependencies true
+        // SDK 35 is intentionally pinned; retain all other warning/error checks.
+        disable 'OldTargetApi'
+    }
+}
