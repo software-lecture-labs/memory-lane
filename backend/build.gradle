@@ -9,17 +9,22 @@ java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
 repositories { mavenCentral() }
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'org.postgresql:postgresql:42.7.8'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 tasks.named('test') { useJUnitPlatform() }
 
-// Local credentials must stay outside classpath resources and packaged artifacts.
-tasks.named('processResources') {
-    exclude '**/application-local.properties', '**/application-local.yml', '**/application-local.yaml', '**/.gitkeep'
+def localConfigExcludes = ['**/application-local.properties', '**/application-local.yml',
+    '**/application-local.yaml', '**/.env', '**/.env.*', '**/local.properties', '**/.gitkeep']
+
+tasks.withType(org.gradle.language.jvm.tasks.ProcessResources).configureEach {
+    exclude localConfigExcludes
 }
 
-// Also exclude stale local resources left by an earlier build.
-tasks.withType(Jar).configureEach {
-    exclude '**/application-local.properties', '**/application-local.yml', '**/application-local.yaml'
+tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach {
+    rootSpec.exclude localConfigExcludes
 }
+
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }

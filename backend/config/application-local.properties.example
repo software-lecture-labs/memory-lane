@@ -1,4 +1,3 @@
-# Copy to application-local.properties in this external config directory.
-# Activate only when needed: SPRING_PROFILES_ACTIVE=local
+# Ayni klasore application-local.properties adiyla kopyalayin.
+# Yukleme: --spring.profiles.active=local --spring.config.additional-location=optional:file:./config/
 server.port=8080
-# Supply real credentials through environment variables; never commit them.

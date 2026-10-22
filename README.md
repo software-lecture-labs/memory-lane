@@ -43,3 +43,9 @@ Mobil modül henüz Activity veya işlevsel ekran içermez. APK derlemesi kullan
 SDK yolları, parolalar, `.env`, imzalama anahtarları ve yerel ayarlar commitlenmez. Yanlışlıkla classpath altına konan application-local.properties/yml/yaml dosyaları da paketlemeden dışlanır.
 
 Ayrıntılar: [mimari](docs/architecture.md), [Git çalışma biçimi](docs/git-workflow.md). Anlık doğrulama sonuçlarının kaynağı ilgili PR açıklaması ve o commit için GitHub Actions kontrolleridir; repodaki belgeler kalıcı kurulum bilgilerini içerir.
+
+## İsteğe bağlı veritabanı profili
+
+Varsayılan açılış datasource oluşturmaz ve migration çalıştırmaz; yerel veritabanı kurulması gerekmez. Ekip veritabanı hazır olduğunda DB_HOST, DB_PORT, DB_NAME, DB_USER ve DB_PASSWORD ortam değişkenlerini verip `database` profilini etkinleştirin. Profil yalnız mevcut PostgreSQL şemasını doğrular; tablo veya veritabanı oluşturmaz. Şema/migration teslimi ve bu profille bağlantı doğrulaması ayrıca tamamlanmalıdır.
+
+Harici yerel dosya ile birlikte kullanım: backend dizininde `gradlew.bat bootRun --args="--spring.profiles.active=local,database --spring.config.additional-location=optional:file:./config/"`. `backend/.env.example` değişken örneğidir; otomatik yüklenmez. Bağlantı bilgisi gelene kadar yalnız `local` profili veya varsayılan profil kullanılabilir.
