@@ -1,10 +1,16 @@
 *.class
+*.hprof
+hs_err_pid*
+replay_pid*
 *.log
 *.jar
 *.war
 *.ear
 *.zip
 .gradle/
+.kotlin/
+.externalNativeBuild/
+.cxx/
 **/build/
 .idea/
 *.iml
@@ -13,6 +19,8 @@ local.properties
 .env.*
 !.env.example
 application-local.properties
+application-local.yml
+application-local.yaml
 *.jks
 *.keystore
 keystore.properties
