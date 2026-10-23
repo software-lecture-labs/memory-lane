@@ -11,12 +11,14 @@ Android mobil uygulaması ve Java HTTP backend için ortak repo.
 1. Repoyu klonlayın, JDK 17 kurun ve `java -version` ile kontrol edin.
 2. Android Studio ile Android SDK Platform 35 kurun. Lisanslar kabul edilmişse Gradle eksik SDK bileşenlerini de indirebilir.
 3. `mobile/local.properties.example` dosyasını `mobile/local.properties` olarak kopyalayıp Windows/macOS/Linux için kendi SDK yolunuzu girin veya `ANDROID_HOME` tanımlayın.
-4. Backend varsayılan ayarlarla çalışır. Yerel değişiklik gerekiyorsa `backend/config/application-local.properties.example` dosyasını aynı dizinde `application-local.properties` olarak kopyalayın. Bu dosya kaynak klasörlerinin dışındadır.
+4. Backend PostgreSQL gerektirir. Docker Desktop kurun, ardından `backend/.env.example` dosyasını `backend/.env` olarak kopyalayıp `DB_PASSWORD` değerini değiştirin ve `backend` dizininde `docker compose up -d` çalıştırın. `docker compose ps` çıktısında `(healthy)` görünmelidir. Uygulama `backend` dizininden çalıştırıldığında aynı `.env` dosyasını kendisi okur; şifre tek yerde tutulur. Gerçek ortam değişkenleri `.env` değerlerinin önüne geçer. Şifrenin varsayılanı yoktur.
+5. Backend diğer ayarlarda varsayılanlarla çalışır. Yerel değişiklik gerekiyorsa `backend/config/application-local.properties.example` dosyasını aynı dizinde `application-local.properties` olarak kopyalayın. Bu dosya kaynak klasörlerinin dışındadır.
 
 PowerShell, repo kökünden:
 
 ```powershell
 cd backend
+docker compose up -d
 .\gradlew.bat test bootJar
 # Yalnızca harici yerel ayarları kullanmak istediğinizde:
 $env:SPRING_PROFILES_ACTIVE = 'local'
@@ -25,7 +27,7 @@ $env:SPRING_PROFILES_ACTIVE = 'local'
 
 Komutları backend dizininden çalıştırın. Farklı çalışma dizininde harici config konumunu `SPRING_CONFIG_ADDITIONAL_LOCATION` ile belirtin. Local profil etkin değilse `application-local.properties` okunmaz. Gerçek parolaları örneğe yazmayın; ortam değişkenleri kullanın.
 
-Sunucu varsayılan olarak 8080 portunda açılır. Henüz API endpoint'i yoktur; `/` için 404 beklenir. Test, rastgele portta gerçek sunucu açılışını doğrular; ayrı test harici local ayarların yalnızca doğru profilde yüklendiğini kontrol eder.
+Sunucu varsayılan olarak 8080 portunda açılır. Açılışta Flyway bekleyen migration'ları uygular; boş veritabanı bu şekilde kurulur. `GET http://localhost:8080/api/health` veritabanı erişilebilirse 200 döner. Veritabanı kapalıysa uygulama açılmaz ve ne yapılacağını yazar. Veritabanı testleri Docker ile tek bir geçici PostgreSQL container'ı açar. Docker yoksa bu testler yalnızca yerelde atlanır; CI'da (`CI` ortam değişkeni varken) hiçbir zaman atlanmaz, Docker yoksa build başarısız olur. Gradle 8.14.3, JDK 25 ile çalışmaz; `JAVA_HOME` JDK 17'yi göstermelidir.
 
 Mobil için tekrar repo kökünden başlayın:
 
@@ -44,11 +46,9 @@ SDK yolları, parolalar, `.env`, imzalama anahtarları ve yerel ayarlar commitle
 
 Ayrıntılar: [mimari](docs/architecture.md), [Git çalışma biçimi](docs/git-workflow.md). Anlık doğrulama sonuçlarının kaynağı ilgili PR açıklaması ve o commit için GitHub Actions kontrolleridir; repodaki belgeler kalıcı kurulum bilgilerini içerir.
 
-## İsteğe bağlı veritabanı profili
+## Veritabanı ve profiller
 
-Varsayılan açılış datasource oluşturmaz ve migration çalıştırmaz; yerel veritabanı kurulması gerekmez. Ekip veritabanı hazır olduğunda DB_HOST, DB_PORT, DB_NAME, DB_USER ve DB_PASSWORD ortam değişkenlerini verip `database` profilini etkinleştirin. Profil yalnız mevcut PostgreSQL şemasını doğrular; tablo veya veritabanı oluşturmaz. Şema/migration teslimi ve bu profille bağlantı doğrulaması ayrıca tamamlanmalıdır.
-
-Harici yerel dosya ile birlikte kullanım: backend dizininde `.\gradlew.bat bootRun --args="--spring.profiles.active=local,database"`. `backend/.env.example` değişken örneğidir; otomatik yüklenmez. Bağlantı bilgisi gelene kadar yalnız `local` profili veya varsayılan profil kullanılabilir.
+Backend her profilde PostgreSQL'e bağlanır ve açılışta Flyway migration'larını uygular; ayrı bir `database` profili yoktur. Bağlantı bilgileri yukarıdaki kurulum adımında anlatılan `backend/.env` dosyasından veya ortam değişkenlerinden gelir. Harici yerel ayarlarla çalıştırmak için backend dizininde: `.\gradlew.bat bootRun --args="--spring.profiles.active=local --spring.config.additional-location=optional:file:./config/"`.
 
 ## CI raporları
 
