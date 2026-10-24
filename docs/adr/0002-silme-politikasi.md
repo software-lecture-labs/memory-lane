@@ -27,4 +27,5 @@ Seçenek 3 uygulanır.
 
 - Silme servisleri bağımlı kayıtları doğru sırayla silmek zorundadır; yanlış sıra `RESTRICT` hatasıyla yakalanır ve testte görünür.
 - Rollback testi (proje dokümanındaki kasıtlı hata senaryosu) tüm silme adımlarını kapsayabilir.
+- Kalıcı silme, anı ve fotoğrafın tekrar deneme anahtarlarını (`client_request_id`, `client_photo_id`) da siler. API sözleşmesi (ML-03) silinmiş kaynağın anahtarı tekrar gelirse yeni kayıt oluşturmayıp 409 `IDEMPOTENCY_KEY_RETIRED` döndürmeyi istediği için, ilgili özellik geliştirilirken emekli anahtarlar ayrı bir tabloda tutulmalıdır. Bu tablo içerik değil yalnızca kullanıcı kimliği, kapsam ve anahtarı saklar; hesap silmede kullanıcının diğer kayıtlarıyla aynı transaction'da silinir.
 - Geri alma (çöp kutusu) özelliği istenirse bu karar yeni bir ADR ile yeniden değerlendirilir.
