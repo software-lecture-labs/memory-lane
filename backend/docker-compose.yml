@@ -1,0 +1,23 @@
+# Local PostgreSQL for development. Credentials come from backend/.env (never committed).
+# Usage: copy .env.example to .env, set a password, then run `docker compose up -d`.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME must be set in .env}
+      POSTGRES_USER: ${DB_USER:?DB_USER must be set in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    ports:
+      # Bind to loopback only so the database is not reachable from the network.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - memorylane-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  memorylane-db-data:

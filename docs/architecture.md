@@ -2,7 +2,20 @@
 
 ## Java backend ve application server
 
-Backend Java 17 üzerinde Spring Boot 4.1.1 ile çalışır; seçilen HTTP çalışma ortamı gömülü Tomcat'tir. `bootJar` çalıştırılabilir JAR üretir. Ayrı Jakarta EE application server/WAR dağıtımı bu kurulumda uygulanmadı. Ders şartı özellikle WildFly/Payara gibi tam Jakarta EE sunucusu gerektiriyorsa bu tercih öğretim görevlisiyle doğrulanmalı ve ayrı bir işte uyarlanmalıdır.
+Backend Java 17 üzerinde Spring Boot 4.1.1 ile çalışır; seçilen HTTP çalışma ortamı gömülü Tomcat'tir. `bootJar` çalıştırılabilir JAR üretir. Ayrı Jakarta EE application server/WAR dağıtımı bu kurulumda uygulanmadı.
+
+Ekip, genel proje dokümanındaki Payara Micro + Jakarta EE seçimi yerine Spring Boot kullanmaya karar verdi. Karşılıklar: REST → Spring Web MVC, CDI → Spring bağımlılık enjeksiyonu, Persistence → Spring Data JPA/Hibernate, Transactions → `@Transactional`, Payara datasource → Spring Boot/HikariCP datasource. Trello kartlarında ve proje dokümanında Payara geçen ifadeler bu karara göre okunmalıdır. Gerekçe: [ADR-0001](adr/0001-spring-boot-uygulama-calisma-ortami.md).
+
+## Veritabanı ve migration (ML-04)
+
+- PostgreSQL 17; yerelde `backend/docker-compose.yml` ile yalnızca 127.0.0.1 üzerinde çalışır. Bağlantı bilgileri `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` ortam değişkenlerinden okunur.
+- Şemanın sahibi Flyway'dir. Migration dosyaları `backend/src/main/resources/db/migration/V<n>__aciklama.sql` biçimindedir ve uygulama açılışında otomatik çalışır. Uygulanmış bir migration değiştirilmez; her şema değişikliği yeni bir sürüm dosyasıdır.
+- Hibernate şemayı yalnızca doğrular (`ddl-auto=validate`); tablo oluşturmaz veya değiştirmez. Zaman damgaları UTC `TIMESTAMPTZ`, anı günü saat diliminden bağımsız `DATE` olarak tutulur.
+- `V1` proje dokümanındaki veri modelini (users, sessions, memories, photos, file_cleanup_jobs) kurar. `V2` users, memories ve photos kimliklerini ve bunlara bağlı foreign key'leri `UUID` yapar; sessions ve file_cleanup_jobs kimlikleri dışarı açılmadığı için `BIGINT` kalır. Bu tablolara henüz API yazmadığı için V2 tabloları yeniden oluşturur; içlerinde satır varsa veri silmek yerine açıklayıcı bir hatayla durur. Kategori ve duygu değerleri İngilizce sabitlerle saklanır (`TRAVEL`, `HAPPY` vb.); Türkçe etiketler istemcide gösterilir.
+- Fotoğraf sınırı dosya başına 5 MB = 5.000.000 bayttır. Kapak, anının mevcut en küçük `position` değerine sahip fotoğrafıdır. Pozisyonlar yeniden numaralandırılmaz: kapak silinince sıradaki fotoğraf kapak olur, yeni fotoğraf `max(position) + 1` alır. Anı başına 5 fotoğraf sınırını servis, anı satırını kilitleyerek (`SELECT ... FOR UPDATE`) sayar ve uygular.
+- Tekrar denemeler (idempotency): Anı oluşturma isteği istemcinin ürettiği `client_request_id` (UUID) ile gelir; aynı hesapta bu anahtar tekildir. Sunucu oluşturma isteğinin SHA-256 özetini `client_request_sha256` olarak saklar. Aynı anahtar ve aynı özetle gelen tekrar yeni anı üretmez, mevcut anıyı döndürür; aynı anahtarla farklı içerik çakışma (409) olarak reddedilir. Fotoğraf yükleme de aynı kuralı izler: `client_photo_id` anı içinde tekildir, dosya içeriğinin SHA-256 özeti `content_sha256` olarak saklanır; aynı anahtar ve aynı içerik mevcut fotoğrafı döndürür, farklı içerik 409 alır. Yanıt kodları ve özetin hangi alanlardan hesaplanacağı ML-03 API sözleşmesinde kesinleştirilir.
+- Veritabanına ulaşılamazsa uygulama açılmaz ve nedeni ile yapılacakları kısa bir hata mesajıyla bildirir. Çalışırken `GET /api/health` veritabanı erişilebilirse 200 `{"status":"UP","database":"UP"}`, değilse 503 `DOWN` döner.
+- Veritabanı testleri test JVM'i başına tek bir `postgres:17` Testcontainers örneğini paylaşır (singleton container); temiz şema gereken test bu container içinde ayrı bir veritabanı açar. Docker yoksa bu testler yalnızca yerelde atlanır, CI'da atlanmaz. Veritabanı gerektirmeyen testler Docker'a ihtiyaç duymaz.
 
 ## SOLID
 
@@ -17,7 +30,7 @@ Mevcut paket iskeleti korunmuştur. Henüz iş kuralları veya repository uygula
 
 Kalıcı veri katmanı eklendiğinde bir kullanım senaryosunun tüm yazmaları service katmanındaki tek transaction sınırında yürütülmelidir. Spring transaction yönetimi ve `@Transactional` kullanılacaktır; checked exception rollback kuralları açıkça seçilmelidir. Dış HTTP çağrıları uzun DB transaction'ı içinde tutulmamalıdır.
 
-Kabul testleri: başarılı işlemde tüm kayıtlar commit olur; ikinci yazmada hata üretildiğinde ilk yazma da rollback olur; eşzamanlı güncellemede veri kaybı engellenir (örneğin optimistic locking); yetkisiz erişimde hiçbir kayıt değişmez. Üretimde kullanılacak DB ile entegrasyon testi gerekir. Bu kurulumda veritabanı, transaction uygulaması ve bu testler henüz yoktur.
+Kabul testleri: başarılı işlemde tüm kayıtlar commit olur; ikinci yazmada hata üretildiğinde ilk yazma da rollback olur; eşzamanlı güncellemede veri kaybı engellenir (örneğin optimistic locking); yetkisiz erişimde hiçbir kayıt değişmez. Üretimde kullanılacak DB ile entegrasyon testi gerekir. PostgreSQL bağlantısı ve şema kuruldu; transaction uygulaması ve bu testler henüz yoktur.
 
 ## Statik analiz: A hedefi
 
@@ -55,4 +68,4 @@ Bu bölüm hedef mimariyi belirler. Bu PR'da anı API'si, anı veritabanı, mobi
 
 ## ML-27 veritabanı planı
 
-Veritabanısız varsayılan profil geçici bir başlangıç çözümüdür. ML-27 kalıcılık katmanı eklenirken entity/repository taraması, datasource ve açılış testleri birlikte düzenlenecek; mevcut DataSource dışlaması ile `database` profilindeki boş exclude kalıcı çözüm olarak kullanılmayacak. Şema, ekip veritabanında elle yönetilmek yerine Flyway ile `backend/src/main/resources/db/migration/V1__...sql` altında repoda sürümlenecek. Migration uygulandıktan sonra `ddl-auto=validate`, entity eşlemelerini bu şemayla karşılaştıracak. Entegrasyon testlerinin paylaşılan veritabanından bağımsız çalışması için Testcontainers/PostgreSQL, yerel geliştirme için Spring Boot Docker Compose desteği planlanıyor; bunlar Docker erişimi gerektirir. Paylaşılan ekip veritabanı entegrasyon veya demo ortamı olarak kullanılabilir. Bu PR yalnız planı belgeler; Flyway, Testcontainers ve Compose kurulumu yapmaz, veritabanı/container başlatmaz ve mevcut veritabanı testini değiştirmez. Uygulama ve gerçek kalıcılık doğrulaması ML-27 kapsamında ayrıca yapılacak.
+ML-27'de planlanan veritabanı temeli ML-04 ile uygulandı: geçici DataSource dışlaması ve `database` profili kaldırıldı; uygulama her profilde PostgreSQL'e bağlanır. Şema Flyway ile `backend/src/main/resources/db/migration/` altında sürümlenir (V1 ilk şema, V2 UUID kimlikler ve tekrar deneme alanları), `ddl-auto=validate` entity eşlemelerini bu şemayla karşılaştırır. Entegrasyon testleri Testcontainers/PostgreSQL kullanır; yerel geliştirme için `backend/docker-compose.yml` vardır. Spring Boot'un otomatik Docker Compose desteği eklenmedi: uygulama açılışı Docker'a bağlı kalmasın ve aynı compose dosyası elle yönetilebilsin diye compose ayrı komutla başlatılır. Paylaşılan ekip veritabanı entegrasyon veya demo ortamı olarak kullanılabilir. Entity/repository taraması ve kalıcılık katmanının kendisi ML-27 kapsamında kalır.

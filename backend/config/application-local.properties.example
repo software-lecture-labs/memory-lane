@@ -1,3 +1,9 @@
 # Ayni klasore application-local.properties adiyla kopyalayin.
 # Yukleme: --spring.profiles.active=local --spring.config.additional-location=optional:file:./config/
 server.port=8080
+
+# Database settings normally come from backend/.env. Override them here only when this
+# profile must use a different database; this file is ignored by Git.
+#spring.datasource.url=jdbc:postgresql://127.0.0.1:5432/memory_lane
+#spring.datasource.username=memory_lane
+#spring.datasource.password=
