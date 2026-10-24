@@ -6,7 +6,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.transaction.support.TransactionTemplate;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,12 +17,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class SchemaRulesTest {
     private static final String HASH = "a".repeat(64);
     private static JdbcTemplate jdbc;
+    private static TransactionTemplate transaction;
 
     @BeforeAll
     static void migrate() throws Exception {
         DriverManagerDataSource dataSource = dataSource(SharedPostgres.createEmptyDatabase("schema_rules"));
         Flyway.configure().dataSource(dataSource).load().migrate();
         jdbc = new JdbcTemplate(dataSource);
+        transaction = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
     }
 
     @Test void userMemoryAndPhotoKeysAreGeneratedUuids() {
@@ -61,6 +65,46 @@ class SchemaRulesTest {
         assertThrows(DataIntegrityViolationException.class, () -> insertMemory(owner, requestId));
         // Keys are scoped per owner, so another account may use the same value.
         assertNotNull(insertMemory(insertUser(), requestId));
+    }
+
+    @Test void memoryWithPhotosIsDeletedOnlyAfterItsPhotos() {
+        UUID memory = insertMemory(insertUser(), UUID.randomUUID());
+        insertPhoto(memory, UUID.randomUUID(), 1000, 0);
+        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("DELETE FROM memories WHERE id = ?", memory));
+
+        jdbc.update("DELETE FROM photos WHERE memory_id = ?", memory);
+        assertEquals(1, jdbc.update("DELETE FROM memories WHERE id = ?", memory));
+    }
+
+    @Test void userIsDeletedOnlyAfterItsMemoriesAndSessions() {
+        UUID user = insertUser();
+        insertMemory(user, UUID.randomUUID());
+        jdbc.update("INSERT INTO sessions (user_id, token_hash, expires_at) VALUES (?, ?, now() + interval '1 day')",
+                user, UUID.randomUUID().toString());
+        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("DELETE FROM users WHERE id = ?", user));
+
+        jdbc.update("DELETE FROM memories WHERE owner_id = ?", user);
+        jdbc.update("DELETE FROM sessions WHERE user_id = ?", user);
+        assertEquals(1, jdbc.update("DELETE FROM users WHERE id = ?", user));
+    }
+
+    @Test void photoPositionsCanBeSwappedOnlyWhenUniquenessIsDeferred() {
+        UUID memory = insertMemory(insertUser(), UUID.randomUUID());
+        UUID first = insertPhoto(memory, UUID.randomUUID(), 1000, 0);
+        UUID second = insertPhoto(memory, UUID.randomUUID(), 1000, 1);
+        assertThrows(DataIntegrityViolationException.class, () -> transaction.executeWithoutResult(status -> swap(first, second)));
+
+        transaction.executeWithoutResult(status -> {
+            jdbc.execute("SET CONSTRAINTS uq_photos_memory_position DEFERRED");
+            swap(first, second);
+        });
+        assertEquals(second, jdbc.queryForObject(
+                "SELECT id FROM photos WHERE memory_id = ? ORDER BY position LIMIT 1", UUID.class, memory));
+    }
+
+    private static void swap(UUID first, UUID second) {
+        jdbc.update("UPDATE photos SET position = 1 WHERE id = ?", first);
+        jdbc.update("UPDATE photos SET position = 0 WHERE id = ?", second);
     }
 
     @Test void uuidMigrationRefusesToDropExistingRows() throws Exception {
