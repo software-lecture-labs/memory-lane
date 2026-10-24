@@ -6,6 +6,10 @@ Android mobil uygulaması ve Java HTTP backend için ortak repo.
 - `backend/`: Java 17, Spring Boot 4.1.1 ve gömülü Tomcat.
 - `docs/`: kalıcı mimari kararlar ve Git çalışma biçimi.
 
+## Veri modeli ve API
+
+Hesap, oturum, kullanıcıya özel anı ve fotoğraf işlemlerinin ortak alanları, endpointleri, hata yanıtları ve tekrar deneme kuralları [ML-03 API sözleşmesinde](docs/api-contract.md) tanımlıdır. Bu belge geliştirme sözleşmesidir; endpointlerin uygulanmış olduğunu göstermez.
+
 ## İlk kurulum
 
 1. Repoyu klonlayın, JDK 17 kurun ve `java -version` ile kontrol edin.
