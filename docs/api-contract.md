@@ -17,7 +17,7 @@ Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı ve K1'in o
 | --- | --- |
 | User | UUID `id`, normalize ve unique `email`, yalnız sunucuda `passwordHash`, UTC `createdAt`. Bir kullanıcının birden çok oturumu ve anısı olabilir. |
 | Session | Bir User'a bağlıdır. `tokenHash` SHA-256 hex olarak saklanır; ham token saklanmaz. UTC `createdAt` ve `expiresAt`; ömür 24 saat. |
-| Memory | UUID `id`, zorunlu `owner_id → User.id`, başlık, açıklama, `memoryDate`, kategori, isteğe bağlı duygu/konum, UTC oluşturma/güncelleme zamanı. Bir Memory'nin 0–5 Photo kaydı olabilir. |
+| Memory | UUID `id`, zorunlu `owner_id → User.id`, başlık, açıklama, `memoryDate`, kategori, isteğe bağlı duygu/konum, UTC oluşturma/güncelleme zamanı. Sunucu tarafındaki version eşzamanlı güncellemeyi denetler; DTO yazma alanı değildir. Bir Memory'nin 0–5 Photo kaydı olabilir. |
 | Photo | UUID `id`, zorunlu `memory_id → Memory.id`, MIME türü, bayt boyutu, seçim sırası, UTC oluşturma zamanı. Depolama anahtarı ve tekrar kontrol bilgileri yalnız sunucudadır. |
 
 Session–User ve Memory–User ilişkileri çoktan-bire, Photo–Memory ilişkisi çoktan-biredir. FK ve tekilliklerin migration ile kurulması K4'ün altyapı uygulamasında ele alınır; bu belge tablo oluşturmaz.
@@ -37,7 +37,7 @@ Session–User ve Memory–User ilişkileri çoktan-bire, Photo–Memory ilişki
 
 Kategori/duygu kodları API’de sabittir; Türkçe etiketleri mobil gösterir (örneğin TRAVEL → Gezi, HAPPY → Mutlu, OTHER → Diğer). JSON `emotion` alanı SQL şemasındaki `mood`, `order` alanı `position`, `contentType` alanı `media_type` ile eşlenir; iç SQL adları API alan adlarını değiştirmez.
 
-Anı oluşturma ve PUT aynı yazma gövdesini kullanır. PUT'ta zorunlu alanlar yeniden verilir; eksik isteğe bağlı alanlar yukarıdaki varsayılanlara döner. PUT fotoğraf listesini değiştirmez. `id`, `createdAt`, `updatedAt`, `photoCount` ve `coverPhotoId` sunucunun yanıt alanlarıdır; istek alanı değildir.
+Anı oluşturma ve PUT aynı yazma gövdesini kullanır. PUT'ta zorunlu alanlar yeniden verilir; eksik isteğe bağlı alanlar yukarıdaki varsayılanlara döner. PUT fotoğraf listesini değiştirmez ve aşağıdaki `If-Match` koşulunu zorunlu tutar. `id`, `createdAt`, `updatedAt`, `photoCount` ve `coverPhotoId` sunucunun yanıt alanlarıdır; istek alanı değildir.
 
 ## Hesap ve oturum
 
@@ -81,8 +81,8 @@ Token 32 güvenli rastgele bayttan URL-safe Base64 olarak üretilir; 43 karakter
 | --- | --- | --- |
 | POST | `/memories` | 201 MemoryDetail; `Location: /api/memories/{id}`; `Idempotency-Key` zorunlu |
 | GET | `/memories` | 200 sayfalı MemorySummary listesi; arama ve filtre aynı endpointte |
-| GET | `/memories/{id}` | 200 MemoryDetail |
-| PUT | `/memories/{id}` | 200 güncel MemoryDetail; `createdAt` ve fotoğraflar korunur |
+| GET | `/memories/{id}` | 200 MemoryDetail ve güçlü `ETag` başlığı |
+| PUT | `/memories/{id}` | `If-Match` zorunlu; 200 güncel MemoryDetail; eski sürüm 412, eksik başlık 428 |
 | DELETE | `/memories/{id}` | 204; bulunamayan/yabancı anı 404 |
 | GET | `/memories/map` | 200, konumlu anıların sayfalamadan bağımsız noktaları |
 
@@ -119,6 +119,40 @@ MemoryDetail örneği:
 ```
 
 MemorySummary aynı alanları taşır; yalnız `photos` dizisi bulunmaz. `photoCount` ve `coverPhotoId` ile listede gereksiz dosya indirme önlenir. Kapak fotoğrafı, varsa en küçük `order` değerindeki fotoğraftır.
+
+### Eşzamanlı güncelleme: ETag ve If-Match
+
+Düzenleme formu `GET /memories/{id}` yanıtındaki güçlü `ETag` değerini saklar. Etiket sunucunun ürettiği opak bir değerdir; istemci sürüm numarası tahmin etmez veya etiketi parçalamaz. Örnek GET başlığı: `ETag: "memory-22222222-2222-4222-8222-222222222222-r7"`. Liste yanıtı düzenleme için sürüm kaynağı değildir; form açılırken detay GET yapılır. Etiket ve detay gövdesi aynı tutarlı kayıt görüntüsünden üretilir.
+
+İstemci PUT'ta aldığı etiketi tırnaklarıyla birlikte gönderir:
+
+```http
+PUT /api/memories/22222222-2222-4222-8222-222222222222
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+If-Match: "memory-22222222-2222-4222-8222-222222222222-r7"
+```
+
+- Oturum ve kaynak sahipliği önce doğrulanır. Oturumsuz istek 401, bulunamayan/yabancı anı 404 alır; bu yanıtlar kaynak sürümünü açığa çıkarmaz.
+- `If-Match` yoksa 428 `PRECONDITION_REQUIRED` döner ve hiçbir alan değiştirilmez. İstemci önce detay GET yapıp etiketi alır.
+- Bu API düzenleme için tek, tırnaklı ETag ister. Bozuk başlık, birden çok etiket veya sürümü kontrol etmeden her kaydı eşleştiren `*` kullanımı 400 `INVALID_PRECONDITION` döner. Zayıf `W/"..."` etiketi güçlü karşılaştırmada eşleşmez ve 412 döner.
+- Etiket güncel temsil ile eşleşmiyorsa 412 `MEMORY_MODIFIED` döner; hiçbir alan veya fotoğraf değiştirilmez. Mobil yerel formu korur, güncel detayı yeniden alır ve iki sürümü kullanıcıya gösterir. Güncel ETag'i alıp eski formu otomatik göndermek yasaktır; yeni kayıt kullanıcının açık incelemesinden sonra yapılır.
+- Etiket eşleşiyorsa, sürüm kontrolü ve alanların yazılması aynı transaction'da atomik yapılır. Aynı sürümü kullanan iki eşzamanlı PUT'tan yalnız biri yazabilir; diğeri 412 alır. Önce okuyup sonra koşulsuz UPDATE yapmak yeterli değildir.
+- Başarılı PUT 200 ve güncel MemoryDetail döner. Yazma DTO'su normalleştirildiği ve detaydan farklı olduğu için başarılı PUT yanıtında ETag gönderilmez; bir sonraki düzenlemenin etiketi detay GET ile alınır. Bu seçim, dönüştürülen PUT gövdelerinde validator gönderilmesine ilişkin RFC 9110 kuralına uyar.
+
+Yanıtı kaybolan PUT aynı eski etiketle tekrarlandığında 412 alabilir; 200 dönmüş gibi varsayılmaz. İstemci GET ile güncel durumu alıp yerel form ile karşılaştırır; başka cihazın değişikliği otomatik ezilmez. POST için tanımlı Idempotency-Key kuralları PUT'un If-Match koşulunu kaldırmaz.
+
+MemoryDetail fotoğraf bilgilerini de içerdiği için başarılı fotoğraf ekleme/silme, `photoCount`, `coverPhotoId`, `photos` veya başka görünür alanı değiştiren her işlem anının sürümünü de aynı transaction'da artırır. Başarılı bir isteğin idempotent tekrarı veri/sıra/sürümü yeniden değiştirmez. GET gövdesi değişirken aynı güçlü etiket tekrar kullanılamaz.
+
+Sunucu uygulaması için karar: Memory entity'sinde `@Version` long alanı ve `memories.version BIGINT NOT NULL DEFAULT 0` gerekir. Bu kolon mevcut V1/V2'de yoktur; ilgili API özelliği uygulanırken yeni bir sürümlü migration ile eklenecek, uygulanmış dosyalar değiştirilmeyecektir. Fotoğraf işlemleri de anının sürümünü artırmalı ve optimistic-lock hatası sahiplik denetiminden sonra 412'ye çevrilmelidir. Bu PR yalnız sözleşmeyi belirler; var olan şemaya kolon eklemez veya korumanın çalıştığını iddia etmez.
+
+412 gövde örneği:
+
+```json
+{"code":"MEMORY_MODIFIED","message":"Anı başka bir işlemle değişti. Güncel halini alıp değişikliklerinizi kontrol edin."}
+```
+
+Uygulama kabul senaryoları: iki cihaz aynı r7'yi okur; ilk PUT 200, ikinci PUT 412 ve ilk cihazın kaydı korunur. Eksik If-Match 428, zayıf/eski etiket 412, bozuk/* etiket 400 olmalıdır. Kaybolan başarılı PUT'un tekrarı ve arada fotoğraf değişmesi de eski formla sessiz yazma yapmamalıdır. Bunlar henüz çalıştırılmış backend testleri değildir; endpoint yazılırken gerçek kalıcılık testlerine eklenecektir.
 
 ### Sayfalama ve arama
 
@@ -190,7 +224,7 @@ PhotoResponse; liste ve MemoryDetail.photos içinde de aynı biçimdedir:
 2. Her fotoğraf için ayrı UUID anahtar tutulur; yanıtın `order` değeri sunucudan alınır. Anı kaydolup bir fotoğraf hata verirse anı geri alınmaz ve yeniden oluşturulmaz; yalnız başarısız/belirsiz fotoğraf aynı anahtar ve dosya ile yeniden gönderilir. Başarılı fotoğraflar tekrar yüklenmez.
 3. Yanıt kaybolmuşsa aynı isteği aynı anahtarla tekrar etmek ilk kaydın kimliğini döndürür; ikinci anı/fotoğraf oluşturmaz. İlk başarılı yazma 201, tekrar 200 ve `Idempotency-Replayed: true` döner. Oluşturulan kaynağın `Location` bilgisi aynı kalır. Aynı anahtarla farklı içerik 409 `IDEMPOTENCY_CONFLICT` döner.
 4. Anahtarın kapsamı kullanıcı + yöntem + hedef yoldur. Sunucu başarılı sonucu ve içerik eşleşmesini kalıcı olarak kaydeder; eşzamanlı tekrarda tek kayıt üretilir. Kaynak silinmişse aynı anahtar yeniden kaynak yaratmaz, 409 `IDEMPOTENCY_KEY_RETIRED` döner. Uygulama başarısız olmuş ve hiçbir kayıt oluşmamışsa anahtar yeniden denenebilir. Kullanıcı aynı dosyayı yeni anahtarla bilinçli olarak seçerse bu yeni bir yüklemedir; kopya önleme bu belirsiz ağ tekrarları içindir.
-5. Tekrar kontrolü 5 adet sınırı kontrolünden önce yapılır; daha önce başarılı bir isteğin tekrarı limit doldu diye altıncı dosya sayılmaz. Dosya içeriği ve MIME türü eşleşmesi sunucuda denetlenir; ilk başarılı yanıtın sıra değeri tekrar yanıtta korunur. PUT veya DELETE sonrasında durumu doğrulamak için aynı kaynağa GET yapılabilir; silinmiş kaynak için 404 beklenir.
+5. Tekrar kontrolü 5 adet sınırı kontrolünden önce yapılır; daha önce başarılı bir isteğin tekrarı limit doldu diye altıncı dosya sayılmaz. Dosya içeriği ve MIME türü eşleşmesi sunucuda denetlenir; ilk başarılı yanıtın sıra değeri tekrar yanıtta korunur. PUT yanıtı belirsizse önceki If-Match ile körlemesine yazmak yerine detay GET yapılır; 412 akışı izlenir. DELETE sonrası doğrulamada silinmiş kaynak için 404 beklenir.
 6. Mobil kısmi başarıyı örneğin “Anı kaydedildi, 2 fotoğraf yüklenemedi” olarak gösterir. Başarısız dosyaların seçimi ön plandaki tekrar deneme için korunur; bunun kapsamı süreçler arası çevrimdışı senkronizasyon değildir. 401 durumunda tekrar deneme durur ve oturum akışına dönülür.
 
 Geçersiz dosya/tarih gibi 4xx hataları veri düzeltilmeden tekrar gönderilmez. 429'da en az bir dakika beklenir. Bağlantı/5xx hatasında kullanıcı yeniden deneyebilir; yeni anahtar üretilmez. Anı silme DB kayıtları için transaction, fiziksel dosyalar için commit sonrası temizleme kullanır; dosya hatası nedeniyle kullanıcıya silinmemiş anı gibi yanıt verilmez. Başarı/rollback ve dosya temizliği uygulaması ML-13/ML-14'ün işidir; bu belge o işleri gerçekleştirmez.
@@ -207,12 +241,15 @@ Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından ka
 | --- | --- | --- |
 | 400 | `INVALID_INPUT` | Alan, UUID, tarih, koordinat, sayfa geçersiz; zorunlu anahtar eksik |
 | 400 | `INVALID_JSON` | Okunamayan JSON |
+| 400 | `INVALID_PRECONDITION` | PUT için If-Match biçimi desteklenmiyor veya * kullanılmış |
 | 401 | `INVALID_CREDENTIALS` | Hesap/parola doğrulanamadı; yalnız login |
 | 401 | `INVALID_SESSION` | Eksik, geçersiz, iptal edilmiş veya süresi dolmuş oturum; `WWW-Authenticate: Bearer` |
 | 404 | `MEMORY_NOT_FOUND` / `PHOTO_NOT_FOUND` | Kaynak bulunamadı veya kullanıcıya ait değil; yabancı kaynak için ayrı kod yok |
 | 409 | `EMAIL_IN_USE` | Normalize e-posta zaten kayıtlı |
 | 409 | `PHOTO_LIMIT_REACHED` | Anıda 5 kayıt var |
 | 409 | `IDEMPOTENCY_CONFLICT` / `IDEMPOTENCY_KEY_RETIRED` | Anahtar farklı içerikle kullanıldı veya kaynak silinmiş |
+| 412 | `MEMORY_MODIFIED` | PUT etiketi güncel sürümle eşleşmiyor; veri değiştirilmez |
+| 428 | `PRECONDITION_REQUIRED` | PUT için If-Match eksik; önce detay GET yapılmalı |
 | 413 | `FILE_TOO_LARGE` / `REQUEST_TOO_LARGE` | Dosya limiti / auth gövde limiti aşıldı |
 | 415 | `UNSUPPORTED_PHOTO_TYPE` | Fotoğraf JPEG/PNG değil veya içerik türü uyuşmuyor |
 | 405 / 415 | `HTTP_ERROR` | Yöntem veya JSON isteğinin Content-Type değeri desteklenmiyor |
@@ -228,6 +265,7 @@ Güncel main'deki V1 ve V2 migration'ları birlikte esas alınır; uygulanmış 
 | --- | --- |
 | User, Memory, Photo UUID | V2 `users.id`, `memories.id`, `photos.id` ve ilgili UUID foreign key'ler |
 | Session | Dışarı açılmayan BIGINT `sessions.id`; UUID `user_id`, hash ve UTC zaman alanları |
+| ETag/If-Match sürümü | Yeni `memories.version` kolonu ve entity @Version alanı gerektirir; mevcut V1/V2'de bulunmaz, sonraki sürümlü migration ile eklenir |
 | `emotion`, `order`, `contentType`, `contentUrl` | SQL `mood`, `position`, `media_type` eşlemesi; URL controller tarafından üretilir, storage_key veya dosya yolu açılmaz |
 | Anı `Idempotency-Key` | `memories.client_request_id`, `(owner_id, client_request_id)` tekilliği ve `client_request_sha256` |
 | Fotoğraf `Idempotency-Key` | `photos.client_photo_id`, `(memory_id, client_photo_id)` tekilliği ve `content_sha256` |
@@ -242,3 +280,9 @@ V2 şeması anahtar ve içerik özetlerini sağlar; başarılı tekrarın 200 ya
 ## ML-03 teslim durumu
 
 ML-03'ün veri ilişkileri, biçimler, endpointler, DTO/hata/sayfalama/yükleme örnekleri ve kısmi başarı/tekrar kuralları tamamlanmıştır. K2 fotoğraf akışı incelemesini ekipte ayrıca yapacaktır; onay alınmış gibi kaydedilmez. Belgenin hazırlanması, API uygulaması ve ekip incelemesi ayrı işlerdir; doğrulama sonucu ilgili PR/CI üzerinden takip edilir. Bu belge endpoint uygulaması, migration veya mobil ekran geliştirmesi değildir.
+
+## HTTP eşzamanlılık kaynağı
+
+- [RFC 9110 — If-Match](https://www.rfc-editor.org/rfc/rfc9110.html#name-if-match)
+- [RFC 9110 — PUT](https://www.rfc-editor.org/rfc/rfc9110.html#name-put)
+- [RFC 6585 — 428 Precondition Required](https://www.rfc-editor.org/rfc/rfc6585.html#section-3)
