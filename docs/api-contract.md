@@ -1,10 +1,12 @@
 # Veri modeli ve API sözleşmesi
 
-Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı ve K1'in onayladığı kurallar esas alınır; backend Spring Boot'tur. Auth dahil aşağıdaki endpointler geliştirme sözleşmesidir. Yereldeki ML-27 yanıt biçimi esas alınmıştır; main dalında bu endpointlerin uygulanmış veya gerçek veritabanıyla doğrulanmış olduğu iddia edilmez.
+Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. Auth dahil aşağıdaki endpointler geliştirme sözleşmesidir; uygulanmış veya gerçek veritabanıyla doğrulanmış oldukları iddia edilmez. Ekip rol kodları README'de açıklanır.
 
 ## Genel kurallar
 
-- Taban yol `/api`. JSON gövdeleri UTF-8 ve `Content-Type: application/json` kullanır. Fotoğraf yükleme multipart'tır.
+- İş API'sinin taban yolu `/api/v1`. JSON gövdeleri UTF-8 ve `Content-Type: application/json` kullanır. Fotoğraf yükleme multipart'tır.
+- ML-04'teki mevcut `/api/health` altyapı endpointi değişmez. Bu sözleşmedeki iş endpointleri yalnız `/api/v1` altında uygulanacak; aynı iş için paralel `/api/auth` veya `/api/memories` alias'ı tanımlanmaz. Geriye uyumlu alan eklemeleri v1'de kalabilir; alan tipi/adı değişikliği gibi uyumsuz değişiklik yeni sürüm gerektirir.
+- Hesap ve anı yanıtları/hataları `Cache-Control: no-store` taşır. ETag burada önbellek zorunluluğu değil, yazma önkoşuludur.
 - Register ve login dışındaki aşağıdaki işlemler `Authorization: Bearer <accessToken>` ister. Sağlık yolları ayrıdır; bu belgenin iş API'sine dahil değildir.
 - User, Memory ve Photo kimlikleri sunucunun ürettiği UUID metinleridir: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. Örnekler küçük harfle yazılır. Session anahtarı UUID değildir.
 - `createdAt`, `updatedAt` ve `expiresAt` ISO 8601 UTC metnidir ve `Z` ile biter; saniye/kesir kısmı ISO 8601'e göre değişebilir. `memoryDate` saat içermeyen `YYYY-MM-DD` tarihidir. Bugün kontrolü `Europe/Istanbul` takvim gününe göre yapılır.
@@ -20,7 +22,7 @@ Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı ve K1'in o
 | Memory | UUID `id`, zorunlu `owner_id → User.id`, başlık, açıklama, `memoryDate`, kategori, isteğe bağlı duygu/konum, UTC oluşturma/güncelleme zamanı. Sunucu tarafındaki version eşzamanlı güncellemeyi denetler; DTO yazma alanı değildir. Bir Memory'nin 0–5 Photo kaydı olabilir. |
 | Photo | UUID `id`, zorunlu `memory_id → Memory.id`, MIME türü, bayt boyutu, seçim sırası, UTC oluşturma zamanı. Depolama anahtarı ve tekrar kontrol bilgileri yalnız sunucudadır. |
 
-Session–User ve Memory–User ilişkileri çoktan-bire, Photo–Memory ilişkisi çoktan-biredir. FK ve tekilliklerin migration ile kurulması K4'ün altyapı uygulamasında ele alınır; bu belge tablo oluşturmaz.
+Session–User ve Memory–User ilişkileri çoktan-bire, Photo–Memory ilişkisi çoktan-biredir. FK ve tekillikler ML-04 V1/V2 migration'larında kuruludur; aşağıdaki şema eşleştirmesi bu alanları gösterir. Bu belge tablo oluşturmaz.
 
 `owner_id` kayıt sırasında oturumdan belirlenir; istemciden alınmaz. Liste, detay, güncelleme, silme, fotoğraf yükleme/indirme, arama ve harita aynı sahiplik denetimini uygular. Geçerli oturumla başka hesaba ait bir kaynak istenirse, kaynağın varlığını açıklamamak için bulunamayan kaynakla aynı 404 döner. Fotoğraf sahipliği bağlı olduğu Memory üzerinden denetlenir; medya herkese açık dosya klasöründen sunulmaz.
 
@@ -56,6 +58,10 @@ Register/login isteği:
 
 E-posta kırpılır ve Locale.ROOT ile küçük harfe çevrilir; en fazla 254 karakter ve unique'tir. Kayıt parolası 15–128 Unicode karakterdir; boşluk/Türkçe karakter korunur, parola kırpılmaz. Hazır kütüphaneyle Argon2id kullanılır. Yanlış parola ve bilinmeyen hesap aynı `401 INVALID_CREDENTIALS` yanıtını verir. Auth istek gövdesi 8 KiB, giriş/kayıt denemesi IP başına 20/dakika ile sınırlıdır.
 
+Register için `409 EMAIL_IN_USE` bilinçli bir ilk teslim kararıdır: e-postanın kayıtlı olduğunu açığa çıkarır, ancak e-posta doğrulaması/mail altyapısı kapsam dışı olduğundan kullanıcıya açık hata verilir. Bu karar herkese açık hizmet için hesap varlığını gizleyen bir çözüm olarak sunulmaz.
+
+IP limiti tek başına yeterli değildir: CGNAT arkasındaki kullanıcılar aynı kotayı paylaşabilir, dağıtılmış denemeler farklı IP kullanabilir. Login için ek kural, normalize e-posta başına IP'lerden bağımsız 60 saniyede en fazla 5 başarısız denemedir; sonraki deneme pencere bitene kadar 429 alır. Var olan ve olmayan hesaplara aynı sayaç kuralı uygulanır; sayaç için hesap varlığı açıklanmaz. Başarılı giriş başarısız deneme sayacını sıfırlar. Geçersiz JSON/e-posta IP kotasına girer, e-posta kotasına yazılmaz. 429 yanıtı kalan beklemeyi saniye olarak `Retry-After` ile bildirir; iki limit birden dolmuşsa uzun bekleme seçilir. Bu limitler kalıcı hesap kilidi değildir; çoklu sunucuda sayaçların ortak tutulması gerekir. Sayaç anahtarları/loglar düz e-posta veya parola taşımamalıdır. Bunlar auth uygulamasının kabul kurallarıdır; bu belge sayaç kodu eklemez.
+
 UserResponse örneği (register ve me):
 
 ```json
@@ -79,7 +85,7 @@ Token 32 güvenli rastgele bayttan URL-safe Base64 olarak üretilir; 43 karakter
 
 | Yöntem | Yol | Davranış |
 | --- | --- | --- |
-| POST | `/memories` | 201 MemoryDetail; `Location: /api/memories/{id}`; `Idempotency-Key` zorunlu |
+| POST | `/memories` | 201 MemoryDetail; `Location: /api/v1/memories/{id}`; `Idempotency-Key` zorunlu |
 | GET | `/memories` | 200 sayfalı MemorySummary listesi; arama ve filtre aynı endpointte |
 | GET | `/memories/{id}` | 200 MemoryDetail ve güçlü `ETag` başlığı |
 | PUT | `/memories/{id}` | `If-Match` zorunlu; 200 güncel MemoryDetail; eski sürüm 412, eksik başlık 428 |
@@ -127,7 +133,7 @@ Düzenleme formu `GET /memories/{id}` yanıtındaki güçlü `ETag` değerini sa
 İstemci PUT'ta aldığı etiketi tırnaklarıyla birlikte gönderir:
 
 ```http
-PUT /api/memories/22222222-2222-4222-8222-222222222222
+PUT /api/v1/memories/22222222-2222-4222-8222-222222222222
 Authorization: Bearer <accessToken>
 Content-Type: application/json
 If-Match: "memory-22222222-2222-4222-8222-222222222222-r7"
@@ -156,7 +162,9 @@ Uygulama kabul senaryoları: iki cihaz aynı r7'yi okur; ilk PUT 200, ikinci PUT
 
 ### Sayfalama ve arama
 
-`GET /memories?page=0&size=20&q=sahil&category=TRAVEL` örneğinde `page` sıfırdan başlar; varsayılan 0'dır. `size` varsayılan 20, aralık 1–100'dür. Negatif/geçersiz değer 400; son sayfadan sonrası 200 ve boş `content` döner. `q` kırpılır, en fazla 100 karakterdir; başlık/açıklama içinde büyük-küçük harf duyarsız düz metin aramasıdır. `%` ve `_` kullanıcı için özel joker değildir; aksan/harf sadeleştirmesi yapılmaz. Boş `q` veya `category` filtreyi kaldırır. Kategori sabit kodu büyük harfle tam eşleşir; Türkçe etiket query parametresi olarak gönderilmez. İki filtre birlikte AND olarak uygulanır.
+`GET /memories?page=0&size=20&q=sahil&category=TRAVEL` örneğinde `page` sıfırdan başlar; varsayılan 0'dır. `size` varsayılan 20, aralık 1–100'dür. Negatif/geçersiz değer 400; son sayfadan sonrası 200 ve boş `content` döner. `q` kırpılır, en fazla 100 karakterdir; başlık/açıklama içinde Türkçe büyük-küçük harf duyarsız düz metin aramasıdır. Hem sorgu hem aranan metin NFC Unicode normalleştirmesinden sonra Türkçe (`tr-TR`) küçük harfe dönüştürülerek karşılaştırılır; veritabanının varsayılan collation/ILIKE davranışına bırakılmaz. `İstanbul`–`istanbul` ve `Işık`–`ışık` eşleşir; `Işık`–`isik` eşleşmez. `%` ve `_` düz karakterdir, joker değildir; aksan/harf sadeleştirmesi yapılmaz. Boş `q` veya `category` filtreyi kaldırır. Kategori sabit kodu büyük harfle tam eşleşir; Türkçe etiket query parametresi olarak gönderilmez. İki filtre birlikte AND olarak uygulanır.
+
+Arama uygulamasında bu üç Türkçe örneği ve `%`/`_` düz karakter davranışı kabul testi olacak. Bu PR arama kodu veya çalıştırılmış DB testi içermez. Kullanıcıya ait kayıt sayısı düşük demo için tarama kabul edilir; ihtiyaç oluşursa pg_trgm/indeks planı ayrı şema değişikliğiyle değerlendirilecek.
 
 Sıra sabittir: `memoryDate DESC`, ardından `id DESC`. Bu sıralama aynı tarihteki kayıtları belirgin tutar; kayıtlar değişirken offset sayfalama sabit bir snapshot garantisi vermez. Mobil filtre değişince page=0'a döner ve önceki isteğin güncel sonucu ezmesini önler.
 
@@ -181,10 +189,10 @@ Sıra sabittir: `memoryDate DESC`, ardından `id DESC`. Bu sıralama aynı tarih
 
 ### Harita
 
-`GET /memories/map?q=sahil&category=TRAVEL` aynı arama/kategori kurallarını uygular. `page`/`size` kabul etmez; verilirse 400 döner. Yalnız oturum sahibinin konumlu kayıtları döner; liste sayfasındaki 20 kayıtla sınırlanmaz. Sonuç sessizce kesilmez; konumsuz anılar atlanır. Noktalar `memoryDate DESC`, `id DESC` sırasındadır.
+`GET /memories/map?q=sahil&category=TRAVEL` aynı arama/kategori kurallarını uygular. `page`/`size` kabul etmez; verilirse 400 döner. Yalnız oturum sahibinin konumlu kayıtları döner; liste sayfasındaki 20 kayıtla sınırlanmaz. Konumsuz anılar atlanır. Noktalar `memoryDate DESC`, `id DESC` sırasındadır. İlk sürümde en fazla 1000 nokta döner; sahiplik ve filtreler sınırdan önce uygulanır. `limit=1000`, `returned` ve `truncated` yanıt alanları zorunludur. 1000 veya daha az eşleşmede truncated=false; daha fazla eşleşmede ilk 1000 nokta ve truncated=true döner. Mobil kesilme bilgisini açıkça gösterir ve kullanıcıyı arama/kategori daraltmaya veya sayfalı listeye yönlendirir; bütün anıların haritada göründüğü izlenimi verilmez. İleride görünen alan için minLat/maxLat/minLng/maxLng filtreleri eklenebilir; şu an bu parametreler desteklenmiş sayılmaz.
 
 ```json
-{"points":[{"id":"22222222-2222-4222-8222-222222222222","title":"Sahil yürüyüşü","memoryDate":"2026-10-22","latitude":41.0082,"longitude":28.9784,"coverPhotoId":null}]}
+{"points":[{"id":"22222222-2222-4222-8222-222222222222","title":"Sahil yürüyüşü","memoryDate":"2026-10-22","latitude":41.0082,"longitude":28.9784,"coverPhotoId":null}],"limit":1000,"returned":1,"truncated":false}
 ```
 
 ## Fotoğraf endpointleri ve yanıtı
@@ -212,7 +220,7 @@ PhotoResponse; liste ve MemoryDetail.photos içinde de aynı biçimdedir:
   "contentType":"image/jpeg",
   "sizeBytes":245678,
   "createdAt":"2026-10-23T09:05:00Z",
-  "contentUrl":"/api/memories/22222222-2222-4222-8222-222222222222/photos/33333333-3333-4333-8333-333333333333/content"
+  "contentUrl":"/api/v1/memories/22222222-2222-4222-8222-222222222222/photos/33333333-3333-4333-8333-333333333333/content"
 }
 ```
 
@@ -227,7 +235,7 @@ PhotoResponse; liste ve MemoryDetail.photos içinde de aynı biçimdedir:
 5. Tekrar kontrolü 5 adet sınırı kontrolünden önce yapılır; daha önce başarılı bir isteğin tekrarı limit doldu diye altıncı dosya sayılmaz. Dosya içeriği ve MIME türü eşleşmesi sunucuda denetlenir; ilk başarılı yanıtın sıra değeri tekrar yanıtta korunur. PUT yanıtı belirsizse önceki If-Match ile körlemesine yazmak yerine detay GET yapılır; 412 akışı izlenir. DELETE sonrası doğrulamada silinmiş kaynak için 404 beklenir.
 6. Mobil kısmi başarıyı örneğin “Anı kaydedildi, 2 fotoğraf yüklenemedi” olarak gösterir. Başarısız dosyaların seçimi ön plandaki tekrar deneme için korunur; bunun kapsamı süreçler arası çevrimdışı senkronizasyon değildir. 401 durumunda tekrar deneme durur ve oturum akışına dönülür.
 
-Geçersiz dosya/tarih gibi 4xx hataları veri düzeltilmeden tekrar gönderilmez. 429'da en az bir dakika beklenir. Bağlantı/5xx hatasında kullanıcı yeniden deneyebilir; yeni anahtar üretilmez. Anı silme DB kayıtları için transaction, fiziksel dosyalar için commit sonrası temizleme kullanır; dosya hatası nedeniyle kullanıcıya silinmemiş anı gibi yanıt verilmez. Başarı/rollback ve dosya temizliği uygulaması ML-13/ML-14'ün işidir; bu belge o işleri gerçekleştirmez.
+Geçersiz dosya/tarih gibi 4xx hataları veri düzeltilmeden tekrar gönderilmez. 429'da Retry-After süresi beklenir; başlık beklenmedik biçimde yoksa güvenli varsayılan 60 saniyedir. Bağlantı/5xx hatasında kullanıcı yeniden deneyebilir; yeni anahtar üretilmez. Anı silme DB kayıtları için transaction, fiziksel dosyalar için commit sonrası temizleme kullanır; dosya hatası nedeniyle kullanıcıya silinmemiş anı gibi yanıt verilmez. Başarı/rollback ve dosya temizliği uygulaması ML-13/ML-14'ün işidir; bu belge o işleri gerçekleştirmez.
 
 ## Hata gövdesi ve durumlar
 
@@ -253,7 +261,7 @@ Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından ka
 | 413 | `FILE_TOO_LARGE` / `REQUEST_TOO_LARGE` | Dosya limiti / auth gövde limiti aşıldı |
 | 415 | `UNSUPPORTED_PHOTO_TYPE` | Fotoğraf JPEG/PNG değil veya içerik türü uyuşmuyor |
 | 405 / 415 | `HTTP_ERROR` | Yöntem veya JSON isteğinin Content-Type değeri desteklenmiyor |
-| 429 | `RATE_LIMITED` | Giriş/kayıt deneme sınırı |
+| 429 | `RATE_LIMITED` | IP veya login e-posta deneme sınırı; Retry-After saniye bilgisi |
 | 500 | `INTERNAL_ERROR` | İstemciye iç ayrıntısı verilmeyen beklenmeyen hata |
 | 503 | `DATABASE_UNAVAILABLE` | Bağlantı hazır değil veya veritabanı kullanılamıyor |
 
@@ -276,6 +284,14 @@ Güncel main'deki V1 ve V2 migration'ları birlikte esas alınır; uygulanmış 
 Anı gövdesi özeti, doğrulanmış/varsayılanları uygulanmış yazma alanlarından hesaplanır: anahtar sırası `title`, `description`, `memoryDate`, `category`, `emotion`, `location`; location içinde `latitude`, `longitude`. JSON UTF-8, gereksiz boşluksuz ve anahtar sırası sabit üretilir; sayılarda anlamsız son sıfırlar kaldırılır, −0 değeri 0 olur. Kaynak metindeki JSON boşlukları ve alan sırası özete etki etmez. Sunucunun bu standart gösteriminin SHA-256 hex değeri `client_request_sha256` olur. Fotoğraf `content_sha256` yalnız ham dosya baytlarından hesaplanır; multipart sınır/metin bilgisi dahil edilmez. Aynı anahtarla gelen MIME türü ayrıca karşılaştırılır. İstemci özeti veya iç alanları belirleyemez.
 
 V2 şeması anahtar ve içerik özetlerini sağlar; başarılı tekrarın 200 yanıtı, anahtar çakışmasının 409 yanıtı ve anı satırı kilidi servis uygulamasında yapılacaktır. Silinmiş anahtarın tekrar kullanılmaması için ayrıca kalıcı emekli-anahtar kaydı gerekir; mevcut V2'nin bunu tek başına sağladığı iddia edilmez. Bu depolama, ilgili API özelliği geliştirilirken sürümlü migration ile eklenecek, burada veritabanı değiştirilmez. Böylece beklenen HTTP sözleşmesi ile henüz yazılmamış uygulama birbirine karıştırılmaz.
+
+## Sözleşme ve hata biçimi kararı
+
+Bu PR'da tek kaynak bu Markdown sözleşmesidir. OpenAPI 3.1 incelendi; şema araçları, istemci üretimi ve sözleşme testleri için uygun bir sonraki adımdır. Bu PR için zorunlu olmayan ikinci bir OpenAPI dosyası eklenmez. İlk iş endpointi yazılmadan önce taşıma kararı kesinleştirilecek; taşınırsa alan/yanıt şemaları OpenAPI'de tek kaynak olacak ve Markdown yalnız akış kararlarını açıklayacak. Aynı kuralları iki yerde bağımsız güncel tutma yolu seçilmez.
+
+Spring MVC `ProblemDetail` ve RFC 9457'yi destekler; bu, Spring Boot kullanınca bütün özel hata yanıtlarının kendiliğinden o biçime dönüştüğü anlamına gelmez. İlk sürüm için kararımız, bu belgede örneklenen tek `{code,message}` JSON hata gövdesini korumaktır; mobil yalnız code üzerinden eşler. Problem Details'e geçilirse ayrı ve açık bir sözleşme sürümü kararı gerekir; bazı endpointlerin bir biçim, bazılarının diğer biçim dönmesi kabul edilmez. Bu PR ikinci bir hata biçimi veya exception handler eklemez.
+
+Kaynaklar: [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.1.html), [Spring MVC hata yanıtları](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html).
 
 ## ML-03 teslim durumu
 
