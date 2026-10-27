@@ -3,3 +3,8 @@
 # macOS:   /Users/YOUR_USER/Library/Android/sdk
 # Linux:   /home/YOUR_USER/Android/Sdk
 sdk.dir=C:/Users/YOUR_USER/AppData/Local/Android/Sdk
+
+# Backend address used by the app. Must end with a slash.
+# Emulator (default when omitted): http://10.0.2.2:8080/
+# Physical phone on the same Wi-Fi: http://<computer LAN IP>:8080/
+# memorylane.apiBaseUrl=http://192.168.1.20:8080/
