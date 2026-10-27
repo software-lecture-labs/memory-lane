@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Item ids match the destination ids in nav_graph.xml; NavigationUI relies on that. -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/memoriesFragment"
+        android:icon="@drawable/ic_tab_memories"
+        android:title="@string/tab_memories" />
+    <item
+        android:id="@+id/mapFragment"
+        android:icon="@drawable/ic_tab_map"
+        android:title="@string/tab_map" />
+    <item
+        android:id="@+id/profileFragment"
+        android:icon="@drawable/ic_tab_profile"
+        android:title="@string/tab_profile" />
+</menu>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:gravity="center_horizontal"
+    tools:orientation="vertical"
+    tools:parentTag="android.widget.LinearLayout">
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/state_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true" />
+
+    <ImageView
+        android:id="@+id/state_icon"
+        android:layout_width="@dimen/ml_icon_status"
+        android:layout_height="@dimen/ml_icon_status"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_status_error" />
+
+    <TextView
+        android:id="@+id/state_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_sm"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Title"
+        tools:text="@string/error_title" />
+
+    <TextView
+        android:id="@+id/state_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_xs"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+        tools:text="@string/error_network" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/state_retry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_md"
+        android:text="@string/state_retry" />
+</merge>

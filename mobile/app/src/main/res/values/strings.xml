@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="app_name">Memory Lane</string>
+
+    <!-- Bottom tabs -->
+    <string name="tab_memories">Anılar</string>
+    <string name="tab_map">Harita</string>
+    <string name="tab_profile">Profil</string>
+
+    <!-- Memories tab -->
+    <string name="memories_title">Anılarım</string>
+    <string name="memories_subtitle">Kaydettiğin anılar burada listelenecek.</string>
+
+    <!-- Map and profile tabs -->
+    <string name="map_title">Anı haritası</string>
+    <string name="map_subtitle">Konumlu anıların haritada gösterilecek.</string>
+    <string name="profile_title">Profil</string>
+    <string name="profile_subtitle">Hesap ve oturum ayarların burada yer alacak.</string>
+    <string name="screen_not_ready">Bu bölüm sonraki geliştirmede eklenecek.</string>
+
+    <!-- Shared state view -->
+    <string name="state_retry">Tekrar dene</string>
+</resources>

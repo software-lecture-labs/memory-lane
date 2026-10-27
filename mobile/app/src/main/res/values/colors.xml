@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Palette from the "Warm Nostalgia Scrapbook" design system (DESIGN.md).
+     Layouts never use hex values directly; they go through these names or the theme.
+     tools:ignore="UnusedResources" marks tokens reserved for the login/register screens and
+     memory chips; drop the attribute once a screen references the color. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <color name="ml_canvas">#FFF8FC</color>
+    <color name="ml_surface">#FFFFFF</color>
+
+    <color name="ml_primary">#D93678</color>
+    <color name="ml_primary_pressed">#C52869</color>
+    <color name="ml_on_primary">#FFFFFF</color>
+
+    <color name="ml_lavender">#DCCEFF</color>
+    <color name="ml_lavender_pressed" tools:ignore="UnusedResources">#CFC0F5</color>
+    <color name="ml_peach" tools:ignore="UnusedResources">#FFD0B5</color>
+    <color name="ml_butter" tools:ignore="UnusedResources">#FFE69A</color>
+    <color name="ml_mint" tools:ignore="UnusedResources">#C9EBDD</color>
+
+    <!-- Deep plum is the only text color on pastel surfaces; alpha variants follow DESIGN.md. -->
+    <color name="ml_plum">#35263F</color>
+    <color name="ml_plum_muted">#B335263F</color>
+    <color name="ml_plum_hint">#7335263F</color>
+    <color name="ml_outline">#1F35263F</color>
+    <color name="ml_ghost_stroke" tools:ignore="UnusedResources">#3335263F</color>
+
+    <color name="ml_error">#BA1A1A</color>
+</resources>

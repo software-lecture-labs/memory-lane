@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:orientation="vertical"
+    tools:parentTag="android.widget.LinearLayout">
+
+    <TextView
+        android:id="@+id/header_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Headline"
+        tools:text="@string/memories_title" />
+
+    <TextView
+        android:id="@+id/header_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_xs"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+        tools:text="@string/memories_subtitle" />
+</merge>

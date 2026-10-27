@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 8pt spacing scale, radii and type sizes from DESIGN.md. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <dimen name="ml_space_xs">4dp</dimen>
+    <dimen name="ml_space_sm">8dp</dimen>
+    <dimen name="ml_space_md">16dp</dimen>
+    <dimen name="ml_space_lg">24dp</dimen>
+
+    <dimen name="ml_radius_input">16dp</dimen>
+    <dimen name="ml_radius_card">24dp</dimen>
+    <dimen name="ml_radius_pill">999dp</dimen>
+
+    <dimen name="ml_button_height">48dp</dimen>
+    <dimen name="ml_stroke_thin">1dp</dimen>
+    <dimen name="ml_stroke_regular">1.5dp</dimen>
+    <dimen name="ml_card_elevation">2dp</dimen>
+    <dimen name="ml_icon_status">40dp</dimen>
+
+    <dimen name="ml_text_headline">24sp</dimen>
+    <dimen name="ml_text_title">20sp</dimen>
+    <dimen name="ml_text_body">16sp</dimen>
+    <dimen name="ml_text_body_small">14sp</dimen>
+    <dimen name="ml_text_label_large">15sp</dimen>
+    <dimen name="ml_text_label">13sp</dimen>
+    <dimen name="ml_text_caption" tools:ignore="UnusedResources">11sp</dimen>
+</resources>
