@@ -18,6 +18,19 @@
     <string name="profile_subtitle">Hesap ve oturum ayarların burada yer alacak.</string>
     <string name="screen_not_ready">Bu bölüm sonraki geliştirmede eklenecek.</string>
 
+    <!-- Server health -->
+    <string name="health_section_title">Sunucu durumu</string>
+    <string name="health_checking">Sunucu kontrol ediliyor…</string>
+    <string name="health_ok_title">Sunucu bağlantısı hazır</string>
+    <string name="health_ok_detail">Veritabanı: %1$s</string>
+    <string name="health_server_address">Adres: %1$s</string>
+
     <!-- Shared state view -->
     <string name="state_retry">Tekrar dene</string>
+    <string name="error_title">Sunucu hazır değil</string>
+    <string name="error_network">Bağlantı kurulamadı. Sunucunun açık olduğunu ve adresin doğru olduğunu kontrol et.</string>
+    <string name="error_database_unavailable">Sunucu çalışıyor ancak veritabanına şu an ulaşılamıyor.</string>
+    <string name="error_http">Sunucu beklenmeyen bir yanıt verdi.</string>
+    <string name="error_parse">Sunucu yanıtı okunamadı.</string>
+    <string name="error_unexpected">Beklenmeyen bir hata oluştu.</string>
 </resources>

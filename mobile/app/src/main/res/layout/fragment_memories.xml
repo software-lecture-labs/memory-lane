@@ -1,21 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="@dimen/ml_space_md">
+    android:fillViewport="true">
 
-    <com.memorylane.core.ui.widget.ScreenHeaderView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:headerSubtitle="@string/memories_subtitle"
-        app:headerTitle="@string/memories_title" />
+        android:orientation="vertical"
+        android:padding="@dimen/ml_space_md">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/ml_space_lg"
-        android:text="@string/screen_not_ready"
-        android:textAppearance="@style/TextAppearance.MemoryLane.Body" />
-</LinearLayout>
+        <com.memorylane.core.ui.widget.ScreenHeaderView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:headerSubtitle="@string/memories_subtitle"
+            app:headerTitle="@string/memories_title" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_lg"
+            android:text="@string/health_section_title"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+        <!-- Shown only after a successful health response. -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/health_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_sm"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="@dimen/ml_icon_status"
+                    android:layout_height="@dimen/ml_icon_status"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_status_ok" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/ml_space_md"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/health_ok_title"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Title" />
+
+                    <TextView
+                        android:id="@+id/health_database"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/ml_space_xs"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                        tools:text="Veritabanı: UP" />
+
+                    <TextView
+                        android:id="@+id/health_address"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                        tools:text="Adres: http://10.0.2.2:8080/" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.memorylane.core.ui.widget.StateView
+            android:id="@+id/health_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_lg" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
