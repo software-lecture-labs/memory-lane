@@ -10,7 +10,17 @@ Android mobil uygulaması ve Java HTTP backend için ortak repo.
 
 Hesap, oturum, kullanıcıya özel anı ve fotoğraf işlemlerinin ortak alanları, endpointleri, hata yanıtları ve tekrar deneme kuralları [ML-03 API sözleşmesinde](docs/api-contract.md) tanımlıdır. Bu belge geliştirme sözleşmesidir; endpointlerin uygulanmış olduğunu göstermez.
 
-## Ekip rol kodları
+## Hesap API'si (ML-27)
+
+`POST /api/v1/auth/register` e-posta ve parolayla hesap açar (201); otomatik oturum açmaz. `POST /api/v1/auth/login` aynı JSON alanlarıyla Bearer token ve `expiresAt` döndürür. `GET /api/v1/auth/me` token sahibini döndürür; `POST /api/v1/auth/logout` yalnız o tokenı iptal eder (204). Son iki istekte `Authorization: Bearer <accessToken>` gerekir. Çıkış aynı doğru biçimli tokenla tekrarlanabilir; geçersiz/süresi dolmuş oturumla `me` 401 döner.
+
+Kayıtta e-posta kırpılıp küçük harfe çevrilir; parola 15–128 Unicode karakterdir, kırpılmaz. Argon2id (19 MiB, 2 geçiş, 1 paralellik) parola özeti; 32 rastgele bayttan üretilen 24 saatlik tokenın yalnız SHA-256 özeti PostgreSQL'e yazılır. Ham parola/token loglanmaz. Yanıtlar `Cache-Control: no-store` taşır.
+
+Auth gövdesi 8 KiB ile, kayıt/giriş denemeleri gerçek bağlantı IP'si başına 20/dakika ile sınırlıdır. Login için normalize e-posta başına beş başarısız denemeden sonra pencere bitene kadar 429/Retry-After döner. Başarılı giriş hesabın başarısızlık sayacını sıfırlar. Sayaçlar bu kontrollü, tek sunuculu demo için bellektedir; yeniden başlatmada sıfırlanır ve birden çok sunucu arasında paylaşılmaz. Proxy başlıklarına güvenilmez; proxy kullanımı ayrıca yapılandırılmalıdır. HTTPS dağıtımı ML-32, iş kaynaklarının sahiplik denetimi ML-29 kapsamındadır.
+
+Mevcut Flyway `users`/`sessions` şeması, dar `AuthRepository` içinde parametreli JDBC sorgularıyla kullanılır. `INSERT ... ON CONFLICT` eşzamanlı kayıtta tek hesap üretir; kayıt ve oturum yazmaları service transaction'ı içindedir. Bu küçük auth teslimi entity eşlemesi gerektirmeden mevcut şemayı kullanır; anı/fotoğraf JPA geliştirmesini değiştirmez. API biçimleri [sözleşmede](docs/api-contract.md), çalıştırma/test komutları aşağıdadır. Auth entegrasyon testleri HTTP uçlarını gerçek PostgreSQL üzerinde kontrol eder; Docker yoksa yalnız yerelde atlanır, CI'da zorunludur.
+
+## Ekip rol kodlarının karşılığı
 
 Kartlar ve belgelerde K1 hesap/oturum backend'i ve anı oluşturmayı; K2 fotoğraf akışı ve kayıt/giriş mobil ekranlarını; K3 mobil oturum, liste, detay, düzenleme ve aramayı; K4 veritabanı altyapısı, sahiplik, harita ve silme/transaction işlerini ifade eder. Bunlar ekip içi rol kodlarıdır. İş API'si `/api/v1` sözleşmesini izler; mevcut `/api/health` altyapı yolu ayrıdır.
 

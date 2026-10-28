@@ -1,6 +1,6 @@
 # Veri modeli ve API sözleşmesi
 
-Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. Auth dahil aşağıdaki endpointler geliştirme sözleşmesidir; uygulanmış veya gerçek veritabanıyla doğrulanmış oldukları iddia edilmez. Ekip rol kodları README'de açıklanır.
+Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me uygulanmıştır; diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
 
 ## Genel kurallar
 
