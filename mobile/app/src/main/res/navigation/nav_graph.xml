@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/memoriesFragment">
+
+    <fragment
+        android:id="@+id/memoriesFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoriesFragment"
+        android:label="@string/tab_memories" />
+
+    <fragment
+        android:id="@+id/mapFragment"
+        android:name="com.memorylane.feature.map.ui.MapFragment"
+        android:label="@string/tab_map" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.memorylane.feature.profile.ui.ProfileFragment"
+        android:label="@string/tab_profile" />
+</navigation>

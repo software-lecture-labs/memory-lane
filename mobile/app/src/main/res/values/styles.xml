@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared typography and component styles. Screens reference these styles only;
+     sizes, colors and shapes are changed here, never in a single layout.
+     tools:ignore="UnusedResources" marks styles reserved for the login/register screens. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Typography: DESIGN.md headline-md, headline-sm, body-md, body-sm, label-lg, label-md, label-sm -->
+    <style name="TextAppearance.MemoryLane.Headline" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/ml_text_headline</item>
+        <item name="android:textColor">@color/ml_plum</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Title" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="android:textSize">@dimen/ml_text_title</item>
+        <item name="android:textColor">@color/ml_plum</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Body" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_regular</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_regular</item>
+        <item name="android:textSize">@dimen/ml_text_body</item>
+        <item name="android:textColor">@color/ml_plum</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Body.Muted">
+        <item name="android:textSize">@dimen/ml_text_body_small</item>
+        <item name="android:textColor">@color/ml_plum_muted</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Label" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="android:textSize">@dimen/ml_text_label</item>
+        <item name="android:textColor">@color/ml_plum</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Button" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_semibold</item>
+        <item name="android:textSize">@dimen/ml_text_label_large</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Caption" parent="TextAppearance.Material3.LabelSmall" tools:ignore="UnusedResources">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/ml_text_caption</item>
+        <item name="android:textColor">@color/ml_plum_muted</item>
+    </style>
+
+    <!-- Buttons: every variant is a pill, see DESIGN.md Buttons. -->
+    <style name="Widget.MemoryLane.Button.Primary" parent="Widget.Material3.Button">
+        <item name="android:minHeight">@dimen/ml_button_height</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Button</item>
+        <item name="android:textColor">@color/ml_on_primary</item>
+        <item name="backgroundTint">@color/ml_button_primary_bg</item>
+        <item name="cornerRadius">@dimen/ml_radius_pill</item>
+    </style>
+
+    <style name="Widget.MemoryLane.Button.Secondary" parent="Widget.Material3.Button" tools:ignore="UnusedResources">
+        <item name="android:minHeight">@dimen/ml_button_height</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Button</item>
+        <item name="android:textColor">@color/ml_plum</item>
+        <item name="backgroundTint">@color/ml_button_secondary_bg</item>
+        <item name="cornerRadius">@dimen/ml_radius_pill</item>
+    </style>
+
+    <style name="Widget.MemoryLane.Button.Ghost" parent="Widget.Material3.Button.OutlinedButton" tools:ignore="UnusedResources">
+        <item name="android:minHeight">@dimen/ml_button_height</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Button</item>
+        <item name="android:textColor">@color/ml_plum</item>
+        <item name="strokeColor">@color/ml_ghost_stroke</item>
+        <item name="strokeWidth">@dimen/ml_stroke_regular</item>
+        <item name="cornerRadius">@dimen/ml_radius_pill</item>
+    </style>
+
+    <!-- Scrapbook card: white paper on the warm canvas. -->
+    <style name="Widget.MemoryLane.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/ml_surface</item>
+        <item name="cardCornerRadius">@dimen/ml_radius_card</item>
+        <item name="cardElevation">@dimen/ml_card_elevation</item>
+        <item name="strokeColor">@color/ml_outline</item>
+        <item name="strokeWidth">@dimen/ml_stroke_thin</item>
+        <item name="contentPadding">@dimen/ml_space_md</item>
+    </style>
+
+    <!-- Form fields for the upcoming login/register screens, see DESIGN.md Input Fields. -->
+    <style name="Widget.MemoryLane.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">@dimen/ml_radius_input</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/ml_radius_input</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/ml_radius_input</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/ml_radius_input</item>
+        <item name="boxBackgroundColor">@color/ml_canvas</item>
+        <item name="boxStrokeColor">@color/ml_input_stroke</item>
+        <item name="boxStrokeWidth">@dimen/ml_stroke_regular</item>
+        <item name="boxStrokeWidthFocused">@dimen/ml_stroke_regular</item>
+        <item name="hintTextColor">@color/ml_primary</item>
+        <item name="errorTextColor">@color/ml_error</item>
+    </style>
+
+    <style name="Widget.MemoryLane.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
+        <item name="backgroundTint">@color/ml_surface</item>
+        <item name="itemIconTint">@color/ml_bottom_nav_item</item>
+        <item name="itemTextColor">@color/ml_bottom_nav_item</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.MemoryLane.BottomNavigation.ActiveIndicator</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.MemoryLane.Label</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.MemoryLane.Label</item>
+    </style>
+
+    <style name="Widget.MemoryLane.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/ml_lavender</item>
+    </style>
+</resources>

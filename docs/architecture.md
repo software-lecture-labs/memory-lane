@@ -56,6 +56,37 @@ Yerel profil ayarları backend/config/application-local.properties içinde, clas
 
 Mobil modülün Android SDK 35, AGP 8.7.3 ve Gradle 8.9 sürümleri korunur. Lint uyarıları hatadır ve bağımlılıklar da kontrol edilir. Tek istisna OldTargetApi güncellik bildirimidir: SDK 35 bilinçli olarak sabitlendiği için bu kural kapalıdır. Diğer lint kuralları, bağımlılık kontrolleri ve warningsAsErrors etkin kalır. Hedef API yükseltmesi ayrı uyumluluk çalışması gerektirir. CI'da SDK/build-tools sürümleri tekrar yazılmaz; setup-android lisansları kabul eder, Gradle eksik bileşenleri build tanımına göre indirir. Push kontrolü yalnızca main üzerinde; diğer dal değişiklikleri PR kontrolüyle doğrulanır ve eski çalışmalar concurrency ile iptal edilir.
 
+## Mobil mimari (ML-28)
+
+Mobil uygulama Java ve XML layout ile yazılır. Tek Activity (`MainActivity`) ve Navigation Component kullanılır; alt sekmeler (Anılar, Harita, Profil) `res/navigation/nav_graph.xml` hedefleridir ve menü kimlikleri hedef kimlikleriyle aynıdır.
+
+Katmanlar MVVM + Repository biçimindedir: Fragment yalnız çizer ve kullanıcı olayını ViewModel'e iletir; ViewModel ekran durumunu `LiveData<UiState>` olarak tutar; Repository arayüzü veri kaynağını gizler; Retrofit arayüzü yalnız HTTP yolunu tanımlar. Bu, backend'deki controller → service → repository ayrımının mobil karşılığıdır.
+
+- SRP: Çizim, ekran durumu, veri erişimi ve HTTP tanımı ayrı sınıflardadır.
+- OCP: Paketler özellik bazlıdır. `core/` (config, di, network, ui) bütün ekranların ortak altyapısı, `feature/<özellik>/data` ve `feature/<özellik>/ui` özelliğe ait koddur. Yeni özellik mevcut özelliklere dokunmadan yeni paket olarak eklenir.
+- LSP/DIP: ViewModel somut sınıfa değil `HealthRepository` gibi arayüze bağlıdır; uzak uygulama ile testteki sahte uygulama aynı sözleşmeyle değiştirilebilir.
+- ISP: Repository arayüzleri özellik başına dardır; tek bir genel "Api" arayüzü kurulmaz.
+
+Bağımlılık enjeksiyonu elle yapılır: `MemoryLaneApp` açılışta tek bir `AppContainer` kurar ve somut sınıfları bilen tek yer orasıdır. ViewModel'ler fabrika ile bağımlılıklarını yapıcıdan alır.
+
+Ağ katmanında tek Retrofit/OkHttp istemcisi ve Gson kullanılır. `ApiCaller` her sonucu `ApiResult` (veri veya `ApiError`) olarak döndürür ve hatayı türüne ayırır: NETWORK (yanıt yok: sunucu kapalı, adres yanlış, zaman aşımı), HTTP (2xx dışı; sözleşmedeki `{code,message}` gövdesi okunur), PARSE (okunamayan 2xx gövde). Ekran kararları mesaj metnine değil tür ve `code` alanına göre verilir ([API sözleşmesi](api-contract.md)). `UiState` içinde LOADING, SUCCESS, EMPTY ve ERROR ayrı durumlardır; liste ekranları `UiState.fromList` kullanır ve yalnız başarılı ama boş yanıt EMPTY olur. Bağlantı hatası boş listeye çevrilmez. Ortak `StateView` hata durumunu ikon ve "Tekrar dene" ile, boş durumu bunlar olmadan gösterir.
+
+Sunucu adresi `mobile/local.properties` içindeki `memorylane.apiBaseUrl` değeridir; yoksa emülatörün ana bilgisayar adresi `http://10.0.2.2:8080/` kullanılır. Değer BuildConfig'e derlenir; şemasız veya boş değer açılışta açık hatayla durur. Düz HTTP yalnız debug manifestinde açıktır; release derlemesi Android'in varsayılan cleartext engelini korur. Release için HTTPS adresi yayın hazırlığında belirlenecektir.
+
+Tasarım değerleri "Warm Nostalgia Scrapbook" tasarım sisteminden `res/values` altına aktarılır (renk, ölçü, yazı ve bileşen stilleri); ana renk tasarım sistemi belgesindeki `#D93678`'dir. Layout'lar hex, dp veya sp değeri yazmaz; bu kaynakları kullanır. Ortak bileşenler `ScreenHeaderView` (ekran başlığı), `StateView` (yükleniyor/hata/boş), birincil/ikincil/ghost buton, kart, form alanı ve alt menü stilleridir. Henüz bir ekranda kullanılmayan stiller `tools:ignore="UnusedResources"` ile işaretlidir; kullanıldıklarında işaret kaldırılır. Plus Jakarta Sans fontu çevrimdışı ve Google Play servisleri olmayan cihazlarda da aynı görünmesi için OFL 1.1 lisansıyla uygulamaya gömülüdür (`mobile/third_party/plus-jakarta-sans/OFL.txt`).
+
+Değerlendirilen alternatifler:
+
+| Konu | Seçim | Alternatif ve seçilmeme nedeni |
+| --- | --- | --- |
+| Desen | MVVM + Repository | MVC'de iş mantığı Activity/Fragment içinde birikir ve test cihaz ister. MVP'de Presenter yaşam döngüsünü elle izler; AndroidX ViewModel ekran döndürmede durumu hazır korur. |
+| DI | Elle `AppContainer` | Hilt, Java'da annotation processor ve ek Gradle eklentisi getirir; mevcut bağımlılık sayısında kazancı azdır. Bağımlılıklar yapıcıdan alındığı için ileride geçiş yalnız container'ı değiştirir. |
+| Navigasyon | Navigation Component | Elle FragmentTransaction yönetiminde sekme geri yığını ve durum saklama tekrar yazılır. |
+| HTTP/JSON | Retrofit + OkHttp + Gson | HttpURLConnection veya yalın OkHttp ile JSON dönüşümü ve hata eşlemesi her istekte tekrarlanır. |
+| Paketler | Özellik bazlı | Katman bazlı (ui/data/model) yapıda özellik sayısı arttıkça ilgili dosyalar dağılır; ilk iskeletteki boş klasörler bu yapıyla değiştirildi. |
+
+Bilinen sınırlar: Anılar sekmesi şimdilik sunucu sağlık kontrolünü gösterir; anı listesi, harita ve profil içeriği ilgili kartlarda eklenecektir. Giriş/kayıt ekranları auth API'sine (ML-27) bağlanacağı için ayrı PR'da yapılacaktır. Testler JVM birim testleridir (ağ katmanı MockWebServer ile gerçek HTTP üzerinden); cihaz üzerinde otomatik UI testi henüz yoktur.
+
 ## Veri saklama ve yedekleme kararı
 
 Anıların kalıcı ve asıl kaydı backend'de tutulacak. Mobil cihazda sunucudan tekrar alınabilen veriler önbellek olarak ele alınacak; yeni cihazda yeniden giriş yapılıp sunucudaki kayıtlar getirilecek. Henüz sunucuya gönderilmemiş anılar ise önbellek sayılmayacak: başarılı sunucu onayı alınana kadar korunmalı ve kullanıcıya senkronizasyon durumları gösterilmelidir.

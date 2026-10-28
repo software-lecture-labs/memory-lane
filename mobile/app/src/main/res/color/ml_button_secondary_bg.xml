@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used by Widget.MemoryLane.Button.Secondary, which no screen uses yet. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UnusedResources">
+    <item android:alpha="0.38" android:color="@color/ml_lavender" android:state_enabled="false" />
+    <item android:color="@color/ml_lavender_pressed" android:state_pressed="true" />
+    <item android:color="@color/ml_lavender" />
+</selector>
