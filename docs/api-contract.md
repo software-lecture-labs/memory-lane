@@ -1,6 +1,6 @@
 # Veri modeli ve API sözleşmesi
 
-Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. Auth dahil aşağıdaki endpointler geliştirme sözleşmesidir; uygulanmış veya gerçek veritabanıyla doğrulanmış oldukları iddia edilmez. Ekip rol kodları README'de açıklanır.
+Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me uygulanmıştır; diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
 
 ## Genel kurallar
 
@@ -79,7 +79,7 @@ LoginResponse örneği:
 }
 ```
 
-Token 32 güvenli rastgele bayttan URL-safe Base64 olarak üretilir; 43 karakterdir. Mobil yalnız süreç belleğinde tutar; parola/token kalıcı diske yazılmaz. Süre dolunca veya iptal edilmiş tokenla 401 döner; refresh token ve beni hatırla yoktur. Çıkış yalnız ilgili oturumu iptal eder. Mobil 401/çıkışta token ve önceki hesaba ait ekran/görsel durumunu temizler (ML-30).
+Token 32 güvenli rastgele bayttan URL-safe Base64 olarak üretilir; 43 karakterdir. İlk sürüm kararı, tokenın yalnız uygulama süreci belleğinde tutulmasıdır; parola/token kalıcı diske yazılmaz. Android süreci arka planda sonlandırırsa yeniden giriş gerekir; yalnız ekran döndürme veya arka plana geçme tokenı temizlemez. Kararın gerekçesi ve Keystore alternatifi [mobil oturum kararında](architecture.md#mobil-oturum-saklama-kararı) açıklanır. Süre dolunca veya iptal edilmiş tokenla 401 döner; refresh token ve beni hatırla yoktur. Çıkış yalnız ilgili oturumu iptal eder. Mobil 401/çıkışta token ve önceki hesaba ait ekran/görsel durumunu temizler (ML-30).
 
 ## Anı endpointleri
 
@@ -160,11 +160,46 @@ Sunucu uygulaması için karar: Memory entity'sinde `@Version` long alanı ve `m
 
 Uygulama kabul senaryoları: iki cihaz aynı r7'yi okur; ilk PUT 200, ikinci PUT 412 ve ilk cihazın kaydı korunur. Eksik If-Match 428, zayıf/eski etiket 412, bozuk/* etiket 400 olmalıdır. Kaybolan başarılı PUT'un tekrarı ve arada fotoğraf değişmesi de eski formla sessiz yazma yapmamalıdır. Bunlar henüz çalıştırılmış backend testleri değildir; endpoint yazılırken gerçek kalıcılık testlerine eklenecektir.
 
+### Fotoğraf işleminden sonra düzenleme etiketini yenileme
+
+PhotoResponse anının ETag'ini taşımaz; fotoğraf ekleme/silme yanıtına anı etiketini temsil eden ikinci bir başlık eklenmez. Tek kaynak, detay GET yanıtındaki ETag ve aynı yanıttaki MemoryDetail'dır.
+
+1. Form açılırken detay GET yapılır. Mobil, sunucudan gelen yazılabilir anı alanlarını ayrı bir başlangıç kopyası (`editBase`), etiketi `editETag` ve kullanıcının düzenlemesini ayrı yerel taslak olarak tutar.
+2. Başarılı her fotoğraf ekleme/silme (başarılı idempotent tekrar dahil) sonrasında mobil `GET /memories/{id}` ile detayı ve ETag'i yeniden alır. Fotoğraf işlemi veya bu GET sürerken metin kaydetme bekletilir; kullanıcı formda yazmaya devam edebilir. Yeniden GET yerine fotoğraf isteği veya metin PUT'u tekrar edilmez.
+3. Yeni detayın yazılabilir metin/tarih/kategori/duygu/konum alanları `editBase` ile karşılaştırılır. `photos`, `photoCount`, `coverPhotoId` ve salt okunur zaman alanları bu karşılaştırmaya girmez. Yazılabilir alanlar aynıysa yalnız fotoğraf görünümü ve `editETag` yenilenir; yerel taslak korunur. Kullanıcı Kaydet dediğinde bu güncel etiketle PUT yapılır; kendi fotoğraf işlemi yüzünden gereksiz 412 oluşmaz.
+4. Yazılabilir alanlardan biri değişmişse başka bir metin güncellemesi olabilir. Eski taslak yeni etiketle otomatik gönderilmez. Mobil yerel taslağı ve güncel sunucu halini gösterir; kullanıcı değişiklikleri birleştirip açıkça onayladığında `editBase`, `editETag` ve taslak birlikte güncellenir. Salt fotoğraf değişimini bahane ederek diğer cihazın metni ezilmez.
+5. Detay GET başarısızsa eski etiketle metin kaydetme yapılmaz. Fotoğrafın başarılı sonucu ve yerel taslak korunur, kullanıcıya yenilemenin tamamlanamadığı gösterilir; yalnız GET yeniden denenir. Oturum 401 alırsa ortak oturum akışı uygulanır.
+
+Son GET ile PUT arasında başka bir işlem daha olursa 412 hâlâ doğru sonuçtur; bu akış gerçek eşzamanlı güncelleme korumasını kaldırmaz. Kabul senaryoları: kendi fotoğraf eklemesi → GET → metin PUT'u başarılı; arada başka cihazın metin değişikliği → kullanıcı incelemesi olmadan PUT yok; son GET'ten sonraki değişiklik → 412; başarısız yenileme → taslak korunur ve kaydetme bekler. Bunlar mobil/endpoint uygulaması için kurallardır, bu belge çalışmasında çalıştırılmış uygulama testleri değildir.
+
 ### Sayfalama ve arama
 
 `GET /memories?page=0&size=20&q=sahil&category=TRAVEL` örneğinde `page` sıfırdan başlar; varsayılan 0'dır. `size` varsayılan 20, aralık 1–100'dür. Negatif/geçersiz değer 400; son sayfadan sonrası 200 ve boş `content` döner. `q` kırpılır, en fazla 100 karakterdir; başlık/açıklama içinde Türkçe büyük-küçük harf duyarsız düz metin aramasıdır. Hem sorgu hem aranan metin NFC Unicode normalleştirmesinden sonra Türkçe (`tr-TR`) küçük harfe dönüştürülerek karşılaştırılır; veritabanının varsayılan collation/ILIKE davranışına bırakılmaz. `İstanbul`–`istanbul` ve `Işık`–`ışık` eşleşir; `Işık`–`isik` eşleşmez. `%` ve `_` düz karakterdir, joker değildir; aksan/harf sadeleştirmesi yapılmaz. Boş `q` veya `category` filtreyi kaldırır. Kategori sabit kodu büyük harfle tam eşleşir; Türkçe etiket query parametresi olarak gönderilmez. İki filtre birlikte AND olarak uygulanır.
 
-Arama uygulamasında bu üç Türkçe örneği ve `%`/`_` düz karakter davranışı kabul testi olacak. Bu PR arama kodu veya çalıştırılmış DB testi içermez. Kullanıcıya ait kayıt sayısı düşük demo için tarama kabul edilir; ihtiyaç oluşursa pg_trgm/indeks planı ayrı şema değişikliğiyle değerlendirilecek.
+#### Türkçe karşılaştırma SQL'de yapılır
+
+Arama normalleştirmesi ve eşleştirmesi PostgreSQL sorgusunda, LIMIT/OFFSET'ten önce yapılacaktır. Java'nın veritabanından gelen bir sayfayı sonradan filtrelemesi kabul edilmez. Sayfa içeriği ile `totalElements`/`totalPages` hesabı aynı sahiplik, kategori ve arama koşulunu kullanır; harita sorgusu da aynı arama ifadesini kullanır. Aynı istek için içerik ve toplam tutarlı bir veri görüntüsünden okunmalıdır; ayrı sayfa istekleri arasında sabit snapshot garantisi verilmez.
+
+PostgreSQL 17 / UTF8 için seçilen tasarım, Türkçe deterministic ICU collation ile `normalize(..., NFC)` ve `lower(...)`, ardından düz metin `strpos(...) > 0` karşılaştırmasıdır. Sadece ICU collation tanımlamak otomatik olarak harf duyarsız arama sağlamaz; iki taraf da aynı SQL dönüşümünden geçer. PostgreSQL 17'de nondeterministic collation ile LIKE/ILIKE kullanılamadığı için o yol seçilmez.
+
+Uygulama sırasında yeni sürümlü migration ile sağlanacak collation ayarı ve arama ifadesi örneği (bu belge bunları çalıştırmaz):
+
+```sql
+CREATE COLLATION memorylane_tr
+    (provider = icu, locale = 'tr-TR', deterministic = true);
+
+strpos(
+    lower(normalize(coalesce(title, ''), NFC) COLLATE memorylane_tr),
+    lower(normalize(CAST(:q AS text), NFC) COLLATE memorylane_tr)
+) > 0
+```
+
+Aynı ifade description için de uygulanır; ikisi OR ile, kullanıcı ve kategori filtreleri AND ile birleşir. `:q` doğrulanmış/kırpılmış sorgunun bağlı parametresidir, SQL metnine eklenmez. `strpos` düz alt metin aradığı için `%` ve `_` joker olmaz. Sonuçlar eşleştirmeden sonra mevcut sabit sırayla sıralanır ve sayfalanır. ICU/UTF8 desteği kurulumda doğrulanacak; yoksa Java filtresine veya farklı locale'e sessiz geri dönüş yapılmayacaktır. Mevcut V1/V2 değiştirilmeyecek; bu notta collation veya indeks oluşturulmaz.
+
+Gerçek PostgreSQL kabul testi, Türkçe eşleşmeler ve `%`/`_` davranışına ek olarak şunları içerecek: aynı kullanıcıya ait 25 eşleşen kayıt, eşleşmeyen kayıtlar ve başka kullanıcının eşleşen kayıtları; size=20 için ilk sayfa 20, ikinci sayfa 5 kayıt, totalElements=25, totalPages=2 olmalı. Bu örnekler henüz çalıştırılmadı. Demo hacminde tarama kabul edilir; ihtiyaç oluşursa pg_trgm/indeks planı ayrı değişikliktir.
+
+Kaynaklar: [PostgreSQL 17 collation](https://www.postgresql.org/docs/17/collation.html), [metin fonksiyonları](https://www.postgresql.org/docs/17/functions-string.html), [pattern matching sınırı](https://www.postgresql.org/docs/17/functions-matching.html).
+
 
 Sıra sabittir: `memoryDate DESC`, ardından `id DESC`. Bu sıralama aynı tarihteki kayıtları belirgin tutar; kayıtlar değişirken offset sayfalama sabit bir snapshot garantisi vermez. Mobil filtre değişince page=0'a döner ve önceki isteğin güncel sonucu ezmesini önler.
 

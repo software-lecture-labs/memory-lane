@@ -11,7 +11,7 @@ Ekip, genel proje dokümanındaki Payara Micro + Jakarta EE seçimi yerine Sprin
 - PostgreSQL 17; yerelde `backend/docker-compose.yml` ile yalnızca 127.0.0.1 üzerinde çalışır. Bağlantı bilgileri `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` ortam değişkenlerinden okunur.
 - Şemanın sahibi Flyway'dir. Migration dosyaları `backend/src/main/resources/db/migration/V<n>__aciklama.sql` biçimindedir ve uygulama açılışında otomatik çalışır. Uygulanmış bir migration değiştirilmez; her şema değişikliği yeni bir sürüm dosyasıdır.
 - Hibernate şemayı yalnızca doğrular (`ddl-auto=validate`); tablo oluşturmaz veya değiştirmez. Zaman damgaları UTC `TIMESTAMPTZ`, anı günü saat diliminden bağımsız `DATE` olarak tutulur.
-- `V1` proje dokümanındaki veri modelini (users, sessions, memories, photos, file_cleanup_jobs) kurar. `V2` users, memories ve photos kimliklerini ve bunlara bağlı foreign key'leri `UUID` yapar; sessions ve file_cleanup_jobs kimlikleri dışarı açılmadığı için `BIGINT` kalır. Bu tablolara henüz API yazmadığı için V2 tabloları yeniden oluşturur; içlerinde satır varsa veri silmek yerine açıklayıcı bir hatayla durur. Kategori ve duygu değerleri İngilizce sabitlerle saklanır (`TRAVEL`, `HAPPY` vb.); Türkçe etiketler istemcide gösterilir.
+- `V1` proje dokümanındaki veri modelini (users, sessions, memories, photos, file_cleanup_jobs) kurar. `V2` users, memories ve photos kimliklerini ve bunlara bağlı foreign key'leri `UUID` yapar; sessions ve file_cleanup_jobs kimlikleri dışarı açılmadığı için `BIGINT` kalır. V2 hazırlandığı sırada bu tablolara API yazmadığı için migration tabloları yeniden oluşturur; içlerinde satır varsa veri silmek yerine açıklayıcı bir hatayla durur. Kategori ve duygu değerleri İngilizce sabitlerle saklanır (`TRAVEL`, `HAPPY` vb.); Türkçe etiketler istemcide gösterilir.
 - Fotoğraf sınırı dosya başına 5 MB = 5.000.000 bayttır. Kapak, anının mevcut en küçük `position` değerine sahip fotoğrafıdır. Pozisyonlar yeniden numaralandırılmaz: kapak silinince sıradaki fotoğraf kapak olur, yeni fotoğraf `max(position) + 1` alır. Anı başına 5 fotoğraf sınırını servis, anı satırını kilitleyerek (`SELECT ... FOR UPDATE`) sayar ve uygular.
 - Tekrar denemeler (idempotency): Anı oluşturma isteği istemcinin ürettiği `client_request_id` (UUID) ile gelir; aynı hesapta bu anahtar tekildir. Sunucu oluşturma isteğinin SHA-256 özetini `client_request_sha256` olarak saklar. Aynı anahtar ve aynı özetle gelen tekrar yeni anı üretmez, mevcut anıyı döndürür; aynı anahtarla farklı içerik çakışma (409) olarak reddedilir. Fotoğraf yükleme de aynı kuralı izler: `client_photo_id` anı içinde tekildir, dosya içeriğinin SHA-256 özeti `content_sha256` olarak saklanır; aynı anahtar ve aynı içerik mevcut fotoğrafı döndürür, farklı içerik 409 alır. Yanıt kodları ve özetin hangi alanlardan hesaplanacağı ML-03 API sözleşmesinde kesinleştirilir.
 - Veritabanına ulaşılamazsa uygulama açılmaz ve nedeni ile yapılacakları kısa bir hata mesajıyla bildirir. Çalışırken `GET /api/health` veritabanı erişilebilirse 200 `{"status":"UP","database":"UP"}`, değilse 503 `DOWN` döner.
@@ -24,17 +24,17 @@ Ekip, genel proje dokümanındaki Payara Micro + Jakarta EE seçimi yerine Sprin
 - Arayüz uygulamaları aynı davranış sözleşmesini korur; sözleşme testleri eklenir (LSP).
 - Kullanılmayan metotları zorunlu kılan geniş arayüzler oluşturulmaz (ISP).
 
-Mevcut paket iskeleti korunmuştur. Henüz iş kuralları veya repository uygulaması bulunmadığından SOLID uyumu tamamlandı iddiası yoktur.
+ML-27 hesap/oturum akışı controller, service ve repository olarak ayrılmıştır; JPA entity'leri dış API yanıtı olarak kullanılmaz. Giriş limiti doğrulama işlemini bir Supplier üzerinden çalıştırır; parola veya AuthService nesnesini bilmez. Anı/fotoğraf özellikleri kendi görevlerinde geliştirilecektir; bu teslim tüm uygulamanın SOLID uyumunun tamamlandığı iddiası değildir.
 
 ## Transaction
 
 Kalıcı veri katmanı eklendiğinde bir kullanım senaryosunun tüm yazmaları service katmanındaki tek transaction sınırında yürütülmelidir. Spring transaction yönetimi ve `@Transactional` kullanılacaktır; checked exception rollback kuralları açıkça seçilmelidir. Dış HTTP çağrıları uzun DB transaction'ı içinde tutulmamalıdır.
 
-Kabul testleri: başarılı işlemde tüm kayıtlar commit olur; ikinci yazmada hata üretildiğinde ilk yazma da rollback olur; eşzamanlı güncellemede veri kaybı engellenir (örneğin optimistic locking); yetkisiz erişimde hiçbir kayıt değişmez. Üretimde kullanılacak DB ile entegrasyon testi gerekir. PostgreSQL bağlantısı ve şema kuruldu; transaction uygulaması ve bu testler henüz yoktur.
+Kabul testleri: başarılı işlemde tüm kayıtlar commit olur; ikinci yazmada hata üretildiğinde ilk yazma da rollback olur; eşzamanlı güncellemede veri kaybı engellenir (örneğin optimistic locking); yetkisiz erişimde hiçbir kayıt değişmez. Üretimde kullanılacak DB ile entegrasyon testi gerekir. PostgreSQL bağlantısı ve şema kuruldu; ML-27 hesap/oturum yazmaları transaction içindedir. Anı silme, çoklu yazma rollback ve optimistic locking uygulaması ilgili ML-13/ML-21 görevlerinde doğrulanacaktır.
 
 ## Statik analiz: A hedefi
 
-Hedef SonarQube/SonarCloud üzerinde reliability, security ve maintainability derecelerinin A olmasıdır; kullanılan sürüm ve değerlendirme modu rapora yazılmalıdır. Quality gate geçişi ayrıca kaydedilir. Sonuçlar proje anahtarı, commit SHA ve analiz bağlantısıyla ilişkilendirilmelidir. Henüz Sonar sunucusu/proje anahtarı verilmedi ve analiz çalıştırılmadı; A elde edildiği iddia edilmez.
+Analiz aracı ve A ölçütü öğretim elemanından doğrulanacaktır. SonarQube/SonarCloud adaydır; seçilmiş araç veya alınmış not olarak gösterilmez. Araç seçilirse kullanılan sürüm ve değerlendirme modu rapora yazılmalıdır. Quality gate geçişi ayrıca kaydedilir. Sonuçlar proje anahtarı, commit SHA ve analiz bağlantısıyla ilişkilendirilmelidir. Henüz Sonar sunucusu/proje anahtarı verilmedi ve analiz çalıştırılmadı; A elde edildiği iddia edilmez.
 
 Android lint uyarıları hataya dönüştürülür. Lint geçişi tek başına Sonar A kanıtı değildir. İşlevler eklendikçe birim/entegrasyon testleri ve coverage raporları analiz sürecine bağlanmalıdır.
 
@@ -91,12 +91,63 @@ Bilinen sınırlar: Anılar sekmesi şimdilik sunucu sağlık kontrolünü göst
 
 Anıların kalıcı ve asıl kaydı backend'de tutulacak. Mobil cihazda sunucudan tekrar alınabilen veriler önbellek olarak ele alınacak; yeni cihazda yeniden giriş yapılıp sunucudaki kayıtlar getirilecek. Henüz sunucuya gönderilmemiş anılar ise önbellek sayılmayacak: başarılı sunucu onayı alınana kadar korunmalı ve kullanıcıya senkronizasyon durumları gösterilmelidir.
 
-Parola, erişim/yenileme anahtarı ve cihaza özel kimlik bilgileri bulut yedeğine veya device-transfer'a dahil edilmeyecek. Mobil oturum saklama geliştirilirken Android Keystore ve yedek dışı depolama kullanılmalı; yeni cihaza geçişte kullanıcı yeniden giriş yapmalıdır. Anıların backend'de tutulması tek başına yedek değildir: sunucu veritabanı ve varsa fotoğraf depolaması için yedekleme, saklama süresi ve geri yükleme testleri ayrıca hazırlanmalıdır.
+Parola ve oturum anahtarı kalıcı diske, bulut yedeğine veya device-transfer'a yazılmaz. İlk sürümde token yalnız süreç belleğindedir; Keystore ile kalıcı oturum kullanılmaz. Gerekçe [mobil oturum kararında](#mobil-oturum-saklama-kararı) kayıtlıdır. Anıların backend'de tutulması tek başına yedek değildir: sunucu veritabanı ve varsa fotoğraf depolaması için yedekleme, saklama süresi ve geri yükleme testleri ayrıca hazırlanmalıdır.
 
 Bu iskelet aşamasında allowBackup=false ve mevcut yedekleme dosyaları korunur; device-transfer bu PR'da açılmaz. Mevcut XML'deki root dışlamasının bütün veri alanlarını veya her üreticinin cihaz transferi davranışını kapsadığı varsayılmaz. Yedek dışı hassas depolama, çevrimdışı kuyruk ve senkronizasyon uygulandığında izin verilen veri alanları tek tek belirlenip yedekleme/geri yükleme testiyle doğrulanmalıdır.
 
-Bu bölüm hedef mimariyi belirler. Bu PR'da anı API'si, anı veritabanı, mobil veri saklama veya geri yükleme akışı henüz uygulanmadı; mevcut veriler için kayıpsız kurtarma garantisi verilmez.
+Bu bölüm veri saklama hedefini belirler. Anı/fotoğraf tabloları ML-04 migration'larında, hesap/oturum API'si ML-27'de bulunur. Anı iş API'si, mobil veri saklama ve geri yükleme akışı bu teslimde tamamlanmış sayılmaz; mevcut veriler için kayıpsız kurtarma garantisi verilmez.
 
 ## ML-27 veritabanı planı
 
-ML-27'de planlanan veritabanı temeli ML-04 ile uygulandı: geçici DataSource dışlaması ve `database` profili kaldırıldı; uygulama her profilde PostgreSQL'e bağlanır. Şema Flyway ile `backend/src/main/resources/db/migration/` altında sürümlenir (V1 ilk şema, V2 UUID kimlikler ve tekrar deneme alanları), `ddl-auto=validate` entity eşlemelerini bu şemayla karşılaştırır. Entegrasyon testleri Testcontainers/PostgreSQL kullanır; yerel geliştirme için `backend/docker-compose.yml` vardır. Spring Boot'un otomatik Docker Compose desteği eklenmedi: uygulama açılışı Docker'a bağlı kalmasın ve aynı compose dosyası elle yönetilebilsin diye compose ayrı komutla başlatılır. Paylaşılan ekip veritabanı entegrasyon veya demo ortamı olarak kullanılabilir. Entity/repository taraması ve kalıcılık katmanının kendisi ML-27 kapsamında kalır.
+ML-27'de planlanan veritabanı temeli ML-04 ile uygulandı: geçici DataSource dışlaması ve `database` profili kaldırıldı; uygulama her profilde PostgreSQL'e bağlanır. Şema Flyway ile `backend/src/main/resources/db/migration/` altında sürümlenir (V1 ilk şema, V2 UUID kimlikler ve tekrar deneme alanları), `ddl-auto=validate` entity eşlemelerini bu şemayla karşılaştırır. Entegrasyon testleri Testcontainers/PostgreSQL kullanır; yerel geliştirme için `backend/docker-compose.yml` vardır. Spring Boot'un otomatik Docker Compose desteği eklenmedi: uygulama açılışı Docker'a bağlı kalmasın ve aynı compose dosyası elle yönetilebilsin diye compose ayrı komutla başlatılır. Paylaşılan ekip veritabanı entegrasyon veya demo ortamı olarak kullanılabilir. ML-27, UserAccount/UserSession JPA eşlemelerini ve AuthRepository'yi bu şemaya bağlar. Kayıt, oturum oluşturma ve iptal service transaction'ları içinde çalışır; eşzamanlı e-posta kaydı PostgreSQL INSERT ON CONFLICT ile tek hesapla sonuçlanır. Migration'lar değiştirilmez.
+
+## Mobil oturum saklama kararı
+
+İlk hesaplı Trello planıyla uyumlu olarak ilk sürümde Bearer token yalnız uygulama süreci belleğinde tutulacak. Şifre saklanmaz; refresh token, beni hatırla veya Keystore ile şifreli kalıcı oturum yoktur. Karar kontrollü ders demosunda kalıcı kimlik bilgisi, yedek dışlama ve anahtar yaşam döngüsü kapsamını büyütmemek içindir; tekrar giriş gerektirmesinin kullanıcı deneyimi maliyeti kabul edilir.
+
+Android arka plandaki süreci sonlandırırsa token kaybolur ve kullanıcı yeniden giriş yapar. Yalnız arka plana geçmek veya Activity'nin dönme gibi nedenlerle yeniden oluşması çıkış değildir; token Activity yerine uygulama süreci düzeyinde yönetilmelidir. Sürecin kapanması sunucuya logout gönderilmiş sayılmaz; sunucunun 24 saatlik oturum süresi ve açık logout iptali kuralı değişmez. Kullanıcıya uygulamayı her durumda hatırlayan kalıcı giriş sözü verilmez.
+
+Keystore ile şifreli kalıcı token, daha az tekrar giriş sağlayan alternatif olarak değerlendirildi; bu sürüme eklenmedi. Gerçek kullanımda bu tercih değişirse oturum saklama, yedek/cihaz aktarımı, iptal ve anahtar yönetimi birlikte ele alınacak ve mobil oturum geliştirilmeden önce yeni karar kaydedilecek. Bellek ve kalıcı saklama aynı sürümün çelişen iki yolu olarak uygulanmayacak.
+
+Arama SQL'de ve sayfalamadan önce yapılır; deterministic Türkçe ICU collation tasarımı ve COUNT eşleşmesi [API sözleşmesindedir](api-contract.md#türkçe-karşılaştırma-sqlde-yapılır). Fotoğraf işlemlerinin form taslağını kaybetmeden güncel ETag'i alması ve başka cihazın metnini ezmemesi de [aynı sözleşmede](api-contract.md#fotoğraf-işleminden-sonra-düzenleme-etiketini-yenileme) tanımlıdır. Bunlar sonraki uygulama işlerinin kabul kurallarıdır; bu belge değişikliği uygulama kodu veya migration içermez.
+
+## ML-01 ders kriterleri ve alternatifler
+
+Sabit kapsam README'deki [ilk teslim kapsamı](../README.md#ilk-teslim-kapsamı) bölümündedir. Java/XML Android, Java 17 / Spring Boot 4.1.1 / gömülü Tomcat ve PostgreSQL kullanılır. İlk hesaplı plan korunur; hesapsız demo kararı alınmamıştır. Anı ve fotoğraf erişiminde owner_id istemciden alınmayacak, doğrulanan oturumdan belirlenecektir. User, Session, Memory ve Photo ilişkileri [ML-03 sözleşmesinde](api-contract.md) tanımlıdır.
+
+| Konu | Soru ve kayıtlı durum |
+| --- | --- |
+| Sunucu kabulü | Öğretim elemanı PR #2 incelemesinde gömülü Tomcat ile Spring Boot kullanımını bu dönem için kabul etti ([20 Ekim 2026 tarihli yorum](https://github.com/software-lecture-labs/memory-lane/pull/2#discussion_r4325681153)). Ekip bu seçeneği ADR-0001 ile seçti. Ayrı Jakarta EE sunucusu kullanılmaz. Bu kabul, yerel/uzak demo, TLS ve cihaz erişimi gibi bütün teslim ayrıntılarının ayrıca onaylandığı anlamına gelmez; bu ayrıntılar bekleyen varsayımlardır. |
+| Analiz A ölçütü | Hangi araç/sürüm, mobil/backend kapsamı ve kalite kapısı esas alınacak? Araç ve ölçüt henüz doğrulanmadı; alınmış A notu yoktur. |
+
+Controller HTTP sözleşmesini, service iş kurallarını/transaction'ı, repository kalıcılığı yürütür. Entity dış API sözleşmesinin yerine geçmez; request/response DTO'ları kullanılır. Örnek akış: mobil form → HTTP API → controller → service → repository → PostgreSQL. Sorumlulukların ayrılması ve constructor injection SOLID için başlangıçtır; iskelet tek başına tam uyum kanıtı sayılmaz.
+
+| Alternatif | Karar ve gerekçe |
+| --- | --- |
+| Controller içinde doğrudan veri erişimi | Seçilmedi; HTTP, iş kuralları ve transaction aynı yerde toplanır. |
+| Controller/service/repository katmanlı tek uygulama | Seçildi; dört kişilik ekipte sorumlulukları ayırır, tek backend dağıtımını korur. |
+| Mikroservisler | Seçilmedi; kapsam için gerekli görülmeyen ayrı servis iletişimi ve dağıtımı ekler. |
+| Jakarta EE/Payara | Öğretim elemanının PR #2 kabulü ve ADR-0001 doğrultusunda Spring Boot/gömülü Tomcat seçildi; ayrı Jakarta EE sunucusu kullanılmaz. |
+
+| Ders kriteri | Karşılık ve doğrulama |
+| --- | --- |
+| Java ve sunucu | Java 17, Spring Boot ve çalıştırılabilir JAR; Spring Boot/gömülü Tomcat kabulü PR #2 yorumunda kayıtlı. Açılış/HTTP kanıtları ilgili özellik PR/CI kayıtlarından izlenir; demo ortamı ayrıntıları ayrıca netleştirilir |
+| SOLID | Katman sorumlulukları ve bağımlılık enjeksiyonu; özellik PR'larında kod incelemesi ve davranış testleri |
+| Kalıcılık | K4/ML-04 PostgreSQL/JPA/Flyway teslimi; repoda sürümlü migration, yeniden başlatma ve bağlantı hatası senaryoları |
+| Transaction | Service üzerinde @Transactional; ML-13/ML-21 başarı ve rollback testleri. ML-14 dosya temizliği commit sonrası ve tekrar denenebilir olacak |
+| Hesap ve sahiplik | ML-27/ML-29/ML-31 ile oturum ve iki hesap arasında CRUD/medya/arama/harita erişim ayrımı testleri |
+| Statik analiz A | ML-06/ML-22 kapsamında doğrulanan araç, kapsam, ölçüt ve gerçek rapor; lint başarısı A sonucu yerine geçmez |
+| Teslim kanıtı | Gerçek issue/PR/CI bağlantıları, başka üye incelemesi ve main üzerinde çalışan demo |
+
+Şema ve veritabanı/test araçları güncel ML-04 bölümü ve ADR-0001'de anlatıldığı biçimde kullanılır. Geçici database profili ve DataSource dışlaması kaldırılmıştır; burada ikinci bir kurulum yolu tanımlanmaz. API alanları ve tekrar davranışları [ML-03 sözleşmesindedir](api-contract.md). Bu belge çalışması veritabanı veya container başlatmaz.
+
+### ML-01 kontrol listesi
+
+| Kart maddesi | Durum |
+| --- | --- |
+| Sunucu çalıştırma ortamı kabulünü sor | Spring Boot/gömülü Tomcat kabulü PR #2 yorumuyla doğrulandı ve ADR-0001 ile bağlandı; demo ortamı ayrıntıları bekleyen varsayım olarak kayıtlı. |
+| Analiz aracını ve A ölçütünü sor | Araç, sürüm, mobil/backend kapsamı ve A ölçütü bu takip PR'ının açıklamasında öğretim elemanına sorulur; yanıt bekleniyor, karar veya A sonucu varsayılmaz. |
+| Katmanlı mimariyi ve alternatiflerini yaz | Bu belgede tamamlandı. |
+| Sabit kapsamı README'ye bağla | Hesaplı ilk planın kapsamı README'ye işlendi ve bu belgeden bağlandı. |
+
+ML-01 için kapsam, mimari gerekçe, alternatifler, kriter karşılıkları ve bekleyen varsayımlar kayıtlıdır. Sunucu teknolojisi kabulü kaynaklıdır; analiz ölçütü ve demo ayrıntıları için yanıt beklenir. Kartın belge kabulü yanıtların veya bekleyen varsayımların kaydını ister; bütün uygulama, analiz ve test işlerinin burada tamamlanmasını istemez. Başka üye incelemesi ve main'e alınması gerçekleşmeden ortak Bitti ölçütü sağlanmış sayılmaz.
