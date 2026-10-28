@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/login_background" android:fillViewport="true" android:clipToPadding="false">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="@dimen/ml_space_lg"
+        android:gravity="center_horizontal" android:focusableInTouchMode="true">
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_sm" android:background="@drawable/login_badge"
+            android:elevation="2dp" android:gravity="center" android:paddingHorizontal="@dimen/ml_space_md"
+            android:paddingVertical="@dimen/ml_space_sm">
+            <ImageView android:layout_width="26dp" android:layout_height="26dp"
+                android:background="@drawable/login_icon_circle" android:padding="5dp"
+                android:src="@drawable/login_book" android:importantForAccessibility="no" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/ml_space_sm" android:text="@string/app_name"
+                android:fontFamily="@font/plus_jakarta_sans_bold" android:textStyle="bold"
+                android:textSize="@dimen/ml_text_label_large"
+                android:textColor="@color/login_pink" />
+            <ImageView android:layout_width="16dp" android:layout_height="20dp"
+                android:layout_marginStart="4dp" android:src="@drawable/login_sparkle"
+                android:importantForAccessibility="no" />
+        </LinearLayout>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="14dp" android:gravity="center"
+            android:id="@+id/login_heading"
+            android:text="@string/login_welcome"
+            android:fontFamily="@font/plus_jakarta_sans_extrabold"
+            android:textStyle="bold" android:textColor="@color/ml_plum"
+            android:textSize="@dimen/login_title_size" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_sm" android:gravity="center"
+            android:text="@string/login_subtitle" android:textAppearance="@style/TextAppearance.MemoryLane.Body" android:textSize="14sp"
+            android:textColor="@color/ml_plum_muted" />
+        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/login_header_gap" android:layout_marginBottom="@dimen/ml_space_lg"
+            android:clipChildren="false" android:clipToPadding="false" android:paddingBottom="12dp">
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="10dp" app:cardBackgroundColor="@color/ml_surface"
+                app:cardElevation="4dp"
+                app:cardCornerRadius="@dimen/ml_radius_card"
+                app:contentPadding="0dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="@dimen/login_card_padding">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:labelFor="@id/email_input" android:text="@string/login_email"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Body" android:textSize="13sp"
+                        android:layout_marginTop="@dimen/ml_space_sm" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/email_layout" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:layout_marginTop="@dimen/ml_space_sm"
+                        app:hintEnabled="false" app:errorEnabled="true" app:startIconDrawable="@drawable/login_email"
+                        app:startIconTint="@color/login_icon" app:boxStrokeColor="@color/login_input_stroke">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/email_input" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:hint="@string/login_email_placeholder"
+                            android:textSize="14sp"
+                            android:minHeight="@dimen/ml_button_height"
+                            android:autofillHints="emailAddress"
+                            android:inputType="textEmailAddress" android:imeOptions="actionNext"
+                            android:maxLines="1" android:saveEnabled="false" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:labelFor="@id/password_input" android:text="@string/login_password"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Body" android:textSize="13sp" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/password_layout" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:layout_marginTop="@dimen/ml_space_sm"
+                        app:hintEnabled="false" app:errorEnabled="true" app:startIconDrawable="@drawable/login_lock"
+                        app:startIconTint="@color/login_icon" app:endIconTint="@color/login_icon"
+                        app:boxStrokeColor="@color/login_input_stroke" app:endIconMode="password_toggle"
+                        app:endIconContentDescription="@string/login_show_password">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/password_input" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:textSize="14sp"
+                            android:minHeight="@dimen/ml_button_height"
+                            android:autofillHints="password"
+                            android:inputType="textPassword"
+                            android:imeOptions="actionDone" android:maxLines="1" android:saveEnabled="false" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/login_button" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:minHeight="@dimen/ml_button_height"
+                        android:elevation="5dp"
+                        android:layout_marginTop="@dimen/ml_space_sm"
+                        android:layout_marginBottom="@dimen/ml_space_sm" android:text="@string/login_submit"
+                        android:fontFamily="@font/plus_jakarta_sans_bold" android:textStyle="bold"
+                        android:textSize="@dimen/ml_text_label_large"
+                        app:backgroundTint="@color/login_pink"
+                        app:icon="@drawable/login_arrow" app:iconGravity="textEnd" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+            <View android:layout_width="84dp" android:layout_height="20dp" android:layout_gravity="top|center_horizontal"
+                android:rotation="-2" android:elevation="8dp" android:background="@drawable/login_tape" android:importantForAccessibility="no" />
+        </FrameLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

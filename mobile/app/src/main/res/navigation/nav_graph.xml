@@ -2,7 +2,13 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/memoriesFragment">
+    app:startDestination="@id/loginFragment">
+
+    <!-- Temporary preview entry point; this does not enforce authentication. -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.memorylane.feature.auth.ui.LoginFragment"
+        android:label="@string/login_submit" />
 
     <fragment
         android:id="@+id/memoriesFragment"
