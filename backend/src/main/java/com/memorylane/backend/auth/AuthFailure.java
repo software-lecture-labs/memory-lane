@@ -5,7 +5,14 @@ public class AuthFailure extends RuntimeException {
     final String code;
     final long retryAfter;
 
-    AuthFailure(int status, String code, String message) { this(status, code, message, 0); }
+    java.util.Map<String, String> body() {
+        return java.util.Map.of("code", code, "message", getMessage());
+    }
+
+    AuthFailure(int status, String code, String message) {
+        this(status, code, message, 0);
+    }
+
     AuthFailure(int status, String code, String message, long retryAfter) {
         super(message);
         this.status = status;
