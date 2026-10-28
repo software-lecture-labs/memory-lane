@@ -11,12 +11,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class AuthRequestFilter extends OncePerRequestFilter {
     private final AuthLimiter limiter;
     public AuthRequestFilter(AuthLimiter limiter) { this.limiter = limiter; }
+    private String path(HttpServletRequest request) {
+        // Servlet path is decoded; strip path parameters just as Spring's handler mapping does.
+        return request.getServletPath().replaceAll(";[^/]*", "");
+    }
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith(request.getContextPath() + "/api/v1/auth/");
+        return !path(request).startsWith("/api/v1/auth/");
     }
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         response.setHeader("Cache-Control", "no-store");
-        String path = request.getRequestURI();
+        String path = path(request);
         try {
             if (request.getMethod().equals("POST") && (path.endsWith("/register") || path.endsWith("/login"))) {
                 limiter.ip(request.getRemoteAddr()); // Forwarded headers are deliberately not trusted.

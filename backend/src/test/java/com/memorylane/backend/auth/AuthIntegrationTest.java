@@ -105,7 +105,7 @@ class AuthIntegrationTest {
     }
     @Test void boundsBodyAndReturnsSafeJsonErrors() throws Exception {
         assertEquals(400,send("POST","register","{",null).statusCode());
-        assertEquals(413,send("POST","login","x".repeat(8193),null).statusCode());
+        assertEquals(413,send("POST","%6cogin","x".repeat(8193),null).statusCode());
         var r=send("POST","register","{\"email\":\"wrong\",\"password\":\"secret\"}",null);
         assertEquals(400,r.statusCode()); assertFalse(r.body().contains("secret")); assertFalse(r.body().contains("Exception"));
     }
@@ -117,6 +117,6 @@ class AuthIntegrationTest {
     }
     @Test void ipLimitCountsMalformedRequests() throws Exception {
         for(int i=0;i<20;i++) assertEquals(400,send("POST","login","{",null).statusCode());
-        var r=send("POST","login","{",null); assertEquals(429,r.statusCode()); assertTrue(r.body().contains("RATE_LIMITED"));
+        var r=send("POST","%6cogin","{",null); assertEquals(429,r.statusCode()); assertTrue(r.body().contains("RATE_LIMITED"));
     }
 }
