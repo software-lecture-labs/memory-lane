@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="login_pink">#D95678</color>
+    <color name="login_soft_pink">#FDF7FB</color>
+    <color name="login_outline">#F3DFED</color>
+    <color name="login_icon">#ADA2B0</color>
+    <color name="login_tape">#99FFD085</color>
+    <color name="login_badge_peach">#66FFD085</color>
+    <color name="login_frame_fill">#22FFD085</color>
+</resources>
