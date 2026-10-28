@@ -63,6 +63,7 @@ public class AuthService {
         var user = account.get(); repository.session(user.id(), digest(token), now, expires);
         return new LoginResponse(token, "Bearer", expires, new UserResponse(user.id(), user.email()));
     }
+    @Transactional(readOnly=true)
     public UserResponse me(String authorization) {
         var user = repository.authenticated(digest(token(authorization)), clock.instant())
                 .orElseThrow(AuthService::invalidSession);

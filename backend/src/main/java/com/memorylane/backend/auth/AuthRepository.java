@@ -1,39 +1,41 @@
 package com.memorylane.backend.auth;
 
-import java.sql.Timestamp;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** Uses the existing Flyway-owned schema; credentials never leave this package as DTOs. */
+/** JPA mappings use the existing Flyway schema; conflict-safe registration uses PostgreSQL's atomic insert. */
 @Repository
 public class AuthRepository {
-    private final JdbcTemplate jdbc;
-    public AuthRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    private final EntityManager entityManager;
+    public AuthRepository(EntityManager entityManager) { this.entityManager = entityManager; }
     record Account(UUID id, String email, String passwordHash) { }
 
     Optional<Account> find(String email) {
-        return jdbc.query("SELECT id,email,password_hash FROM users WHERE email=?",
-                (rs, row) -> new Account(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3)), email)
-                .stream().findFirst();
+        return entityManager.createQuery("SELECT u FROM UserAccount u WHERE u.email=:email", UserAccount.class)
+                .setParameter("email", email).getResultStream().findFirst()
+                .map(u -> new Account(u.id, u.email, u.passwordHash));
     }
     boolean insert(UUID id, String email, String hash) {
-        return jdbc.update("INSERT INTO users(id,email,password_hash) VALUES (?,?,?) ON CONFLICT(email) DO NOTHING",
-                id, email, hash) == 1;
+        return entityManager.createNativeQuery("INSERT INTO users(id,email,password_hash) VALUES (:id,:email,:hash) ON CONFLICT(email) DO NOTHING")
+                .setParameter("id", id).setParameter("email", email).setParameter("hash", hash).executeUpdate() == 1;
     }
     void session(UUID user, String hash, Instant now, Instant expires) {
-        jdbc.update("INSERT INTO sessions(user_id,token_hash,created_at,expires_at) VALUES (?,?,?,?)",
-                user, hash, Timestamp.from(now), Timestamp.from(expires));
+        UserSession session = new UserSession();
+        session.user = entityManager.getReference(UserAccount.class, user);
+        session.tokenHash = hash; session.createdAt = now; session.expiresAt = expires;
+        entityManager.persist(session);
     }
     Optional<Account> authenticated(String hash, Instant now) {
-        return jdbc.query("SELECT u.id,u.email,u.password_hash FROM users u JOIN sessions s ON s.user_id=u.id "
-                        + "WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>?",
-                (rs, row) -> new Account(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3)),
-                hash, Timestamp.from(now)).stream().findFirst();
+        return entityManager.createQuery("SELECT s.user FROM UserSession s WHERE s.tokenHash=:hash "
+                        + "AND s.revokedAt IS NULL AND s.expiresAt>:now", UserAccount.class)
+                .setParameter("hash", hash).setParameter("now", now).getResultStream().findFirst()
+                .map(u -> new Account(u.id, u.email, u.passwordHash));
     }
     void revoke(String hash, Instant now) {
-        jdbc.update("UPDATE sessions SET revoked_at=? WHERE token_hash=? AND revoked_at IS NULL", Timestamp.from(now), hash);
+        entityManager.createQuery("UPDATE UserSession s SET s.revokedAt=:now WHERE s.tokenHash=:hash AND s.revokedAt IS NULL")
+                .setParameter("now", now).setParameter("hash", hash).executeUpdate();
     }
 }
