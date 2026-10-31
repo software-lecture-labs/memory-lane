@@ -15,6 +15,7 @@
     <string name="map_title">Anı haritası</string>
     <string name="map_subtitle">Konumlu anıların haritada gösterilecek.</string>
     <string name="profile_title">Profil</string>
+    <string name="profile_preview_login">Giriş ekranını önizle</string>
     <string name="profile_subtitle">Hesap ve oturum ayarların burada yer alacak.</string>
     <string name="screen_not_ready">Bu bölüm sonraki geliştirmede eklenecek.</string>
 
