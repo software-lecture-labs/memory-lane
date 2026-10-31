@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="login_pink">#D95678</color>
     <color name="login_soft_pink">#FDF7FB</color>
     <color name="login_outline">#F3DFED</color>
     <color name="login_icon">#ADA2B0</color>
