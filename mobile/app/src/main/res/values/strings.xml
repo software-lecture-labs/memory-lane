@@ -15,6 +15,7 @@
     <string name="map_title">Anı haritası</string>
     <string name="map_subtitle">Konumlu anıların haritada gösterilecek.</string>
     <string name="profile_title">Profil</string>
+    <string name="profile_preview_login">Giriş ekranını önizle</string>
     <string name="profile_subtitle">Hesap ve oturum ayarların burada yer alacak.</string>
     <string name="screen_not_ready">Bu bölüm sonraki geliştirmede eklenecek.</string>
 
@@ -33,4 +34,16 @@
     <string name="error_http">Sunucu beklenmeyen bir yanıt verdi.</string>
     <string name="error_parse">Sunucu yanıtı okunamadı.</string>
     <string name="error_unexpected">Beklenmeyen bir hata oluştu.</string>
+    <!-- Login -->
+    <string name="login_email_placeholder">ornek@mail.com</string>
+    <string name="login_welcome">Tekrar hoş geldin</string>
+    <string name="login_subtitle">Anılarını kaldığın yerden hatırlamaya devam et.</string>
+    <string name="login_email">E-posta</string>
+    <string name="login_password">Şifre</string>
+    <string name="login_submit">Giriş Yap</string>
+    <string name="login_email_required">E-posta adresini gir.</string>
+    <string name="login_email_invalid">Geçerli bir e-posta adresi gir.</string>
+    <string name="login_password_required">Şifreni gir.</string>
+    <string name="login_show_password">Şifreyi göster</string>
+    <string name="login_hide_password">Şifreyi gizle</string>
 </resources>

@@ -4,6 +4,12 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/memoriesFragment">
 
+    <!-- Preview destination; this does not enforce authentication. -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.memorylane.feature.auth.ui.LoginFragment"
+        android:label="@string/login_submit" />
+
     <fragment
         android:id="@+id/memoriesFragment"
         android:name="com.memorylane.feature.memories.ui.MemoriesFragment"
@@ -17,5 +23,9 @@
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.memorylane.feature.profile.ui.ProfileFragment"
-        android:label="@string/tab_profile" />
+        android:label="@string/tab_profile">
+        <action
+            android:id="@+id/action_profileFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
 </navigation>

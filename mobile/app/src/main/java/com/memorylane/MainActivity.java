@@ -1,6 +1,7 @@
 package com.memorylane;
 
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,17 +26,25 @@ public class MainActivity extends AppCompatActivity {
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.navHost, (view, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            view.setPadding(bars.left, bars.top, bars.right, 0);
-            return insets;
-        });
-
         NavHostFragment navHost = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host);
         if (navHost == null) {
             throw new IllegalStateException("activity_main.xml must contain the nav_host fragment");
         }
         NavController navController = navHost.getNavController();
+        ViewCompat.setOnApplyWindowInsetsListener(binding.navHost, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            boolean isLogin = navController.getCurrentDestination() != null
+                    && navController.getCurrentDestination().getId() == R.id.loginFragment;
+            int bottom = isLogin
+                    ? Math.max(insets.getInsets(WindowInsetsCompat.Type.ime()).bottom, bars.bottom)
+                    : 0;
+            view.setPadding(bars.left, bars.top, bars.right, bottom);
+            return insets;
+        });
         NavigationUI.setupWithNavController(binding.bottomNav, navController);
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            binding.bottomNav.setVisibility(destination.getId() == R.id.loginFragment ? View.GONE : View.VISIBLE);
+            ViewCompat.requestApplyInsets(binding.navHost);
+        });
     }
 }
