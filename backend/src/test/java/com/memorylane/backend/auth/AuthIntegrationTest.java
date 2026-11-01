@@ -88,6 +88,34 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void wrongMethodHasStableErrorBodyOnRunningServer() throws Exception {
+        var response = send("GET", "login", null, null);
+        assertEquals(405, response.statusCode());
+        assertEquals("POST", response.headers().firstValue("Allow").orElseThrow());
+        assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+        assertTrue(response.body().contains("\"code\":\"HTTP_ERROR\""));
+    }
+
+    @Test
+    void malformedEmailIsRejectedBeforeAccountCreation() throws Exception {
+        String prefix = "invalid-" + UUID.randomUUID();
+        var response =
+                send(
+                        "POST",
+                        "register",
+                        credentials(prefix + "\\u0000@example.test", PASSWORD),
+                        null);
+        assertEquals(400, response.statusCode());
+        assertTrue(response.body().contains("INVALID_INPUT"));
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM users WHERE email LIKE ?",
+                        Integer.class,
+                        prefix + "%"));
+    }
+
+    @Test
     void lifecycleStoresOnlyHashesAndRevokesOnlyOneSession() throws Exception {
         var r =
                 send(

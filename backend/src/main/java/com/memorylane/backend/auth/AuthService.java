@@ -44,8 +44,17 @@ public class AuthService {
     static String email(String email) {
         if (email == null) throw invalidInput();
         String normalized = email.strip().toLowerCase(Locale.ROOT);
-        if (normalized.length() > 254 || !normalized.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
-            throw invalidInput();
+        boolean hasInvalidCharacter =
+                normalized
+                        .codePoints()
+                        .anyMatch(
+                                character ->
+                                        Character.isISOControl(character)
+                                                || Character.isWhitespace(character)
+                                                || Character.isSpaceChar(character));
+        if (hasInvalidCharacter
+                || normalized.length() > 254
+                || !normalized.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw invalidInput();
         return normalized;
     }
 
