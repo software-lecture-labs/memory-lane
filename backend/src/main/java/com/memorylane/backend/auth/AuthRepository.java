@@ -3,6 +3,7 @@ package com.memorylane.backend.auth;
 import jakarta.persistence.EntityManager;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -13,6 +14,7 @@ import java.util.UUID;
  * insert.
  */
 @Repository
+@Transactional(readOnly = true)
 public class AuthRepository {
     private final EntityManager entityManager;
 
@@ -27,7 +29,7 @@ public class AuthRepository {
         }
     }
 
-    Optional<Account> find(String email) {
+    public Optional<Account> find(String email) {
         return entityManager
                 .createQuery("SELECT u FROM UserAccount u WHERE u.email=:email", UserAccount.class)
                 .setParameter("email", email)
@@ -38,7 +40,8 @@ public class AuthRepository {
                 .map(u -> new Account(u.id, u.email, u.passwordHash));
     }
 
-    boolean insert(UUID id, String email, String hash) {
+    @Transactional
+    public boolean insert(UUID id, String email, String hash) {
         return entityManager
                         .createNativeQuery(
                                 "INSERT INTO users(id,email,password_hash) VALUES"
@@ -50,7 +53,8 @@ public class AuthRepository {
                 == 1;
     }
 
-    void session(UUID user, String hash, Instant now, Instant expires) {
+    @Transactional
+    public void session(UUID user, String hash, Instant now, Instant expires) {
         UserSession session = new UserSession();
         session.user = entityManager.getReference(UserAccount.class, user);
         session.tokenHash = hash;
@@ -59,7 +63,7 @@ public class AuthRepository {
         entityManager.persist(session);
     }
 
-    Optional<Account> authenticated(String hash, Instant now) {
+    public Optional<Account> authenticated(String hash, Instant now) {
         return entityManager
                 .createQuery(
                         "SELECT s.user FROM UserSession s WHERE s.tokenHash=:hash "
@@ -74,13 +78,25 @@ public class AuthRepository {
                 .map(u -> new Account(u.id, u.email, u.passwordHash));
     }
 
-    void revoke(String hash, Instant now) {
+    @Transactional
+    public void revoke(String hash, Instant now) {
         entityManager
                 .createQuery(
                         "UPDATE UserSession s SET s.revokedAt=:now WHERE s.tokenHash=:hash AND"
                                 + " s.revokedAt IS NULL")
                 .setParameter("now", now)
                 .setParameter("hash", hash)
+                .executeUpdate();
+    }
+
+    @Transactional
+    public int deleteExpiredSessions(Instant cutoff, int batchSize) {
+        return entityManager
+                .createNativeQuery(
+                        "DELETE FROM sessions WHERE id IN (SELECT id FROM sessions "
+                                + "WHERE expires_at <= :cutoff ORDER BY id LIMIT :batchSize)")
+                .setParameter("cutoff", cutoff)
+                .setParameter("batchSize", batchSize)
                 .executeUpdate();
     }
 }

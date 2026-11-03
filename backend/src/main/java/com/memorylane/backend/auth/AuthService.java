@@ -2,6 +2,7 @@ package com.memorylane.backend.auth;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 @Service
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class AuthService {
     private final AuthRepository repository;
     private final PasswordEncoder encoder;
@@ -69,7 +71,6 @@ public class AuthService {
                 400, "INVALID_INPUT", "Geçerli e-posta ve 15–128 karakter parola gereklidir.");
     }
 
-    @Transactional
     public UserResponse register(String email, String password) {
         String normalized = email(email);
         password(password);
@@ -79,7 +80,6 @@ public class AuthService {
         return new UserResponse(id, normalized);
     }
 
-    @Transactional
     public LoginResponse login(String normalized, String password) {
         if (password == null || password.codePointCount(0, password.length()) > 128)
             throw invalidInput();
@@ -101,7 +101,6 @@ public class AuthService {
                 token, "Bearer", expires, new UserResponse(user.id(), user.email()));
     }
 
-    @Transactional(readOnly = true)
     public UserResponse me(String authorization) {
         var user =
                 repository
@@ -110,7 +109,6 @@ public class AuthService {
         return new UserResponse(user.id(), user.email());
     }
 
-    @Transactional
     public void logout(String authorization) {
         repository.revoke(digest(token(authorization)), clock.instant());
     }

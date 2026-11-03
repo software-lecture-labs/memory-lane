@@ -1,6 +1,9 @@
 package com.memorylane.backend.auth;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 import com.memorylane.backend.RequiresDocker;
@@ -10,8 +13,11 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.net.URI;
 import java.net.http.*;
@@ -29,6 +35,8 @@ class AuthIntegrationTest {
 
     @Autowired JdbcTemplate jdbc;
     @MockitoBean Clock clock;
+    @MockitoSpyBean PasswordEncoder encoder;
+    @Autowired AuthSessionCleanup sessionCleanup;
     final AtomicReference<Instant> now = new AtomicReference<>();
     static final String PASSWORD = "Uzun güvenli parola 123";
     final HttpClient http = HttpClient.newHttpClient();
@@ -85,6 +93,58 @@ class AuthIntegrationTest {
         var m = Pattern.compile("\"accessToken\":\"([^\"]+)\"").matcher(r.body());
         assertTrue(m.find());
         return m.group(1);
+    }
+
+    @Test
+    void expensivePasswordWorkRunsWithoutDatabaseTransaction() throws Exception {
+        doAnswer(
+                        invocation -> {
+                            assertFalse(
+                                    TransactionSynchronizationManager.isActualTransactionActive());
+                            return invocation.callRealMethod();
+                        })
+                .when(encoder)
+                .encode(any(CharSequence.class));
+        doAnswer(
+                        invocation -> {
+                            assertFalse(
+                                    TransactionSynchronizationManager.isActualTransactionActive());
+                            return invocation.callRealMethod();
+                        })
+                .when(encoder)
+                .matches(any(CharSequence.class), anyString());
+        register();
+        assertEquals(200, send("GET", "me", null, login()).statusCode());
+    }
+
+    @Test
+    void cleanupRemovesExpiredSessionsAndPreservesActiveOnes() throws Exception {
+        register();
+        String active = login();
+        String expired = login();
+        String revoked = login();
+        assertEquals(204, send("POST", "logout", null, revoked).statusCode());
+        jdbc.update(
+                "UPDATE sessions SET expires_at=? WHERE token_hash=?",
+                java.sql.Timestamp.from(now.get()),
+                AuthService.digest(expired));
+        assertEquals(401, send("GET", "me", null, expired).statusCode());
+        sessionCleanup.cleanup();
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM sessions WHERE token_hash=?",
+                        Integer.class,
+                        AuthService.digest(expired)));
+        assertEquals(
+                1,
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM sessions WHERE token_hash=?",
+                        Integer.class,
+                        AuthService.digest(active)));
+        assertEquals(200, send("GET", "me", null, active).statusCode());
+        assertEquals(401, send("GET", "me", null, expired).statusCode());
+        assertEquals(401, send("GET", "me", null, revoked).statusCode());
     }
 
     @Test

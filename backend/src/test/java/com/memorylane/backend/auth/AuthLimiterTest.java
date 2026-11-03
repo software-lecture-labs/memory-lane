@@ -12,6 +12,25 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class AuthLimiterTest {
     @Test
+    void busyHashCapacityDoesNotCountAsWrongPassword() {
+        var limiter =
+                new AuthLimiter(Clock.fixed(Instant.parse("2026-10-28T12:00:00Z"), ZoneOffset.UTC));
+        for (int i = 0; i < 6; i++) {
+            AuthFailure failure =
+                    assertThrows(
+                            AuthFailure.class,
+                            () ->
+                                    limiter.login(
+                                            "user@example.test",
+                                            () -> {
+                                                throw new AuthFailure(503, "AUTH_BUSY", "Busy", 1);
+                                            }));
+            assertEquals(503, failure.status);
+        }
+        assertEquals("accepted", limiter.login("user@example.test", () -> "accepted"));
+    }
+
+    @Test
     void concurrentFailuresCannotExceedAccountQuota() throws Exception {
         var limiter =
                 new AuthLimiter(Clock.fixed(Instant.parse("2026-10-28T12:00:00Z"), ZoneOffset.UTC));

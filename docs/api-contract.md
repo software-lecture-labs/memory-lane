@@ -298,6 +298,7 @@ Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından ka
 | 405 / 415 | `HTTP_ERROR` | Yöntem veya JSON isteğinin Content-Type değeri desteklenmiyor |
 | 429 | `RATE_LIMITED` | IP veya login e-posta deneme sınırı; Retry-After saniye bilgisi |
 | 500 | `INTERNAL_ERROR` | İstemciye iç ayrıntısı verilmeyen beklenmeyen hata |
+| 503 | `AUTH_BUSY` | Sunucunun eşzamanlı hash kapasitesi dolu; `Retry-After: 1`, yeni istek daha sonra denenebilir |
 | 503 | `DATABASE_UNAVAILABLE` | Bağlantı hazır değil veya veritabanı kullanılamıyor |
 
 ## ML-04 şema eşleştirmesi
