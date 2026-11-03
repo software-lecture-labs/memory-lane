@@ -10,9 +10,37 @@ Android mobil uygulaması ve Java HTTP backend için ortak repo.
 
 Hesap, oturum, kullanıcıya özel anı ve fotoğraf işlemlerinin ortak alanları, endpointleri, hata yanıtları ve tekrar deneme kuralları [ML-03 API sözleşmesinde](docs/api-contract.md) tanımlıdır. Bu belge geliştirme sözleşmesidir; endpointlerin uygulanmış olduğunu göstermez.
 
-## Ekip rol kodları
+## Hesap API'si (ML-27)
+
+`POST /api/v1/auth/register` e-posta ve parolayla hesap açar (201); otomatik oturum açmaz. `POST /api/v1/auth/login` aynı JSON alanlarıyla Bearer token ve `expiresAt` döndürür. `GET /api/v1/auth/me` token sahibini döndürür; `POST /api/v1/auth/logout` yalnız o tokenı iptal eder (204). Son iki istekte `Authorization: Bearer <accessToken>` gerekir. Çıkış aynı doğru biçimli tokenla tekrarlanabilir; geçersiz/süresi dolmuş oturumla `me` 401 döner.
+
+Kayıtta e-posta kırpılıp küçük harfe çevrilir; parola 15–128 Unicode karakterdir, kırpılmaz. Argon2id (19 MiB, 2 geçiş, 1 paralellik) parola özeti; 32 rastgele bayttan üretilen 24 saatlik tokenın yalnız SHA-256 özeti PostgreSQL'e yazılır. Ham parola/token loglanmaz. Yanıtlar `Cache-Control: no-store` taşır.
+
+Auth gövdesi 8 KiB ile, kayıt/giriş denemeleri gerçek bağlantı IP'si başına 20/dakika ile sınırlıdır. Login için normalize e-posta başına beş başarısız denemeden sonra pencere bitene kadar 429/Retry-After döner. Başarılı giriş hesabın başarısızlık sayacını sıfırlar. Sayaçlar bu kontrollü, tek sunuculu demo için bellektedir; yeniden başlatmada sıfırlanır ve birden çok sunucu arasında paylaşılmaz. Proxy başlıklarına güvenilmez; proxy kullanımı ayrıca yapılandırılmalıdır. HTTPS dağıtımı ML-32, iş kaynaklarının sahiplik denetimi ML-29 kapsamındadır.
+
+Mevcut Flyway `users`/`sessions` şeması, UserAccount/UserSession JPA eşlemeleri ve dar `AuthRepository` ile kullanılır. `INSERT ... ON CONFLICT` eşzamanlı kayıtta tek hesap üretir; parola hesaplaması transaction dışındadır; hesap ekleme, oturum oluşturma ve iptal yalnız repository'deki kısa transaction'lar içinde çalışır. Session–User ilişkisi çoktan-biredir; JPA şemayı değiştirmez, Flyway şemasını doğrular. Anı/fotoğraf geliştirmesi bu teslimden ayrıdır. API biçimleri [sözleşmede](docs/api-contract.md), çalıştırma/test komutları aşağıdadır. Auth entegrasyon testleri HTTP uçlarını gerçek PostgreSQL üzerinde kontrol eder; Docker yoksa yalnız yerelde atlanır, CI'da zorunludur.
+
+### Hash kapasitesi ve oturum bakımı
+
+Argon2id çalışma belleği işlem başına 19 MiB olarak yapılandırılmıştır. Kayıt, giriş ve bilinmeyen kullanıcı doğrulaması aynı Semaphore sınırını paylaşır: varsayılan en fazla iki hash işlemi, yani Argon2 çalışma alanları için yaklaşık 38 MiB. Bu sayı toplam JVM belleği veya ölçülmüş heap tepe değeri değildir; kütüphane nesneleri ve uygulamanın diğer kullanımları ayrıca yer tutar. `memorylane.auth.max-concurrent-hashes` 1–8 aralığında ayarlanabilir; yükseltmeden önce sunucunun belleği ölçülmelidir. Kapasite doluysa kuyruk oluşturulmaz; `503 AUTH_BUSY` ve `Retry-After: 1` döner. Parola hash/verify işlemi DB transaction'ı ve bağlantısı tutmaz; repository okuma/yazmaları ayrı kısa transaction'lardır.
+
+Süresi dolan token, temizlik beklenmeden hemen 401 ile reddedilir. Başlangıçtan bir saat sonra ve ardından saatte bir çalışan temizlik işi `expires_at <= şimdi` kayıtlarını, çağrı başına en fazla 1.000 satırlık kısa transaction ile siler. İptal edilmiş kayıtlar da doğal sona erme zamanına kadar tutulur; ardından aynı iş tarafından silinir. Aktif oturumlar korunur. Büyük birikimde kalan kayıtlar sonraki turlarda temizlenir; daha yüksek trafik için ayrı indeks/bakım planı ve çalışma sıklığı değerlendirilmelidir. `memorylane.auth.session-cleanup-delay` ISO-8601 süre olarak ayarlanabilir (varsayılan `PT1H`). Temizlik hatası tokenın geçerlilik süresini uzatmaz.
+
+### Proxy varsayımı
+
+Mevcut geliştirme/ders demosu backend'e doğrudan bağlantı varsayar. `getRemoteAddr()` doğrudan bağlantının adresidir; reverse proxy/load balancer arkasında bütün kullanıcılar için proxy IP'si görünebilir ve IP başına 20/dakika sınırı ortak bir kotaya dönüşebilir. Bu kurulum proxy arkasında kullanıcı bazlı doğru IP sınırı sağladığı iddiasını taşımaz. Hesap başına başarısız giriş sınırı bundan bağımsız kalır. `Forwarded`/`X-Forwarded-For` başlıkları kodda doğrudan okunmaz; istemcinin yazdığı başlığa güvenilmez. Dağıtımda güvenilir proxy adresleri, backend'e doğrudan erişim ve başlıkların proxy tarafından temizlenip yeniden yazılması birlikte ele alınmalı; ancak bundan sonra uygun Spring/Tomcat forwarded-header stratejisi seçilip iki farklı istemciyle test edilmelidir. Load balancer yapılandırması bu K1 backend değişikliğine dahil değildir.
+
+## Ekip rol kodlarının karşılığı
 
 Kartlar ve belgelerde K1 hesap/oturum backend'i ve anı oluşturmayı; K2 fotoğraf akışı ve kayıt/giriş mobil ekranlarını; K3 mobil oturum, liste, detay, düzenleme ve aramayı; K4 veritabanı altyapısı, sahiplik, harita ve silme/transaction işlerini ifade eder. Bunlar ekip içi rol kodlarıdır. İş API'si `/api/v1` sözleşmesini izler; mevcut `/api/health` altyapı yolu ayrıdır.
+
+## İlk teslim kapsamı
+
+İlk hesaplı Trello planı esas alınır; yalnız backend teknolojisi Spring Boot olarak güncellenmiştir. Kayıt, giriş, çıkış ve 24 saatlik iptal edilebilir oturum korunur. Anılar ve fotoğraflar oturum sahibine bağlıdır; farklı hesapların birbirinin verisine erişmemesi hedefi ML-29/ML-31 kapsamında doğrulanacaktır. Bu sahiplik denetimi henüz tamamlanmış sayılmaz.
+
+Anı oluşturma/düzenleme, fotoğraf yükleme/görüntüleme, liste/detay, arama, harita ve silme temel kapsamdadır. Şifre sıfırlama, profil düzenleme, e-posta doğrulama, sosyal giriş, sesli anı, EXIF, yakındakiler, senkronizasyon ve dışa aktarma kapsam dışıdır. Tarihte Bugün ve gelişmiş filtreler temel teslimden sonra değerlendirilir. Mağaza yayını ve herkese açık hizmet planlanmaz.
+
+K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğraflar; K3 mobil oturum, liste, detay, anı düzenleme ve arama; K4 veritabanı altyapısı, sahiplik, harita, silme ve transaction işlerinden sorumludur. İlk plandaki görev dağılımı değişmez. Mimari alternatifler ve bekleyen ders kriterleri [mimari belgesindedir](docs/architecture.md#ml-01-ders-kriterleri-ve-alternatifler).
 
 ## İlk kurulum
 

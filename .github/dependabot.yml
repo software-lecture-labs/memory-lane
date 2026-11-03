@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Istanbul"
+    allow:
+      - dependency-name: "org.bouncycastle:bcprov-jdk18on"
+    open-pull-requests-limit: 3
