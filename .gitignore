@@ -12,6 +12,7 @@ replay_pid*
 .externalNativeBuild/
 .cxx/
 **/build/
+/backend/bin/
 .idea/
 *.iml
 local.properties
