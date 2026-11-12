@@ -3,6 +3,7 @@ package com.memorylane.feature.auth.data;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
+import retrofit2.http.Header;
 
 /** Auth paths from docs/api-contract.md, relative to the shared server root. */
 public interface AuthApi {
@@ -11,4 +12,7 @@ public interface AuthApi {
 
     @POST("api/v1/auth/login")
     Call<LoginResponse> login(@Body AuthRequest request);
+
+    @POST("api/v1/auth/logout")
+    Call<Void> logout(@Header("Authorization") String authorization);
 }

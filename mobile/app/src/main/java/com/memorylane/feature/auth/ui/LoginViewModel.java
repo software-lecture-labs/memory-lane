@@ -28,7 +28,6 @@ public final class LoginViewModel extends ViewModel {
                 ? LoginUiState.Focus.EMAIL
                 : passwordRequired ? LoginUiState.Focus.PASSWORD : LoginUiState.Focus.NONE;
         state.setValue(new LoginUiState(emailError, passwordRequired, focus));
-        // Valid input stays on this screen until API integration is implemented.
     }
 
     public void onEmailChanged() {
