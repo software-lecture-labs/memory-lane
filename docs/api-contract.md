@@ -1,6 +1,6 @@
 # Veri modeli ve API sözleşmesi
 
-Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me uygulanmıştır; diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
+Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me; ML-07 ile anı oluşturma ve sayfalı listeleme uygulanmıştır. Diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
 
 ## Genel kurallar
 
@@ -196,7 +196,7 @@ strpos(
 
 Aynı ifade description için de uygulanır; ikisi OR ile, kullanıcı ve kategori filtreleri AND ile birleşir. `:q` doğrulanmış/kırpılmış sorgunun bağlı parametresidir, SQL metnine eklenmez. `strpos` düz alt metin aradığı için `%` ve `_` joker olmaz. Sonuçlar eşleştirmeden sonra mevcut sabit sırayla sıralanır ve sayfalanır. ICU/UTF8 desteği kurulumda doğrulanacak; yoksa Java filtresine veya farklı locale'e sessiz geri dönüş yapılmayacaktır. Mevcut V1/V2 değiştirilmeyecek; bu notta collation veya indeks oluşturulmaz.
 
-Gerçek PostgreSQL kabul testi, Türkçe eşleşmeler ve `%`/`_` davranışına ek olarak şunları içerecek: aynı kullanıcıya ait 25 eşleşen kayıt, eşleşmeyen kayıtlar ve başka kullanıcının eşleşen kayıtları; size=20 için ilk sayfa 20, ikinci sayfa 5 kayıt, totalElements=25, totalPages=2 olmalı. Bu örnekler henüz çalıştırılmadı. Demo hacminde tarama kabul edilir; ihtiyaç oluşursa pg_trgm/indeks planı ayrı değişikliktir.
+Gerçek PostgreSQL kabul testi, Türkçe eşleşmeler ve `%`/`_` davranışına ek olarak şunları içerecek: aynı kullanıcıya ait 25 eşleşen kayıt, eşleşmeyen kayıtlar ve başka kullanıcının eşleşen kayıtları; size=20 için ilk sayfa 20, ikinci sayfa 5 kayıt, totalElements=25, totalPages=2 olmalı. Bu liste senaryosu `MemoryIntegrationTest` ile PostgreSQL üzerinde doğrulanır. Demo hacminde tarama kabul edilir; ihtiyaç oluşursa pg_trgm/indeks planı ayrı değişikliktir.
 
 Kaynaklar: [PostgreSQL 17 collation](https://www.postgresql.org/docs/17/collation.html), [metin fonksiyonları](https://www.postgresql.org/docs/17/functions-string.html), [pattern matching sınırı](https://www.postgresql.org/docs/17/functions-matching.html).
 
@@ -303,7 +303,7 @@ Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından ka
 
 ## ML-04 şema eşleştirmesi
 
-Güncel main'deki V1 ve V2 migration'ları birlikte esas alınır; uygulanmış V1 değiştirilmez. Bu sözleşme migration veya altyapı kodunu değiştirmez.
+Güncel main'deki V1 ve V2 migration'ları birlikte esas alınır; uygulanmış V1 değiştirilmez. ML-07, Türkçe liste araması için `V4` migration ile `memorylane_tr` collation ekler.
 
 | API / kural | ML-04 karşılığı |
 | --- | --- |
@@ -319,7 +319,7 @@ Güncel main'deki V1 ve V2 migration'ları birlikte esas alınır; uygulanmış 
 
 Anı gövdesi özeti, doğrulanmış/varsayılanları uygulanmış yazma alanlarından hesaplanır: anahtar sırası `title`, `description`, `memoryDate`, `category`, `emotion`, `location`; location içinde `latitude`, `longitude`. JSON UTF-8, gereksiz boşluksuz ve anahtar sırası sabit üretilir; sayılarda anlamsız son sıfırlar kaldırılır, −0 değeri 0 olur. Kaynak metindeki JSON boşlukları ve alan sırası özete etki etmez. Sunucunun bu standart gösteriminin SHA-256 hex değeri `client_request_sha256` olur. Fotoğraf `content_sha256` yalnız ham dosya baytlarından hesaplanır; multipart sınır/metin bilgisi dahil edilmez. Aynı anahtarla gelen MIME türü ayrıca karşılaştırılır. İstemci özeti veya iç alanları belirleyemez.
 
-V2 şeması anahtar ve içerik özetlerini sağlar; başarılı tekrarın 200 yanıtı, anahtar çakışmasının 409 yanıtı ve anı satırı kilidi servis uygulamasında yapılacaktır. Silinmiş anahtarın tekrar kullanılmaması için ayrıca kalıcı emekli-anahtar kaydı gerekir; mevcut V2'nin bunu tek başına sağladığı iddia edilmez. Bu depolama, ilgili API özelliği geliştirilirken sürümlü migration ile eklenecek, burada veritabanı değiştirilmez. Böylece beklenen HTTP sözleşmesi ile henüz yazılmamış uygulama birbirine karıştırılmaz.
+V2 şeması anahtar ve içerik özetlerini sağlar; anı oluşturma için başarılı tekrarın 200 yanıtı ve anahtar çakışmasının 409 yanıtı uygulanmıştır. Fotoğraf tekrarları ve yazma kilidi ilgili fotoğraf görevinde uygulanacaktır. Silinmiş anahtarın tekrar kullanılmaması için ayrıca kalıcı emekli-anahtar kaydı gerekir; mevcut V2'nin bunu tek başına sağladığı iddia edilmez. Bu depolama, ilgili API özelliği geliştirilirken sürümlü migration ile eklenecek, burada veritabanı değiştirilmez. Böylece beklenen HTTP sözleşmesi ile henüz yazılmamış uygulama birbirine karıştırılmaz.
 
 ## Sözleşme ve hata biçimi kararı
 
