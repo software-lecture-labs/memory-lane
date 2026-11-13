@@ -4,7 +4,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.json.JsonMapper;
+import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,11 +36,10 @@ public class MemoryService {
             """;
 
     private final JdbcClient jdbc;
-    private final ObjectMapper json;
+    private static final JsonMapper HASH_JSON = JsonMapper.builder().build();
 
-    public MemoryService(JdbcClient jdbc, ObjectMapper json) {
+    public MemoryService(JdbcClient jdbc) {
         this.jdbc = jdbc;
-        this.json = json;
     }
 
     record Summary(UUID id, String title, String description, LocalDate memoryDate, String category,
@@ -119,9 +121,30 @@ public class MemoryService {
         return row.getObject(column, OffsetDateTime.class).toInstant();
     }
 
-    private String hash(MemoryInput input) {
+    static String hash(MemoryInput input) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(input)));
+            var bytes = new ByteArrayOutputStream();
+            try (JsonGenerator json = HASH_JSON.createGenerator(bytes)) {
+                json.writeStartObject();
+                json.writeStringProperty("title", input.title());
+                json.writeStringProperty("description", input.description());
+                json.writeStringProperty("memoryDate", input.memoryDate().toString());
+                json.writeStringProperty("category", input.category());
+                if (input.emotion() == null) json.writeNullProperty("emotion");
+                else json.writeStringProperty("emotion", input.emotion());
+                if (input.location() == null) {
+                    json.writeNullProperty("location");
+                } else {
+                    json.writeObjectPropertyStart("location");
+                    json.writeName("latitude");
+                    json.writeNumber(BigDecimal.valueOf(input.location().latitude()).stripTrailingZeros().toPlainString());
+                    json.writeName("longitude");
+                    json.writeNumber(BigDecimal.valueOf(input.location().longitude()).stripTrailingZeros().toPlainString());
+                    json.writeEndObject();
+                }
+                json.writeEndObject();
+            }
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray()));
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException(error);
         }
