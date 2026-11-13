@@ -47,7 +47,15 @@ K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğr
 
 `POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Türkçe arama ve kategori filtresi liste API'sindedir. Detay/düzenleme, fotoğraf ve harita akışları kendi kartlarında uygulanır.
 
-## İlk kurulum
+## Ortak PostgreSQL — Supabase
+
+1. Şema sorumlusundan ekip bağlantı dosyasını güvenli kanaldan alın ve `backend/.env` olarak kaydedin. Repodaki `backend/.env.supabase.example` aynı ayarların parolasız örneğidir.
+2. [Supabase PostgreSQL CA sertifikasını](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt) indirip `backend/config/supabase-ca.crt` adıyla kaydedin. Backend, Session pooler üzerinden TLS ile bağlanır. Supabase Data API kapalıdır.
+3. JDK 17 ile `backend` klasöründen Windows'ta `.\gradlew.bat bootRun`, macOS/Linux'ta `./gradlew bootRun` çalıştırın. `GET http://localhost:8080/api/health` yanıtında veritabanı `UP` olmalıdır. Android uygulaması Spring Boot API adresini kullanır.
+
+Ekip bağlantısında Flyway kapalıdır. Şema sorumlusu, yalnızca güncel `main` üzerinden ve şema sahibi bağlantısıyla `SPRING_FLYWAY_ENABLED=true` kullanarak migration uygular. Yeni migration gerektiren özellikleri ortak ortamda denemeden önce ana dala alınıp şemaya uygulandığını doğrulayın. Ortak ortamda yalnız deneme verisi kullanın. Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
+
+## İlk kurulum (yerel Docker seçeneği)
 
 1. Repoyu klonlayın, JDK 17 kurun ve `java -version` ile kontrol edin.
 2. Android Studio ile Android SDK Platform 35 kurun. Lisanslar kabul edilmişse Gradle eksik SDK bileşenlerini de indirebilir.
