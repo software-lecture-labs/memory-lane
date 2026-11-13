@@ -17,9 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
-import com.memorylane.core.network.Cancellable;
 import com.memorylane.core.ui.ErrorMessages;
-import com.memorylane.feature.auth.data.AuthRequest;
 import androidx.navigation.NavOptions;
 import androidx.navigation.fragment.NavHostFragment;
 import com.memorylane.databinding.FragmentLoginBinding;
@@ -27,7 +25,6 @@ import com.memorylane.databinding.FragmentLoginBinding;
 public final class LoginFragment extends Fragment {
     private FragmentLoginBinding binding;
     private LoginViewModel viewModel;
-    private Cancellable login;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -46,33 +43,29 @@ public final class LoginFragment extends Fragment {
         onEdit(binding.emailInput, viewModel::onEmailChanged);
         onEdit(binding.passwordInput, viewModel::onPasswordChanged);
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
-    }
-
-    private void submit() {
-        if (login != null) return;
-        String email = binding.emailInput.getText() == null ? "" : binding.emailInput.getText().toString();
-        String password = binding.passwordInput.getText() == null ? "" : binding.passwordInput.getText().toString();
-        viewModel.onLoginClicked(email, password);
-        LoginUiState state = viewModel.getState().getValue();
-        if (state == null || state.getFocus() != LoginUiState.Focus.NONE) return;
-        AppContainer container = AppContainer.from(requireContext());
-        binding.loginButton.setEnabled(false);
-        binding.emailInput.setEnabled(false);
-        binding.passwordInput.setEnabled(false);
-        login = container.getAuthRepository().login(new AuthRequest(email, password), result -> {
-            login = null;
-            binding.loginButton.setEnabled(true);
-            binding.emailInput.setEnabled(true);
-            binding.passwordInput.setEnabled(true);
+        viewModel.busy().observe(getViewLifecycleOwner(), busy -> {
+            binding.loginButton.setEnabled(!busy);
+            binding.emailInput.setEnabled(!busy);
+            binding.passwordInput.setEnabled(!busy);
+        });
+        viewModel.result().observe(getViewLifecycleOwner(), result -> {
+            if (result == null) return;
+            viewModel.consumeResult();
             if (!result.isSuccess()) {
                 binding.passwordLayout.setError(ErrorMessages.describe(requireContext(), result.getError()));
                 return;
             }
-            container.startSession(result.getData().getAccessToken());
+            AppContainer.from(requireContext()).startSession(result.getData().getAccessToken());
             binding.passwordInput.setText("");
             NavHostFragment.findNavController(this).navigate(R.id.memoriesFragment, null,
                     new NavOptions.Builder().setPopUpTo(R.id.memoriesFragment, true).build());
         });
+    }
+
+    private void submit() {
+        String email = binding.emailInput.getText() == null ? "" : binding.emailInput.getText().toString();
+        String password = binding.passwordInput.getText() == null ? "" : binding.passwordInput.getText().toString();
+        viewModel.login(AppContainer.from(requireContext()).getAuthRepository(), email, password);
     }
 
     private void togglePassword() {
@@ -114,8 +107,6 @@ public final class LoginFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        if (login != null) login.cancel();
-        login = null;
         super.onDestroyView();
         binding = null;
     }

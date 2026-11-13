@@ -14,6 +14,7 @@ import com.memorylane.feature.auth.data.AuthApi;
 import com.memorylane.feature.auth.data.AuthRepository;
 import com.memorylane.feature.auth.data.RemoteAuthRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.memories.data.MemoryRepository;
 
 import retrofit2.Retrofit;
 
@@ -27,7 +28,7 @@ public final class AppContainer {
     private final ApiCaller caller;
     private final AuthApi authApi;
     private final AuthRepository authRepository;
-    private final MemoryApi memoryApi;
+    private final MemoryRepository memoryRepository;
     private String token;
     private final HealthRepository healthRepository;
 
@@ -37,7 +38,7 @@ public final class AppContainer {
         caller = new ApiCaller(gson);
         authApi = retrofit.create(AuthApi.class);
         authRepository = new RemoteAuthRepository(authApi, caller);
-        memoryApi = retrofit.create(MemoryApi.class);
+        memoryRepository = new MemoryRepository(retrofit.create(MemoryApi.class), caller);
         this.baseUrl = retrofit.baseUrl().toString();
         this.healthRepository = new RemoteHealthRepository(retrofit.create(HealthApi.class), caller);
     }
@@ -54,11 +55,9 @@ public final class AppContainer {
     public HealthRepository getHealthRepository() {
         return healthRepository;
     }
-    public ApiCaller getCaller() { return caller; }
-
     public AuthRepository getAuthRepository() { return authRepository; }
 
-    public MemoryApi getMemoryApi() { return memoryApi; }
+    public MemoryRepository getMemoryRepository() { return memoryRepository; }
 
     public String authorization() { return token == null ? null : "Bearer " + token; }
 

@@ -10,46 +10,27 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
 import com.memorylane.core.network.ApiError;
-import com.memorylane.core.network.Cancellable;
 import com.memorylane.core.ui.ErrorMessages;
 import com.memorylane.core.ui.UiState;
 import com.memorylane.databinding.FragmentMemoriesBinding;
 import com.memorylane.feature.health.data.HealthResponse;
 import com.memorylane.feature.health.ui.HealthViewModel;
-import com.memorylane.feature.memories.data.MemoryApi;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 public class MemoriesFragment extends Fragment {
     private FragmentMemoriesBinding binding;
     private HealthViewModel healthViewModel;
     private String baseUrl;
     private AppContainer app;
-    private Cancellable saving;
-    private Cancellable listing;
-    private Form form;
-    private int nextPage;
-
-    public static final class Form extends ViewModel {
-        String session;
-        LocalDate date;
-        MemoryApi.Draft attempted;
-        String key;
-
-        void clear() {
-            date = null;
-            attempted = null;
-            key = null;
-        }
-    }
+    private MemoriesViewModel model;
+    private boolean rendering;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -63,30 +44,22 @@ public class MemoriesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         AppContainer appContainer = AppContainer.from(requireContext());
         app = appContainer;
-        form = new ViewModelProvider(this).get(Form.class);
-        if (!java.util.Objects.equals(form.session, app.authorization())) form.clear();
-        form.session = app.authorization();
-        if (form.attempted != null) {
-            binding.memoryTitle.setText(form.attempted.title());
-            binding.memoryDescription.setText(form.attempted.description());
-        }
-        renderDate();
+        model = new ViewModelProvider(this).get(MemoriesViewModel.class);
+        model.attach(app.getMemoryRepository(), app.authorization());
         binding.memoryLogin.setOnClickListener(button ->
                 NavHostFragment.findNavController(this).navigate(R.id.loginFragment));
         binding.memoryDate.setOnClickListener(button -> chooseDate());
         binding.memorySave.setOnClickListener(button -> save());
-        binding.memoryRefresh.setOnClickListener(button -> load(0));
-        binding.memoryMore.setOnClickListener(button -> load(nextPage));
+        binding.memoryRefresh.setOnClickListener(button -> model.load(0));
+        binding.memoryMore.setOnClickListener(button -> model.more());
         binding.memoryLogout.setOnClickListener(button -> {
             app.endSession();
-            signedOut();
+            model.reset();
+            renderMemories();
         });
-        if (form.session == null) signedOut();
-        else {
-            binding.memoryLogin.setVisibility(View.GONE);
-            binding.memoryContent.setVisibility(View.VISIBLE);
-            load(0);
-        }
+        binding.memoryTitle.addTextChangedListener(draftWatcher());
+        binding.memoryDescription.addTextChangedListener(draftWatcher());
+        model.changes.observe(getViewLifecycleOwner(), ignored -> renderMemories());
         baseUrl = appContainer.getBaseUrl();
         healthViewModel = new ViewModelProvider(this, HealthViewModel.factory(appContainer.getHealthRepository()))
                 .get(HealthViewModel.class);
@@ -95,9 +68,9 @@ public class MemoriesFragment extends Fragment {
     }
 
     private void chooseDate() {
-        LocalDate day = form.date == null ? LocalDate.now() : form.date;
+        LocalDate day = model.date == null ? LocalDate.now() : model.date;
         DatePickerDialog picker = new DatePickerDialog(requireContext(), (view, year, month, date) -> {
-            form.date = LocalDate.of(year, month + 1, date);
+            model.date = LocalDate.of(year, month + 1, date);
             if (binding != null) renderDate();
         }, day.getYear(), day.getMonthValue() - 1, day.getDayOfMonth());
         picker.getDatePicker().setMaxDate(System.currentTimeMillis());
@@ -105,107 +78,74 @@ public class MemoriesFragment extends Fragment {
     }
 
     private void renderDate() {
-        binding.memoryDate.setText(form.date == null ? getString(R.string.memory_date_select) : form.date.toString());
+        binding.memoryDate.setText(model.date == null ? getString(R.string.memory_date_select) : model.date.toString());
     }
 
     private void save() {
-        String title = binding.memoryTitle.getText().toString().trim();
-        if (title.isEmpty()) {
+        captureDraft();
+        if (model.title.trim().isEmpty()) {
             binding.memoryTitle.setError(getString(R.string.memory_title_missing));
-            return;
-        }
-        if (form.date == null) {
+        } else if (model.date == null) {
             binding.memorySaveStatus.setText(R.string.memory_date_missing);
-            return;
-        }
-        var draft = new MemoryApi.Draft(title, binding.memoryDescription.getText().toString(), form.date.toString());
-        if (!draft.equals(form.attempted)) {
-            form.attempted = draft;
-            form.key = UUID.randomUUID().toString();
-        }
-        setSaving(true);
-        binding.memorySaveStatus.setText(R.string.memory_saving);
-        saving = app.getCaller().enqueue(app.getMemoryApi().create(form.session, form.key, draft), result -> {
-            saving = null;
-            setSaving(false);
-            if (!result.isSuccess()) {
-                showError(binding.memorySaveStatus, result.getError());
-                return;
-            }
-            form.clear();
-            binding.memoryTitle.setText("");
-            binding.memoryDescription.setText("");
-            binding.memorySaveStatus.setText("");
-            renderDate();
-            load(0);
-        });
-    }
-
-    private void setSaving(boolean busy) {
-        binding.memorySave.setEnabled(!busy);
-        binding.memoryTitle.setEnabled(!busy);
-        binding.memoryDescription.setEnabled(!busy);
-        binding.memoryDate.setEnabled(!busy);
-    }
-
-    private void load(int page) {
-        if (listing != null) listing.cancel();
-        binding.memoryMore.setEnabled(false);
-        binding.memoryListStatus.setText(R.string.memory_loading);
-        listing = app.getCaller().enqueue(app.getMemoryApi().list(form.session, page), result -> {
-            listing = null;
-            binding.memoryMore.setEnabled(true);
-            if (!result.isSuccess()) {
-                showError(binding.memoryListStatus, result.getError());
-                return;
-            }
-            MemoryApi.Page response = result.getData();
-            if (response == null || response.content() == null) {
-                showError(binding.memoryListStatus, ApiError.parse());
-                return;
-            }
-            if (page == 0) binding.memoryRows.removeAllViews();
-            for (MemoryApi.Memory item : response.content()) {
-                TextView row = new TextView(requireContext());
-                row.setText(getString(R.string.memory_row, item.title(), item.memoryDate()));
-                binding.memoryRows.addView(row);
-            }
-            binding.memoryListStatus.setText(page == 0 && response.content().isEmpty()
-                    ? getString(R.string.memory_empty) : "");
-            binding.memoryMore.setVisibility(response.hasNext() ? View.VISIBLE : View.GONE);
-            nextPage = page + 1;
-        });
-    }
-
-    private void showError(TextView label, ApiError error) {
-        if (error.getHttpStatus() == 401) {
-            app.clearSession();
-            signedOut();
         } else {
-            label.setText(ErrorMessages.describe(requireContext(), error));
+            model.save();
         }
     }
 
-    private void signedOut() {
-        cancelRequests();
-        form.session = null;
-        form.clear();
-        binding.memoryRows.removeAllViews();
-        binding.memoryTitle.setText("");
-        binding.memoryDescription.setText("");
-        binding.memorySaveStatus.setText("");
-        binding.memoryListStatus.setText("");
-        setSaving(false);
-        renderDate();
-        binding.memoryContent.setVisibility(View.GONE);
-        binding.memoryLogin.setVisibility(View.VISIBLE);
+    private android.text.TextWatcher draftWatcher() {
+        return new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+            @Override public void afterTextChanged(android.text.Editable value) {
+                if (!rendering) captureDraft();
+            }
+        };
     }
 
-    private void cancelRequests() {
-        if (saving != null) saving.cancel();
-        if (listing != null) listing.cancel();
-        saving = null;
-        listing = null;
+    private void captureDraft() {
+        model.title = binding.memoryTitle.getText().toString();
+        model.description = binding.memoryDescription.getText().toString();
+    }
+
+    private void renderMemories() {
+        if (unauthorized(model.saveError) || unauthorized(model.listError)) {
+            app.clearSession();
+            model.reset();
+        }
+        boolean signedIn = model.session != null;
+        binding.memoryLogin.setVisibility(signedIn ? View.GONE : View.VISIBLE);
+        binding.memoryContent.setVisibility(signedIn ? View.VISIBLE : View.GONE);
+        binding.memoryTitle.setEnabled(!model.saving);
+        binding.memoryDescription.setEnabled(!model.saving);
+        binding.memoryDate.setEnabled(!model.saving);
+        binding.memorySave.setEnabled(!model.saving);
+        rendering = true;
+        if (!binding.memoryTitle.getText().toString().equals(model.title)) binding.memoryTitle.setText(model.title);
+        if (!binding.memoryDescription.getText().toString().equals(model.description)) {
+            binding.memoryDescription.setText(model.description);
+        }
+        rendering = false;
+        renderDate();
+        binding.memorySaveStatus.setText(model.saving ? getString(R.string.memory_saving) : error(model.saveError));
+        binding.memoryListStatus.setText(model.loading ? getString(R.string.memory_loading)
+                : model.listError != null ? error(model.listError)
+                : model.loaded && model.rows.isEmpty() ? getString(R.string.memory_empty) : "");
+        binding.memoryRows.removeAllViews();
+        for (var item : model.rows) {
+            TextView row = new TextView(requireContext());
+            row.setText(getString(R.string.memory_row, item.title(), item.memoryDate()));
+            binding.memoryRows.addView(row);
+        }
+        binding.memoryMore.setEnabled(!model.loading);
+        binding.memoryMore.setVisibility(model.hasMore ? View.VISIBLE : View.GONE);
+    }
+
+    private boolean unauthorized(ApiError error) {
+        return error != null && error.getHttpStatus() == 401;
+    }
+
+    private String error(ApiError error) {
+        return error == null ? "" : ErrorMessages.describe(requireContext(), error);
     }
 
     private void renderHealth(UiState<HealthResponse> state) {
@@ -237,7 +177,6 @@ public class MemoriesFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        cancelRequests();
         super.onDestroyView();
         binding = null;
     }
