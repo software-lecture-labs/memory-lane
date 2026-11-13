@@ -19,7 +19,10 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers-postgresql'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-tasks.named('test') { useJUnitPlatform() }
+tasks.named('test') {
+    useJUnitPlatform()
+    workingDir = temporaryDir
+}
 
 def localConfigExcludes = ['**/application-local.properties', '**/application-local.yml',
     '**/application-local.yaml', '**/.env', '**/.env.*', '**/local.properties', '**/.gitkeep']

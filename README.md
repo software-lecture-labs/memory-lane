@@ -53,7 +53,7 @@ K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğr
 2. [Supabase PostgreSQL CA sertifikasını](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt) indirip `backend/config/supabase-ca.crt` adıyla kaydedin. Backend, Session pooler üzerinden TLS ile bağlanır. Supabase Data API kapalıdır.
 3. JDK 17 ile `backend` klasöründen Windows'ta `.\gradlew.bat bootRun`, macOS/Linux'ta `./gradlew bootRun` çalıştırın. `GET http://localhost:8080/api/health` yanıtında veritabanı `UP` olmalıdır. Android uygulaması Spring Boot API adresini kullanır.
 
-Ekip bağlantısında Flyway kapalıdır. Şema sorumlusu, yalnızca güncel `main` üzerinden ve şema sahibi bağlantısıyla `SPRING_FLYWAY_ENABLED=true` kullanarak migration uygular. Yeni migration gerektiren özellikleri ortak ortamda denemeden önce ana dala alınıp şemaya uygulandığını doğrulayın. Ortak ortamda yalnız deneme verisi kullanın. Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
+Ekip bağlantısında Flyway kapalıdır. Şema sorumlusu, yalnızca güncel `main` üzerinden ve şema sahibi bağlantısıyla `SPRING_FLYWAY_ENABLED=true` kullanarak migration uygular. Türkçe arama migration’ı V4 uygulanmadan önce, silme ve fotoğraf sırası migration’ı V3 ana dala birleşmiş ve şemaya uygulanmış olmalıdır. Ortak ortamda yalnız deneme verisi kullanın. Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
 
 ## İlk kurulum (yerel Docker seçeneği)
 
