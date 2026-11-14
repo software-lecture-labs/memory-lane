@@ -22,6 +22,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ML-29 acceptance: account B cannot read, change or delete account A's memory or photo even
@@ -36,6 +42,7 @@ class OwnershipIntegrationTest {
 
     @Autowired JdbcTemplate jdbc;
     @Autowired OwnershipGuard guard;
+    @Autowired TransactionTemplate transaction;
     TestApi api;
 
     /** Test-only endpoints using the guard the way the memory and photo services will. */
@@ -69,6 +76,16 @@ class OwnershipIntegrationTest {
             transaction.executeWithoutResult(status -> {
                 guard.lockMemory(user, memoryId);
                 jdbc.update("UPDATE memories SET title = 'Değişti' WHERE id = ?", memoryId);
+            });
+            return ResponseEntity.noContent().build();
+        }
+
+        @DeleteMapping("/photos/{photoId}")
+        ResponseEntity<Void> deletePhoto(@CurrentUser UUID user, @PathVariable UUID memoryId, @PathVariable UUID photoId) {
+            transaction.executeWithoutResult(status -> {
+                guard.lockMemory(user, memoryId);
+                guard.requirePhoto(user, memoryId, photoId);
+                jdbc.update("DELETE FROM photos WHERE id = ?", photoId);
             });
             return ResponseEntity.noContent().build();
         }
@@ -107,7 +124,7 @@ class OwnershipIntegrationTest {
 
     @Test
     void otherAccountGetsSame404AsForMissingMemory() throws Exception {
-        UUID memoryOfA = insertMemory(api.registerAndLogin().userId());
+        UUID memoryOfA = insertMemory(insertUser());
         String tokenOfB = api.registerAndLogin().token();
 
         var foreign = api.get(memoryPath(memoryOfA), tokenOfB);
@@ -120,7 +137,7 @@ class OwnershipIntegrationTest {
 
     @Test
     void otherAccountCannotReadPhotoEvenWithItsFullAddress() throws Exception {
-        UUID memoryOfA = insertMemory(api.registerAndLogin().userId());
+        UUID memoryOfA = insertMemory(insertUser());
         UUID photoOfA = insertPhoto(memoryOfA);
         var response = api.get(memoryPath(memoryOfA) + "/photos/" + photoOfA, api.registerAndLogin().token());
         assertEquals(404, response.statusCode());
@@ -154,12 +171,86 @@ class OwnershipIntegrationTest {
     }
 
     @Test
+    void otherAccountCannotDeletePhoto() throws Exception {
+        TestApi.Login a = api.registerAndLogin();
+        UUID memoryOfA = insertMemory(a.userId());
+        UUID photoOfA = insertPhoto(memoryOfA);
+        String photoPath = memoryPath(memoryOfA) + "/photos/" + photoOfA;
+
+        assertEquals(404, api.send("DELETE", photoPath, null, api.registerAndLogin().token()).statusCode());
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM photos WHERE id = ?", Integer.class, photoOfA));
+
+        assertEquals(204, api.send("DELETE", photoPath, null, a.token()).statusCode());
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM photos WHERE id = ?", Integer.class, photoOfA));
+    }
+
+    @Test
+    void secondWriterWaitsUntilFirstWriterReleasesTheMemoryLock() throws Exception {
+        UUID owner = insertUser();
+        UUID memory = insertMemory(owner);
+        var firstHoldsLock = new CountDownLatch(1);
+        var releaseFirst = new CountDownLatch(1);
+        var firstReleased = new AtomicBoolean();
+        ExecutorService writers = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> first = writers.submit(() -> transaction.executeWithoutResult(status -> {
+                guard.lockMemory(owner, memory);
+                firstHoldsLock.countDown();
+                awaitQuietly(releaseFirst);
+                firstReleased.set(true);
+            }));
+            assertTrue(firstHoldsLock.await(5, TimeUnit.SECONDS));
+
+            Future<Boolean> second = writers.submit(() -> transaction.execute(status -> {
+                guard.lockMemory(owner, memory);
+                return firstReleased.get();
+            }));
+            // PostgreSQL itself reports the second transaction as blocked on the row lock.
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (writersWaitingForLock() == 0 && System.nanoTime() < deadline) Thread.sleep(20);
+            assertEquals(1, writersWaitingForLock());
+            assertFalse(second.isDone());
+
+            releaseFirst.countDown();
+            first.get(5, TimeUnit.SECONDS);
+            assertTrue(second.get(5, TimeUnit.SECONDS), "second writer must get the lock only after the first commits");
+        } finally {
+            releaseFirst.countDown();
+            writers.shutdownNow();
+        }
+    }
+
+    @Test
     void lockingRequiresTheCallersTransaction() {
         assertThrows(IllegalTransactionStateException.class, () -> guard.lockMemory(UUID.randomUUID(), UUID.randomUUID()));
     }
 
+    private int writersWaitingForLock() {
+        return jdbc.queryForObject("""
+                SELECT count(*) FROM pg_stat_activity
+                WHERE datname = current_database() AND wait_event_type = 'Lock' AND query LIKE '%FOR UPDATE%'""",
+                Integer.class);
+    }
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     private static String memoryPath(UUID memory) {
         return "/api/v1/ownership-probe/memories/" + memory;
+    }
+
+    /**
+     * Account A only owns data and never calls the API, so it is inserted directly. The auth
+     * limiter allows 20 register/login requests per minute from one IP for the whole test class.
+     */
+    private UUID insertUser() {
+        return jdbc.queryForObject("INSERT INTO users (email, password_hash) VALUES (?, 'x') RETURNING id",
+                UUID.class, UUID.randomUUID() + "@example.test");
     }
 
     private UUID insertMemory(UUID owner) {

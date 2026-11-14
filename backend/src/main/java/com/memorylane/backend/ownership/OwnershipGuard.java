@@ -33,8 +33,9 @@ public class OwnershipGuard {
     }
 
     /**
-     * For writes (update, delete, photo upload): same check, and locks the memory row until the
-     * caller's transaction ends so concurrent writes such as the 5-photo limit are serialised.
+     * For every write (memory update and delete, photo upload and delete): same check, and locks
+     * the memory row until the caller's transaction ends so concurrent writes such as the 5-photo
+     * limit are serialised. Other writers of the same memory wait; plain reads do not.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockMemory(UUID owner, UUID memoryId) {
@@ -50,7 +51,8 @@ public class OwnershipGuard {
 
     /**
      * Throws {@link ResourceNotFoundException#memory()} if the memory is missing or foreign, and
-     * {@link ResourceNotFoundException#photo()} if the photo is not part of that memory.
+     * {@link ResourceNotFoundException#photo()} if the photo is not part of that memory. Takes no
+     * lock: a photo delete calls {@link #lockMemory} first and then this in the same transaction.
      */
     public void requirePhoto(UUID owner, UUID memoryId, UUID photoId) {
         Boolean photoFound =
