@@ -67,6 +67,19 @@ class SchemaRulesTest {
         assertNotNull(insertMemory(insertUser(), requestId));
     }
 
+    /** ADR-0002: every foreign key, including ones added by later migrations, is ON DELETE RESTRICT. */
+    @Test void everyForeignKeyRestrictsDeletes() {
+        var foreignKeys = jdbc.queryForList("""
+                SELECT conrelid::regclass || '.' || conname AS name, confdeltype::text AS on_delete
+                FROM pg_constraint
+                WHERE contype = 'f' AND connamespace = 'public'::regnamespace""");
+        assertTrue(foreignKeys.size() >= 3, foreignKeys.toString());
+        for (var foreignKey : foreignKeys) {
+            // confdeltype 'r' = RESTRICT; 'a' (NO ACTION) is the default when ON DELETE is omitted.
+            assertEquals("r", foreignKey.get("on_delete"), foreignKey.get("name") + " must be ON DELETE RESTRICT");
+        }
+    }
+
     @Test void memoryWithPhotosIsDeletedOnlyAfterItsPhotos() {
         UUID memory = insertMemory(insertUser(), UUID.randomUUID());
         insertPhoto(memory, UUID.randomUUID(), 1000, 0);

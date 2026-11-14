@@ -18,7 +18,7 @@ Değerlendirilen seçenekler:
 
 Seçenek 3 uygulanır.
 
-- Tüm yabancı anahtarlar açıkça `ON DELETE RESTRICT` tanımlanır (V3). Unutulmuş bir bağımlılık sessiz veri kaybına değil, hataya ve rollback'e yol açar.
+- **Yabancı anahtar kuralı:** Şemadaki her yabancı anahtar açıkça `ON DELETE RESTRICT` tanımlanır; mevcut anahtarlar V3 ile böyle yapılmıştır. Yeni migration'larda eklenen yabancı anahtarlar da bu kurala uyar; `CASCADE`, `SET NULL`, `SET DEFAULT` ve varsayılan `NO ACTION` kullanılmaz. Unutulmuş bir bağımlılık sessiz veri kaybına değil, hataya ve rollback'e yol açar. `SchemaRulesTest.everyForeignKeyRestrictsDeletes` bu kuralı veritabanı kataloğundan (`pg_constraint`) denetler. Silme sırası testleri tek başına yeterli değildir, çünkü varsayılan `NO ACTION` da bağımlısı olan satırın silinmesini reddeder ve bu testler V3 olmadan da geçer.
 - **Anı silme:** Servis sahipliği doğrular; anının fotoğrafları için `file_cleanup_jobs` kayıtları ekler, `photos` satırlarını ve ardından `memories` satırını siler. Hepsi tek transaction'dadır. Fiziksel dosyalar commit sonrasında temizleme işleyicisi tarafından silinir.
 - **Hesap silme (ileride, KVKK talebi):** Aynı yol kullanıcı düzeyinde uygulanır: tüm anılar yukarıdaki gibi silinir, `sessions` satırları silinir, en son `users` satırı silinir; hepsi tek transaction'dadır. Kişisel veri saklanmaz, yumuşak silme kullanılmaz.
 - Yedeklerdeki kopyaların saklama süresi ayrı bir operasyon kararıdır ve bu ADR'nin kapsamında değildir.
