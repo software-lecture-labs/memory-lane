@@ -109,7 +109,7 @@ Android arka plandaki süreci sonlandırırsa token kaybolur ve kullanıcı yeni
 
 Keystore ile şifreli kalıcı token, daha az tekrar giriş sağlayan alternatif olarak değerlendirildi; bu sürüme eklenmedi. Gerçek kullanımda bu tercih değişirse oturum saklama, yedek/cihaz aktarımı, iptal ve anahtar yönetimi birlikte ele alınacak ve mobil oturum geliştirilmeden önce yeni karar kaydedilecek. Bellek ve kalıcı saklama aynı sürümün çelişen iki yolu olarak uygulanmayacak.
 
-Arama SQL'de ve sayfalamadan önce yapılır; deterministic Türkçe ICU collation tasarımı ve COUNT eşleşmesi [API sözleşmesindedir](api-contract.md#türkçe-karşılaştırma-sqlde-yapılır). Fotoğraf işlemlerinin form taslağını kaybetmeden güncel ETag'i alması ve başka cihazın metnini ezmemesi de [aynı sözleşmede](api-contract.md#fotoğraf-işleminden-sonra-düzenleme-etiketini-yenileme) tanımlıdır. Bunlar sonraki uygulama işlerinin kabul kurallarıdır; bu belge değişikliği uygulama kodu veya migration içermez.
+Arama SQL'de ve sayfalamadan önce yapılır; deterministic Türkçe ICU collation tasarımı ve COUNT eşleşmesi [API sözleşmesindedir](api-contract.md#türkçe-karşılaştırma-sqlde-yapılır). Fotoğraf işlemlerinin form taslağını kaybetmeden güncel ETag'i alması ve başka cihazın metnini ezmemesi de [aynı sözleşmede](api-contract.md#fotoğraf-işleminden-sonra-düzenleme-etiketini-yenileme) tanımlıdır. ML-07 liste aramasında bu SQL filtresi ve V4 collation kullanılır. Fotoğraf ve düzenleme akışı ilgili kartların kabul kuralıdır.
 
 ## ML-01 ders kriterleri ve alternatifler
 
@@ -146,7 +146,7 @@ Controller HTTP sözleşmesini, service iş kurallarını/transaction'ı, reposi
 | Kart maddesi | Durum |
 | --- | --- |
 | Sunucu çalıştırma ortamı kabulünü sor | Spring Boot/gömülü Tomcat kabulü PR #2 yorumuyla doğrulandı ve ADR-0001 ile bağlandı; demo ortamı ayrıntıları bekleyen varsayım olarak kayıtlı. |
-| Analiz aracını ve A ölçütünü sor | Araç, sürüm, mobil/backend kapsamı ve A ölçütü bu takip PR'ının açıklamasında öğretim elemanına sorulur; yanıt bekleniyor, karar veya A sonucu varsayılmaz. |
+| Analiz aracını ve A ölçütünü sor | Araç, sürüm, mobil/backend kapsamı ve A ölçütü için öğretim elemanının yanıtı bekleniyor. |
 | Katmanlı mimariyi ve alternatiflerini yaz | Bu belgede tamamlandı. |
 | Sabit kapsamı README'ye bağla | Hesaplı ilk planın kapsamı README'ye işlendi ve bu belgeden bağlandı. |
 

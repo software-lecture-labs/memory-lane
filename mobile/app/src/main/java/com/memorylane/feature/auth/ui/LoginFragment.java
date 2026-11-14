@@ -16,6 +16,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.memorylane.R;
+import com.memorylane.core.di.AppContainer;
+import com.memorylane.core.ui.ErrorMessages;
+import androidx.navigation.NavOptions;
+import androidx.navigation.fragment.NavHostFragment;
 import com.memorylane.databinding.FragmentLoginBinding;
 
 public final class LoginFragment extends Fragment {
@@ -35,12 +39,33 @@ public final class LoginFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
         ViewCompat.setAccessibilityHeading(binding.loginHeading, true);
         binding.passwordLayout.setEndIconOnClickListener(icon -> togglePassword());
-        binding.loginButton.setOnClickListener(button -> viewModel.onLoginClicked(
-                binding.emailInput.getText() == null ? "" : binding.emailInput.getText().toString(),
-                binding.passwordInput.getText() == null ? "" : binding.passwordInput.getText().toString()));
+        binding.loginButton.setOnClickListener(button -> submit());
         onEdit(binding.emailInput, viewModel::onEmailChanged);
         onEdit(binding.passwordInput, viewModel::onPasswordChanged);
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
+        viewModel.busy().observe(getViewLifecycleOwner(), busy -> {
+            binding.loginButton.setEnabled(!busy);
+            binding.emailInput.setEnabled(!busy);
+            binding.passwordInput.setEnabled(!busy);
+        });
+        viewModel.result().observe(getViewLifecycleOwner(), result -> {
+            if (result == null) return;
+            viewModel.consumeResult();
+            if (!result.isSuccess()) {
+                binding.passwordLayout.setError(ErrorMessages.describe(requireContext(), result.getError()));
+                return;
+            }
+            AppContainer.from(requireContext()).startSession(result.getData().getAccessToken());
+            binding.passwordInput.setText("");
+            NavHostFragment.findNavController(this).navigate(R.id.memoriesFragment, null,
+                    new NavOptions.Builder().setPopUpTo(R.id.memoriesFragment, true).build());
+        });
+    }
+
+    private void submit() {
+        String email = binding.emailInput.getText() == null ? "" : binding.emailInput.getText().toString();
+        String password = binding.passwordInput.getText() == null ? "" : binding.passwordInput.getText().toString();
+        viewModel.login(AppContainer.from(requireContext()).getAuthRepository(), email, password);
     }
 
     private void togglePassword() {

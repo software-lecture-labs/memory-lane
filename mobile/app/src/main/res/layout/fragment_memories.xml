@@ -18,6 +18,93 @@
             app:headerSubtitle="@string/memories_subtitle"
             app:headerTitle="@string/memories_title" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/memory_login"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/memory_login" />
+
+        <LinearLayout
+            android:id="@+id/memory_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/memory_form_title"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Title" />
+
+            <EditText
+                android:id="@+id/memory_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/memory_title_hint"
+                android:inputType="textCapSentences"
+                android:importantForAutofill="no"
+                android:saveEnabled="false" />
+
+            <EditText
+                android:id="@+id/memory_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/memory_description_hint"
+                android:inputType="textCapSentences|textMultiLine"
+                android:importantForAutofill="no"
+                android:saveEnabled="false" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/memory_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/memory_date_select" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/memory_save"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/memory_save" />
+
+            <TextView
+                android:id="@+id/memory_save_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/memory_refresh"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/memory_load" />
+
+            <LinearLayout
+                android:id="@+id/memory_rows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/memory_list_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/memory_more"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/memory_more"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/memory_logout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/memory_logout" />
+        </LinearLayout>
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

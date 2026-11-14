@@ -12,12 +12,15 @@ replay_pid*
 .externalNativeBuild/
 .cxx/
 **/build/
+/backend/bin/
 .idea/
 *.iml
 local.properties
 .env
 .env.*
 !.env.example
+!/backend/.env.supabase.example
+/backend/config/supabase-ca.crt
 application-local.properties
 application-local.yml
 application-local.yaml

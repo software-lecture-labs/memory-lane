@@ -4,7 +4,6 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/memoriesFragment">
 
-    <!-- Preview destination; this does not enforce authentication. -->
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.memorylane.feature.auth.ui.LoginFragment"

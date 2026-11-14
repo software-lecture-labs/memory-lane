@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="memory_form_title">Yeni anı</string>
+    <string name="memory_title_hint">Başlık</string>
+    <string name="memory_description_hint">Açıklama</string>
+    <string name="memory_date_select">Tarih seç</string>
+    <string name="memory_date_missing">Anının tarihini seç.</string>
+    <string name="memory_title_missing">Başlık zorunludur.</string>
+    <string name="memory_save">Anıyı kaydet</string>
+    <string name="memory_saving">Anı kaydediliyor…</string>
+    <string name="memory_load">Anıları yenile</string>
+    <string name="memory_loading">Anılar yükleniyor…</string>
+    <string name="memory_more">Daha fazla anı</string>
+    <string name="memory_empty">Henüz anın yok.</string>
+    <string name="memory_row">%1$s · %2$s</string>
+    <string name="memory_login">Anıların için giriş yap</string>
+    <string name="memory_logout">Çıkış yap</string>
+</resources>

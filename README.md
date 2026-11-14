@@ -30,10 +30,6 @@ Süresi dolan token, temizlik beklenmeden hemen 401 ile reddedilir. Başlangıç
 
 Mevcut geliştirme/ders demosu backend'e doğrudan bağlantı varsayar. `getRemoteAddr()` doğrudan bağlantının adresidir; reverse proxy/load balancer arkasında bütün kullanıcılar için proxy IP'si görünebilir ve IP başına 20/dakika sınırı ortak bir kotaya dönüşebilir. Bu kurulum proxy arkasında kullanıcı bazlı doğru IP sınırı sağladığı iddiasını taşımaz. Hesap başına başarısız giriş sınırı bundan bağımsız kalır. `Forwarded`/`X-Forwarded-For` başlıkları kodda doğrudan okunmaz; istemcinin yazdığı başlığa güvenilmez. Dağıtımda güvenilir proxy adresleri, backend'e doğrudan erişim ve başlıkların proxy tarafından temizlenip yeniden yazılması birlikte ele alınmalı; ancak bundan sonra uygun Spring/Tomcat forwarded-header stratejisi seçilip iki farklı istemciyle test edilmelidir. Load balancer yapılandırması bu K1 backend değişikliğine dahil değildir.
 
-## Ekip rol kodlarının karşılığı
-
-Kartlar ve belgelerde K1 hesap/oturum backend'i ve anı oluşturmayı; K2 fotoğraf akışı ve kayıt/giriş mobil ekranlarını; K3 mobil oturum, liste, detay, düzenleme ve aramayı; K4 veritabanı altyapısı, sahiplik, harita ve silme/transaction işlerini ifade eder. Bunlar ekip içi rol kodlarıdır. İş API'si `/api/v1` sözleşmesini izler; mevcut `/api/health` altyapı yolu ayrıdır.
-
 ## İlk teslim kapsamı
 
 İlk hesaplı Trello planı esas alınır; yalnız backend teknolojisi Spring Boot olarak güncellenmiştir. Kayıt, giriş, çıkış ve 24 saatlik iptal edilebilir oturum korunur. Anılar ve fotoğraflar oturum sahibine bağlıdır; farklı hesapların birbirinin verisine erişmemesi hedefi ML-29/ML-31 kapsamında doğrulanacaktır. Bu sahiplik denetimi henüz tamamlanmış sayılmaz.
@@ -42,7 +38,24 @@ Anı oluşturma/düzenleme, fotoğraf yükleme/görüntüleme, liste/detay, aram
 
 K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğraflar; K3 mobil oturum, liste, detay, anı düzenleme ve arama; K4 veritabanı altyapısı, sahiplik, harita, silme ve transaction işlerinden sorumludur. İlk plandaki görev dağılımı değişmez. Mimari alternatifler ve bekleyen ders kriterleri [mimari belgesindedir](docs/architecture.md#ml-01-ders-kriterleri-ve-alternatifler).
 
-## İlk kurulum
+## İlk sprint anı demosu (ML-07)
+
+1. Backend'i boş bir yerel PostgreSQL ile başlatın. Kayıt ekranı henüz hazır değilse `POST /api/v1/auth/register` ile iki test hesabı açın. İstek alanları [API sözleşmesinde](docs/api-contract.md#hesap-ve-oturum) yer alır.
+2. Android uygulamasında **Anılar → Anıların için giriş yap** ile A hesabına girin. Başlık ve tarih seçip kaydedin. Yeni anı listede görünür. Başlıksız kayıt hata verir.
+3. Uygulamayı kapatıp yeniden açın. Token süreç belleğinde olduğu için A ile tekrar girince anı sunucudan yeniden yüklenir.
+4. Çıkış yapıp B hesabına girin. B'nin listesinde A'nın anısı görünmez.
+
+`POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Türkçe arama ve kategori filtresi liste API'sindedir. Detay/düzenleme, fotoğraf ve harita akışları kendi kartlarında uygulanır.
+
+## Ortak PostgreSQL — Supabase
+
+1. Şema sorumlusundan ekip bağlantı dosyasını güvenli kanaldan alın ve `backend/.env` olarak kaydedin. Repodaki `backend/.env.supabase.example` aynı ayarların parolasız örneğidir.
+2. [Supabase PostgreSQL CA sertifikasını](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt) indirip `backend/config/supabase-ca.crt` adıyla kaydedin. Backend, Session pooler üzerinden TLS ile bağlanır. Supabase Data API kapalıdır.
+3. JDK 17 ile `backend` klasöründen Windows'ta `.\gradlew.bat bootRun`, macOS/Linux'ta `./gradlew bootRun` çalıştırın. `GET http://localhost:8080/api/health` yanıtında veritabanı `UP` olmalıdır. Android uygulaması Spring Boot API adresini kullanır.
+
+Ekip bağlantısında Flyway kapalıdır. Şema sorumlusu, yalnızca güncel `main` üzerinden ve şema sahibi bağlantısıyla `SPRING_FLYWAY_ENABLED=true` kullanarak migration uygular. Türkçe arama migration’ı V4 uygulanmadan önce, silme ve fotoğraf sırası migration’ı V3 ana dala birleşmiş ve şemaya uygulanmış olmalıdır. Ortak ortamda yalnız deneme verisi kullanın. Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
+
+## İlk kurulum (yerel Docker seçeneği)
 
 1. Repoyu klonlayın, JDK 17 kurun ve `java -version` ile kontrol edin.
 2. Android Studio ile Android SDK Platform 35 kurun. Lisanslar kabul edilmişse Gradle eksik SDK bileşenlerini de indirebilir.
@@ -76,7 +89,7 @@ macOS/Linux üzerinde `gradlew.bat` yerine `./gradlew` kullanın. Backend wrappe
 
 Hedef mimaride anıların asıl kaydı backend'de tutulacak; mobil oturum anahtarları yedeklere dahil edilmeyecek. Bu veri saklama ve senkronizasyon akışı henüz uygulanmadı; ayrıntılar mimari belgesindedir.
 
-Mobil uygulama alt sekmeli ana ekranla açılır; Anılar sekmesi `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
+Mobil uygulama Anılar sekmesiyle açılır. Sekme giriş ve anı akışının yanında `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
 
 SDK yolları, parolalar, `.env`, imzalama anahtarları ve yerel ayarlar commitlenmez. Yanlışlıkla classpath altına konan application-local.properties/yml/yaml dosyaları da paketlemeden dışlanır.
 
