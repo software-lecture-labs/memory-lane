@@ -55,7 +55,9 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
         } catch (DataAccessResourceFailureException
                 | TransientDataAccessResourceException
                 | CannotCreateTransactionException e) {
-            reject(response, new AuthFailure(503, "DATABASE_UNAVAILABLE", "Veritabanı kullanılamıyor."));
+            // Same exception types as AuthErrors.database(), which cannot share this list
+            // because annotation values must be literals.
+            reject(response, AuthFailure.databaseUnavailable());
             return;
         }
         request.setAttribute(USER_ID, userId);

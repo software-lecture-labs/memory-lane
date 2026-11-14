@@ -33,7 +33,7 @@ public class AuthErrors {
         CannotCreateTransactionException.class
     })
     public ResponseEntity<Map<String, String>> database() {
-        return auth(new AuthFailure(503, "DATABASE_UNAVAILABLE", "Veritabanı kullanılamıyor."));
+        return auth(AuthFailure.databaseUnavailable());
     }
 
     @ExceptionHandler(Exception.class)
