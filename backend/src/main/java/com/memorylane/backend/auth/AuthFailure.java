@@ -5,6 +5,11 @@ public class AuthFailure extends RuntimeException {
     final String code;
     final long retryAfter;
 
+    /** Single source of the 503 body, shared by AuthErrors and SessionAuthenticationFilter. */
+    static AuthFailure databaseUnavailable() {
+        return new AuthFailure(503, "DATABASE_UNAVAILABLE", "Veritabanı kullanılamıyor.");
+    }
+
     java.util.Map<String, String> body() {
         return java.util.Map.of("code", code, "message", getMessage());
     }
