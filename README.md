@@ -47,6 +47,12 @@ K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğr
 
 `POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Türkçe arama ve kategori filtresi liste API'sindedir. Detay/düzenleme, fotoğraf ve harita akışları kendi kartlarında uygulanır.
 
+## Fotoğraf yükleme (ML-09)
+
+`POST /api/v1/memories/{id}/photos` tek bir JPEG/PNG dosyasını `file` adlı multipart alanında ve `Idempotency-Key` başlığıyla alır. `GET /api/v1/memories/{id}/photos` anının fotoğraflarını sırasıyla listeler, her fotoğrafın `contentUrl` adresi dosyayı yalnız anının sahibine döndürür. Kurallar ve hata kodları [API sözleşmesindedir](docs/api-contract.md#fotoğraf-endpointleri-ve-yanıtı).
+
+Dosyalar backend'in diskinde, varsayılan olarak `backend/storage/photos` klasöründe tutulur; klasör Git dışındadır ve `MEMORYLANE_PHOTOS_DIRECTORY` ile değiştirilebilir. Veritabanında yalnız fotoğraf kaydı durur. Ortak Supabase veritabanını kullanırken her geliştiricinin backend'i kendi klasörünü kullanır: başka bir backend üzerinden yüklenmiş fotoğrafın kaydı görünür ama dosyası sizde olmadığı için içerik isteği 404 döner. Demo ve fotoğraf denemeleri tek bir backend üzerinden yapılmalıdır.
+
 ## Ortak PostgreSQL — Supabase
 
 1. Şema sorumlusundan ekip bağlantı dosyasını güvenli kanaldan alın ve `backend/.env` olarak kaydedin. Repodaki `backend/.env.supabase.example` aynı ayarların parolasız örneğidir.
