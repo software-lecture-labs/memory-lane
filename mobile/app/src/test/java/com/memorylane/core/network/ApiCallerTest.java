@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.SocketPolicy;
 
 /** Real HTTP round trips against a local MockWebServer; no Android device needed. */
 public class ApiCallerTest {
@@ -82,6 +83,61 @@ public class ApiCallerTest {
 
         assertNotNull(error);
         assertEquals(ApiError.Kind.PARSE, error.getKind());
+    }
+
+    @Test
+    public void emptySuccessBodyIsParseError() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(200).setBody(""));
+
+        ApiError error = callHealth(server.url("/").toString()).getError();
+
+        assertNotNull(error);
+        assertEquals(ApiError.Kind.PARSE, error.getKind());
+    }
+
+    @Test
+    public void incompleteJsonInCompleteResponseIsParseError() throws Exception {
+        // The server finished the response normally; the JSON itself is cut off.
+        server.enqueue(new MockResponse().setResponseCode(200).setBody("{\"status\":"));
+
+        ApiError error = callHealth(server.url("/").toString()).getError();
+
+        assertNotNull(error);
+        assertEquals(ApiError.Kind.PARSE, error.getKind());
+    }
+
+    @Test
+    public void connectionClosedBeforeResponseIsNetworkError() throws Exception {
+        server.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST));
+
+        ApiError error = callHealth(server.url("/").toString()).getError();
+
+        assertNotNull(error);
+        assertEquals(ApiError.Kind.NETWORK, error.getKind());
+    }
+
+    @Test
+    public void connectionDroppedDuringBodyIsNetworkError() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(200)
+                .setBody("{\"status\":\"UP\",\"database\":\"UP\"}")
+                .setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY));
+
+        ApiError error = callHealth(server.url("/").toString()).getError();
+
+        assertNotNull(error);
+        assertEquals(ApiError.Kind.NETWORK, error.getKind());
+    }
+
+    @Test
+    public void connectionDroppedDuringChunkedBodyIsNetworkError() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(200)
+                .setChunkedBody("{\"status\":\"UP\",\"database\":\"UP\"}", 4)
+                .setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY));
+
+        ApiError error = callHealth(server.url("/").toString()).getError();
+
+        assertNotNull(error);
+        assertEquals(ApiError.Kind.NETWORK, error.getKind());
     }
 
     @Test
