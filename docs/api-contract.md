@@ -241,9 +241,11 @@ Sıra sabittir: `memoryDate DESC`, ardından `id DESC`. Bu sıralama aynı tarih
 
 Yükleme `multipart/form-data` kullanır; tek alan `file` tek dosyadır. `order` sunucunun atadığı yanıt alanıdır, istemci yazmaz. İlk fotoğraf 0, sonraki yeni fotoğraf mevcut `max(position) + 1` değerini alır. Silinen sıra tekrar kullanılmaz ve fotoğraflar yeniden numaralandırılmaz; tüm fotoğraflar silinmişse yeni liste 0'dan başlar. En fazla 5 adet kuralı sıra değerinden değil mevcut kayıt adedinden uygulanır; `order` 5 veya daha büyük olabilir. Liste ve detay galerisi `order ASC` kullanır; kapak en küçük mevcut sıradır.
 
-Mobil seçim sırasını korumak için fotoğrafları seçildiği sırayla, aynı anı için tek tek gönderir. Önceki isteğin sonucu belirsizse aynı anahtarla sonucunu kesinleştirmeden sonraki dosyaya geçmez. Başarısız dosya yeniden denenir veya kullanıcı tarafından seçimden çıkarılır; seçimden çıkarılan dosya daha sonra tekrar eklenirse yeni seçimin sonunda yer alır. İstemci multipart boundary başlığını HTTP kütüphanesine bırakır.
+Mobil seçim sırasını korumak için fotoğrafları seçildiği sırayla, aynı anı için tek tek gönderir. Önceki isteğin sonucu belirsizse aynı anahtarla sonucunu kesinleştirmeden sonraki dosyaya geçmez. Başarısız dosya yeniden denenir veya kullanıcı tarafından seçimden çıkarılır; seçimden çıkarılan dosya daha sonra tekrar eklenirse yeni seçimin sonunda yer alır. Kesin hata alan (ör. 413/415) bir dosyadan sonraki dosyalar yüklenmeye devam edebilir; o dosya sonradan yeniden denenirse `max(position) + 1` alır ve galerinin sonunda görünür. İlk sürümde sıra değiştirme yoktur, bu davranış kabul edilmiştir. İstemci multipart boundary başlığını HTTP kütüphanesine bırakır.
 
 JPEG/PNG içerik ve türü birlikte doğrulanır; yalnız uzantıya güvenilmez. Dosya başına üst sınır 5 MB = 5.000.000 bayt (multipart zarfı hariç); anı başına 5 fotoğraf sunucuda korunur. Dosya adı ve yolu istemciden alınarak depolama yolu yapılmaz. Orijinal galeri dosyası silinmez.
+
+Telefon kamerası 5 MB'ı aşan veya HEIC/WebP gibi kabul edilmeyen dosyalar üretebilir. Mobil bu dosyaları yüklemeden önce bir kez JPEG'e dönüştürebilir ve küçültebilir; sunucu yalnız gelen dosyanın türünü ve boyutunu denetler. Dönüştürülen baytlar uygulamanın yedeklenmeyen önbelleğinde tutulur ve aynı `Idempotency-Key` ile yapılan tekrar denemelerde aynen gönderilir; aksi halde içerik özeti değişir ve 409 `IDEMPOTENCY_CONFLICT` döner. Spring Boot'un varsayılan multipart sınırı 1 MB'tır; fotoğraf endpointi yazılırken `spring.servlet.multipart.max-file-size` 5 MB'a göre ayarlanır ve sınır aşımı bu sözleşmedeki 413 `FILE_TOO_LARGE` gövdesiyle döner.
 
 PhotoResponse; liste ve MemoryDetail.photos içinde de aynı biçimdedir:
 
@@ -331,7 +333,7 @@ Kaynaklar: [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.1.html), [Spring MVC
 
 ## ML-03 teslim durumu
 
-ML-03'ün veri ilişkileri, biçimler, endpointler, DTO/hata/sayfalama/yükleme örnekleri ve kısmi başarı/tekrar kuralları tamamlanmıştır. K2 fotoğraf akışı incelemesini ekipte ayrıca yapacaktır; onay alınmış gibi kaydedilmez. Belgenin hazırlanması, API uygulaması ve ekip incelemesi ayrı işlerdir; doğrulama sonucu ilgili PR/CI üzerinden takip edilir. Bu belge endpoint uygulaması, migration veya mobil ekran geliştirmesi değildir.
+ML-03'ün veri ilişkileri, biçimler, endpointler, DTO/hata/sayfalama/yükleme örnekleri ve kısmi başarı/tekrar kuralları tamamlanmıştır. K2 fotoğraf akışı incelemesi yapıldı ve sözleşme mobil fotoğraf akışıyla uyumlu bulunarak onaylandı. İncelenen maddeler: anı kaydından sonra fotoğrafların ayrı ayrı yüklenmesi; JPEG/PNG, dosya başına 5.000.000 bayt ve anı başına 5 fotoğraf sınırı; yalnız başarısız veya belirsiz fotoğrafın aynı anahtarla yeniden denenmesi; fotoğraf sırası ve ekleme/silme sonrası detay GET ile galerinin yenilenmesi. İnceleme sırasında netleştirilen iki kural (yeniden denenen fotoğrafın sırası, mobilde dönüştürme ve aynı baytlarla tekrar deneme) [fotoğraf bölümüne](#fotoğraf-endpointleri-ve-yanıtı) eklendi. Belgenin hazırlanması, API uygulaması ve ekip incelemesi ayrı işlerdir; doğrulama sonucu ilgili PR/CI üzerinden takip edilir. Bu belge endpoint uygulaması, migration veya mobil ekran geliştirmesi değildir.
 
 ## HTTP eşzamanlılık kaynağı
 
