@@ -1,6 +1,7 @@
 package com.memorylane.backend.auth;
 
 import com.memorylane.backend.memory.MemoryController;
+import com.memorylane.backend.photo.PhotoController;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = {AuthController.class, MemoryController.class})
+@RestControllerAdvice(assignableTypes = {AuthController.class, MemoryController.class, PhotoController.class})
 public class AuthErrors {
     @ExceptionHandler(AuthFailure.class)
     public ResponseEntity<Map<String, String>> auth(AuthFailure failure) {

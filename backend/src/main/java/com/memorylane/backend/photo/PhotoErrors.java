@@ -9,7 +9,11 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Map;
 
-/** Turns photo errors into the contract's {code,message} body. 404s come from OwnershipErrors. */
+/**
+ * Turns photo errors into the contract's {code,message} body. Runs before the shared AuthErrors
+ * handlers (Order -1), which still answer database outages (503) and unexpected errors (500) for
+ * this controller in the one place ADR-0003 asks for. 404s come from OwnershipErrors.
+ */
 @Order(-1)
 @RestControllerAdvice(assignableTypes = PhotoController.class)
 class PhotoErrors {

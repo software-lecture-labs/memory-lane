@@ -4,6 +4,7 @@ import com.memorylane.backend.auth.SessionAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,7 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** HTTP contract of the photo endpoints (status, error codes, headers), checked without a database. */
+/**
+ * HTTP contract of the photo endpoints (status, error codes, headers), checked without a database.
+ * Photo rules answer first; the shared AuthErrors handlers still cover outages and unexpected failures.
+ */
 @WebMvcTest(PhotoController.class)
 class PhotoHttpContractTest {
     // The session filter is not part of a web slice; set the user the way it would.
@@ -31,6 +35,25 @@ class PhotoHttpContractTest {
 
     private final UUID user = UUID.randomUUID();
     private final UUID memory = UUID.randomUUID();
+
+    @Test
+    void databaseOutageGetsTheSharedServiceUnavailableBody() throws Exception {
+        when(photos.list(any(), any())).thenThrow(new DataAccessResourceFailureException("connection refused"));
+
+        mvc.perform(get("/api/v1/memories/{memory}/photos", memory).requestAttr(SESSION_USER, user))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("DATABASE_UNAVAILABLE"));
+    }
+
+    @Test
+    void unexpectedFailureIsAContractInternalError() throws Exception {
+        when(photos.list(any(), any())).thenThrow(new IllegalStateException("disk failure"));
+
+        mvc.perform(get("/api/v1/memories/{memory}/photos", memory).requestAttr(SESSION_USER, user))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"));
+    }
 
     @Test
     void photoRuleErrorsAreNotSwallowedByTheSharedCatchAll() throws Exception {
