@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.io.ByteArrayInputStream;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -81,6 +82,18 @@ class PhotoHttpContractTest {
                 .andExpect(header().string("Content-Security-Policy", "default-src 'none'; sandbox"))
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(content().bytes(PhotoFileTest.PNG));
+    }
+
+    @Test
+    void requestAboveTheServletLimitGetsTheSame413Body() {
+        // Thrown while the multipart body is parsed, before any controller is chosen, so only the
+        // global handler can answer it; checked here directly because over the network the server
+        // may close the connection before the client reads the response.
+        var response = new PhotoErrors.UploadSizeErrors().tooLarge();
+
+        assertEquals(413, response.getStatusCode().value());
+        assertEquals("FILE_TOO_LARGE", response.getBody().get("code"));
+        assertEquals("no-store", response.getHeaders().getFirst("Cache-Control"));
     }
 
     @Test
