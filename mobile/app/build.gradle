@@ -8,8 +8,22 @@ if (localPropertiesFile.exists()) {
     localPropertiesFile.withInputStream { localProperties.load(it) }
 }
 // 10.0.2.2 is the emulator's alias for the host machine's localhost. Release builds block
-// cleartext HTTP, so a production address has to be https://.
+// cleartext HTTP, so a production address has to be https:// (enforced below).
 def apiBaseUrl = localProperties.getProperty('memorylane.apiBaseUrl', 'http://10.0.2.2:8080/')
+
+// A release APK with an http:// address builds fine but every request then fails as "no
+// connection", with nothing on screen pointing at the cause. Stop the release build instead.
+// Hooked to preReleaseBuild so debug builds, lint and CI are not affected.
+def releaseUsesHttps = apiBaseUrl.trim().toLowerCase(Locale.ROOT).startsWith('https://')
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
+    doFirst {
+        if (!releaseUsesHttps) {
+            throw new org.gradle.api.GradleException("Release builds need an https:// server address, but " +
+                    "memorylane.apiBaseUrl is '${apiBaseUrl}'. Set an https:// address in " +
+                    "mobile/local.properties before building a release.")
+        }
+    }
+}
 
 android {
     namespace 'com.memorylane'

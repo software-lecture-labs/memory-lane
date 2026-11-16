@@ -5,9 +5,7 @@ import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.google.gson.stream.MalformedJsonException;
 
-import java.io.EOFException;
 import java.io.IOException;
 
 import okhttp3.ResponseBody;
@@ -72,9 +70,11 @@ public final class ApiCaller {
         }
     }
 
-    // Gson reports some malformed bodies as IOExceptions; they must not be shown as "no connection".
+    // Only ParseErrorConverterFactory marks conversion failures, so every other IOException is a
+    // transport problem. Exception types alone are ambiguous: OkHttp also throws EOFException when
+    // a connection drops mid-body, and that must be shown as "no connection, try again".
     static ApiError classify(Throwable t) {
-        if (t instanceof JsonParseException || t instanceof MalformedJsonException || t instanceof EOFException) {
+        if (t instanceof ResponseParseException) {
             return ApiError.parse();
         }
         if (t instanceof IOException) {
