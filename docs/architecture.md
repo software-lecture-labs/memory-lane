@@ -33,6 +33,24 @@ Kalıcı veri katmanı eklendiğinde bir kullanım senaryosunun tüm yazmaları 
 
 Kabul testleri: başarılı işlemde tüm kayıtlar commit olur; ikinci yazmada hata üretildiğinde ilk yazma da rollback olur; eşzamanlı güncellemede veri kaybı engellenir (örneğin optimistic locking); yetkisiz erişimde hiçbir kayıt değişmez. Üretimde kullanılacak DB ile entegrasyon testi gerekir. PostgreSQL bağlantısı ve şema kuruldu; ML-27 hesap/oturum repository yazmaları kısa transaction içindedir; Argon2 encode/verify işlemi transaction dışında ve ortak Semaphore sınırı altındadır. Anı silme, çoklu yazma rollback ve optimistic locking uygulaması ilgili ML-13/ML-21 görevlerinde doğrulanacaktır.
 
+## Fotoğraf yükleme ve saklama (ML-09)
+
+Fotoğraf işleri `backend/photo` paketindedir ve ADR-0003'teki kurallara uyar: kullanıcı `@CurrentUser` ile alınır, her yükleme tek transaction içinde ilk iş `OwnershipGuard.lockMemory` çağırır. Kilit altında sırasıyla tekrar anahtarı (aynı anahtar ve aynı içerik 200, farklı içerik 409), anı başına 5 adet sınırı ve yeni sıra numarası belirlenir; tekrar kontrolü sınırdan önce yapıldığı için başarılı bir yüklemenin tekrarı altıncı fotoğraf sayılmaz.
+
+Dosya türü uzantıya veya istemcinin beyan ettiği türe değil dosyanın ilk baytlarına bakılarak belirlenir; beyan edilen tür bununla eşleşmelidir. Sınır sözleşmedeki gibi 5.000.000 bayttır ve kodda denetlenir; servlet multipart sınırı yalnız çok daha büyük istekleri erken durdurur ve aynı 413 gövdesini döner. İstemcinin dosya adı hiçbir yerde kullanılmaz, dosya rastgele bir UUID adıyla saklanır. Fotoğraf kurallarının hataları `PhotoErrors` ile sözleşmedeki `{code,message}` gövdesine çevrilir; veritabanı kesintisi (503) ve beklenmeyen hata (500) için, ADR-0003'teki tek yer kuralı gereği, anı ve hesap uç noktalarının kullandığı ortak `AuthErrors` işleyicileri kullanılır.
+
+Saklama `PhotoStorage` arayüzünün arkasındadır; servis yalnız bu arayüzü bilir. İlk uygulama `LocalPhotoStorage` dosyaları backend'in diskinde tutar; dosya önce geçici adla yazılıp tek adımda gerçek adına taşınır. Dosya diske veritabanı satırından önce yazıldığı için transaction rollback olursa bir `TransactionSynchronization` dosyayı siler; böylece başarısız yükleme diskte iz bırakmaz. İki adım arasında süreç çökerse sahipsiz dosya kalabilir; bu dosyaların temizliği ML-14 kapsamındadır.
+
+| Seçenek | Karar |
+| --- | --- |
+| Backend diski | Seçildi. ADR-0002'deki dosya temizleme işleri ve şemadaki `storage_key` alanı bu modele göre tasarlandı; ek servis veya hesap gerektirmez. Sınırı: ortak veritabanında her backend yalnız kendi yüklediği dosyaları sunar (README). |
+| Veritabanında `bytea` | Ortak veritabanında herkes aynı dosyayı görürdü, ancak ücretsiz plandaki veritabanı boyut sınırı fotoğraflarla hızla dolar ve her liste/yedek işlemi büyür. |
+| Supabase Storage / nesne deposu | Ortak dosya sağlar, ancak ek kimlik bilgisi ve Supabase'e özel istemci getirir; ekip Supabase'i şu an yalnız PostgreSQL olarak kullanıyor (Data API kapalı, README). Gerekirse `PhotoStorage` için yeni bir uygulama yazılarak servis değiştirilmeden geçilebilir. |
+
+Güvenlik: yükleme OWASP dosya yükleme önerilerine göre ele alındı. İstemcinin dosya adı ve yolu kullanılmaz, tür içerikten belirlenir, sunucu görüntüyü açıp işlemediği için görüntü bombası riski yoktur. Disk yolu ve `storage_key` hiçbir yanıtta yer almaz. İçerik yanıtı `nosniff` ve `Content-Security-Policy: default-src 'none'; sandbox` ile gönderilir; özel hazırlanmış bir dosya tarayıcıda açılsa bile betik çalıştıramaz. Bilinen sınırlar: kullanıcı başına disk kotası ve yükleme hız sınırı yoktur (anı başına 5 fotoğraf sınırı dışında); fotoğraflar EXIF bilgisiyle (konum dahil olabilir) saklanır ve yalnız sahibine sunulur, istenirse mobil yüklemeden önce bu bilgiyi temizleyebilir.
+
+Henüz yapılmayanlar: fotoğraf silme ve silinen kaynağın anahtarının emekliye ayrılması (409 `IDEMPOTENCY_KEY_RETIRED`) ML-14 ile, anı sürümünün fotoğraf işleminde artırılması ise ETag/`memories.version` geldiğinde eklenecektir.
+
 ## Statik analiz: A hedefi
 
 Analiz aracı ve A ölçütü öğretim elemanından doğrulanacaktır. SonarQube/SonarCloud adaydır; seçilmiş araç veya alınmış not olarak gösterilmez. Araç seçilirse kullanılan sürüm ve değerlendirme modu rapora yazılmalıdır. Quality gate geçişi ayrıca kaydedilir. Sonuçlar proje anahtarı, commit SHA ve analiz bağlantısıyla ilişkilendirilmelidir. Henüz Sonar sunucusu/proje anahtarı verilmedi ve analiz çalıştırılmadı; A elde edildiği iddia edilmez.

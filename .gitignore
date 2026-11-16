@@ -13,6 +13,8 @@ replay_pid*
 .cxx/
 **/build/
 /backend/bin/
+# Uploaded photos are user data on the local backend, never source.
+/backend/storage/
 .idea/
 *.iml
 local.properties
