@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- tools:ignore="UnusedResources" is temporary: RegisterFragment starts using these in the next step. -->
-<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr" tools:ignore="UnusedResources">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
     <string name="register_badge">Kayıt Ol</string>
     <string name="register_title">Kendi anı defterini oluştur</string>
     <string name="register_subtitle">Birkaç saniye içinde ilk anını kaydetmeye başla.</string>

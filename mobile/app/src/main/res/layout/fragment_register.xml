@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Register screen; mirrors fragment_login.xml and reuses its shared login_* resources.
-     tools:ignore="UnusedResources" is temporary until RegisterFragment inflates this layout. -->
+<!-- Register screen; mirrors fragment_login.xml and reuses its shared login_* resources. -->
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/login_background"
     android:fillViewport="true"
-    android:clipToPadding="false"
-    tools:ignore="UnusedResources">
+    android:clipToPadding="false">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

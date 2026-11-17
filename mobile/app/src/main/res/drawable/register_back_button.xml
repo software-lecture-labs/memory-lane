@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- tools:ignore="UnusedResources" is temporary until RegisterFragment inflates the register layout. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:shape="oval"
-    tools:ignore="UnusedResources">
+    android:shape="oval">
     <solid android:color="@color/ml_surface" />
     <stroke
         android:width="@dimen/ml_stroke_thin"
