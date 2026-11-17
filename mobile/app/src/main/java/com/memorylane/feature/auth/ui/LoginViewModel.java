@@ -13,10 +13,7 @@ import com.memorylane.feature.auth.data.AuthRequest;
 import com.memorylane.feature.auth.data.LoginResponse;
 
 public final class LoginViewModel extends ViewModel {
-    // Basic address syntax only; account verification belongs to the server.
-    private static final Pattern EMAIL = Pattern.compile(
-            "[a-zA-Z0-9+._%\\-]{1,256}@[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}"
-                    + "(?:\\.[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25})+");
+    private static final Pattern EMAIL = AuthInputRules.EMAIL;
 
     private final MutableLiveData<LoginUiState> state = new MutableLiveData<>(
             new LoginUiState(LoginUiState.EmailError.NONE, false, LoginUiState.Focus.NONE));
