@@ -40,6 +40,8 @@ public final class LoginFragment extends Fragment {
         ViewCompat.setAccessibilityHeading(binding.loginHeading, true);
         binding.passwordLayout.setEndIconOnClickListener(icon -> togglePassword());
         binding.loginButton.setOnClickListener(button -> submit());
+        binding.registerLink.setOnClickListener(button -> NavHostFragment.findNavController(this)
+                .navigate(R.id.action_loginFragment_to_registerFragment));
         onEdit(binding.emailInput, viewModel::onEmailChanged);
         onEdit(binding.passwordInput, viewModel::onPasswordChanged);
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
@@ -47,6 +49,8 @@ public final class LoginFragment extends Fragment {
             binding.loginButton.setEnabled(!busy);
             binding.emailInput.setEnabled(!busy);
             binding.passwordInput.setEnabled(!busy);
+            // A login result arriving while the register screen is open would navigate on return.
+            binding.registerLink.setEnabled(!busy);
         });
         viewModel.result().observe(getViewLifecycleOwner(), result -> {
             if (result == null) return;

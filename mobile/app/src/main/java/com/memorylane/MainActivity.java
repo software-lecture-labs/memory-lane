@@ -33,9 +33,9 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = navHost.getNavController();
         ViewCompat.setOnApplyWindowInsetsListener(binding.navHost, (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            boolean isLogin = navController.getCurrentDestination() != null
-                    && navController.getCurrentDestination().getId() == R.id.loginFragment;
-            int bottom = isLogin
+            boolean authScreen = navController.getCurrentDestination() != null
+                    && isAuthScreen(navController.getCurrentDestination().getId());
+            int bottom = authScreen
                     ? Math.max(insets.getInsets(WindowInsetsCompat.Type.ime()).bottom, bars.bottom)
                     : 0;
             view.setPadding(bars.left, bars.top, bars.right, bottom);
@@ -43,8 +43,13 @@ public class MainActivity extends AppCompatActivity {
         });
         NavigationUI.setupWithNavController(binding.bottomNav, navController);
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            binding.bottomNav.setVisibility(destination.getId() == R.id.loginFragment ? View.GONE : View.VISIBLE);
+            binding.bottomNav.setVisibility(isAuthScreen(destination.getId()) ? View.GONE : View.VISIBLE);
             ViewCompat.requestApplyInsets(binding.navHost);
         });
+    }
+
+    /** Login and register hide the bottom bar and pad for the keyboard so the form stays reachable. */
+    private static boolean isAuthScreen(int destinationId) {
+        return destinationId == R.id.loginFragment || destinationId == R.id.registerFragment;
     }
 }
