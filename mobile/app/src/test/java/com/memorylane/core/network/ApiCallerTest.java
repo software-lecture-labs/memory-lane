@@ -76,6 +76,31 @@ public class ApiCallerTest {
     }
 
     @Test
+    public void rateLimitKeepsTheRetryAfterSeconds() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", "17")
+                .setBody("{\"code\":\"RATE_LIMITED\",\"message\":\"Biraz bekleyin.\"}"));
+
+        ApiError error = callHealth(server.url("/").toString()).getError();
+
+        assertNotNull(error);
+        assertEquals("RATE_LIMITED", error.getCode());
+        assertEquals(17, error.getRetryAfterSeconds());
+    }
+
+    @Test
+    public void missingOrUnusableRetryAfterIsReportedAsMissing() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(429).setBody("{\"code\":\"RATE_LIMITED\"}"));
+
+        ApiError error = callHealth(server.url("/").toString()).getError();
+
+        assertNotNull(error);
+        assertEquals(ApiError.NO_RETRY_AFTER, error.getRetryAfterSeconds());
+        assertEquals(ApiError.NO_RETRY_AFTER, ApiCaller.retryAfterSeconds("Wed, 21 Oct 2026 07:28:00 GMT"));
+        assertEquals(ApiError.NO_RETRY_AFTER, ApiCaller.retryAfterSeconds("-5"));
+        assertEquals(0, ApiCaller.retryAfterSeconds(" 0 "));
+    }
+
+    @Test
     public void unreadableSuccessBodyIsParseErrorNotNetwork() throws Exception {
         server.enqueue(new MockResponse().setResponseCode(200).setBody("<html>proxy</html>"));
 

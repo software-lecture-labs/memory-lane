@@ -90,7 +90,7 @@ public class RemoteAuthRepositoryTest {
     @Test
     public void loginPreserves401And429ContractErrors() throws Exception {
         assertHttpError(401, "INVALID_CREDENTIALS", true);
-        // ApiCaller currently discards headers: status/code/message survive, Retry-After does not.
+        // Retry-After itself is kept on ApiError; ApiCallerTest covers it.
         assertHttpError(429, "RATE_LIMITED", true);
     }
 
