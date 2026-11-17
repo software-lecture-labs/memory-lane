@@ -5,6 +5,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,6 +38,8 @@ public final class RegisterFragment extends Fragment {
 
     private FragmentRegisterBinding binding;
     private RegisterViewModel viewModel;
+    // Changing the transformation method rewrites the text; that is not a user edit.
+    private boolean togglingVisibility;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -57,8 +60,11 @@ public final class RegisterFragment extends Fragment {
                 icon -> togglePassword(binding.confirmLayout, binding.confirmInput));
         binding.registerButton.setOnClickListener(button -> submit());
         binding.confirmInput.setOnEditorActionListener((input, actionId, event) -> {
-            if (actionId != EditorInfo.IME_ACTION_DONE) return false;
-            submit();
+            boolean enterKey = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER;
+            if (actionId != EditorInfo.IME_ACTION_DONE && !enterKey) return false;
+            // A hardware Enter arrives as key down and key up. Submit on key up: submitting on key
+            // down moves focus first, and the key up then reaches that field and advances it.
+            if (!enterKey || event.getAction() == KeyEvent.ACTION_UP) submit();
             return true;
         });
         binding.backButton.setOnClickListener(button -> goBack());
@@ -177,9 +183,14 @@ public final class RegisterFragment extends Fragment {
         int start = input.getSelectionStart();
         int end = input.getSelectionEnd();
         boolean show = input.getTransformationMethod() instanceof PasswordTransformationMethod;
-        input.setTransformationMethod(show
-                ? HideReturnsTransformationMethod.getInstance()
-                : PasswordTransformationMethod.getInstance());
+        togglingVisibility = true;
+        try {
+            input.setTransformationMethod(show
+                    ? HideReturnsTransformationMethod.getInstance()
+                    : PasswordTransformationMethod.getInstance());
+        } finally {
+            togglingVisibility = false;
+        }
         input.setSelection(Math.max(0, start), Math.max(0, end));
         layout.setEndIconContentDescription(show
                 ? R.string.login_hide_password : R.string.login_show_password);
@@ -190,6 +201,7 @@ public final class RegisterFragment extends Fragment {
         input.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (togglingVisibility) return;
                 onChanged.run();
                 binding.registerError.setVisibility(View.GONE);
             }

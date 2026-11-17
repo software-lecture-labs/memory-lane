@@ -161,6 +161,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/ml_space_sm"
                         android:labelFor="@id/confirm_input"
                         android:text="@string/register_password_confirm"
                         android:textAppearance="@style/TextAppearance.MemoryLane.Body"
