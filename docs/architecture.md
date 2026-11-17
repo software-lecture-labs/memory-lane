@@ -96,6 +96,8 @@ Sunucu adresi `mobile/local.properties` içindeki `memorylane.apiBaseUrl` değer
 
 Tasarım değerleri "Warm Nostalgia Scrapbook" tasarım sisteminden `res/values` altına aktarılır (renk, ölçü, yazı ve bileşen stilleri); ana renk tasarım sistemi belgesindeki `#D93678`'dir. Layout'lar hex, dp veya sp değeri yazmaz; bu kaynakları kullanır. Ortak bileşenler `ScreenHeaderView` (ekran başlığı), `StateView` (yükleniyor/hata/boş), birincil/ikincil/ghost buton, kart, form alanı ve alt menü stilleridir. Henüz bir ekranda kullanılmayan stiller `tools:ignore="UnusedResources"` ile işaretlidir; kullanıldıklarında işaret kaldırılır. Plus Jakarta Sans fontu çevrimdışı ve Google Play servisleri olmayan cihazlarda da aynı görünmesi için OFL 1.1 lisansıyla uygulamaya gömülüdür (`mobile/third_party/plus-jakarta-sans/OFL.txt`).
 
+Giriş ve kayıt ekranları (`feature/auth/ui`) aynı deseni izler: alan doğrulaması ViewModel'dedir ve JVM testleriyle sınanır, Fragment yalnız durumu çizer. Ortak e-posta biçimi ve sınırlar (e-posta en fazla 254, şifre 15–128 Unicode karakter) `AuthInputRules` sınıfındadır; bunlar yalnız erken geri bildirim içindir, asıl doğrulama sunucudadır ve sözleşmedeki sınırlar değişirse bu sınıf da güncellenir. Şifre kırpılmaz, değerler sunucuya olduğu gibi gönderilir. Kayıt oturum açmadığı için token işlenmez; başarılı kayıtta bilgi mesajıyla giriş ekranına dönülür. `EMAIL_IN_USE` e-posta alanında, alana bağlı olmayan sunucu hataları (bağlantı, 429, 503) formdaki genel hata satırında gösterilir. İstek sürerken form kilitlenir ve tekrar gönderim engellenir. `MainActivity`, giriş ve kayıt hedeflerinde alt menüyü gizler ve klavye için alt boşluk bırakır.
+
 Değerlendirilen alternatifler:
 
 | Konu | Seçim | Alternatif ve seçilmeme nedeni |
@@ -106,7 +108,7 @@ Değerlendirilen alternatifler:
 | HTTP/JSON | Retrofit + OkHttp + Gson | HttpURLConnection veya yalın OkHttp ile JSON dönüşümü ve hata eşlemesi her istekte tekrarlanır. |
 | Paketler | Özellik bazlı | Katman bazlı (ui/data/model) yapıda özellik sayısı arttıkça ilgili dosyalar dağılır; ilk iskeletteki boş klasörler bu yapıyla değiştirildi. |
 
-Bilinen sınırlar: Giriş ekranı PR #9, anı kaydı ve listesi PR #12 ile bu temelin üzerine eklendi; harita, profil ve fotoğraf içeriği ilgili kartlarda eklenecektir. Testler JVM birim testleridir (ağ katmanı MockWebServer ile gerçek HTTP üzerinden); cihaz üzerinde otomatik UI testi henüz yoktur.
+Bilinen sınırlar: Giriş ekranı PR #9, anı kaydı ve listesi PR #12, kayıt ekranı ve giriş–kayıt geçişi ML-28 kayıt PR'ı ile bu temelin üzerine eklendi; harita, profil ve fotoğraf içeriği ilgili kartlarda eklenecektir. Testler JVM birim testleridir (ağ katmanı MockWebServer ile gerçek HTTP üzerinden); cihaz üzerinde otomatik UI testi henüz yoktur, ekran akışları emülatörde elle doğrulanır. Kayıttan sonra e-posta giriş formuna otomatik aktarılmaz.
 
 ## Veri saklama ve yedekleme kararı
 
