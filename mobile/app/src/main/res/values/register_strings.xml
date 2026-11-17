@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- tools:ignore="UnusedResources" is temporary: RegisterFragment starts using these in the next step. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr" tools:ignore="UnusedResources">
+    <string name="register_badge">Kayıt Ol</string>
+    <string name="register_title">Kendi anı defterini oluştur</string>
+    <string name="register_subtitle">Birkaç saniye içinde ilk anını kaydetmeye başla.</string>
+    <string name="register_back">Geri dön</string>
+    <string name="register_password_confirm">Şifre (Tekrar)</string>
+    <string name="register_password_rule">En az 15, en fazla 128 karakter</string>
+    <string name="register_submit">Hesap Oluştur</string>
+    <string name="register_have_account">Zaten hesabın var mı?</string>
+    <string name="register_go_login">Giriş Yap</string>
+
+    <!-- Validation and result messages -->
+    <string name="register_password_required">Bir şifre belirle.</string>
+    <string name="register_password_too_short">Şifre en az 15 karakter olmalı.</string>
+    <string name="register_password_too_long">Şifre en fazla 128 karakter olabilir.</string>
+    <string name="register_confirm_required">Şifreni tekrar gir.</string>
+    <string name="register_confirm_mismatch">Şifreler eşleşmiyor.</string>
+    <string name="register_success">Hesabın oluşturuldu. Şimdi giriş yapabilirsin.</string>
+</resources>
