@@ -27,6 +27,8 @@ public final class MemoriesViewModel extends ViewModel {
     private int nextPage;
     boolean hasMore;
     boolean loaded;
+    /** Id of the memory just saved; the screen hands it to the photo upload once, then clears it. */
+    String savedMemoryId;
     ApiError saveError;
     ApiError listError;
     boolean saving;
@@ -55,6 +57,7 @@ public final class MemoriesViewModel extends ViewModel {
         saveRequest = repository.save(session, key, draft, result -> {
             saving = false;
             if (result.isSuccess() && result.getData() != null) {
+                savedMemoryId = result.getData().id();
                 title = "";
                 description = "";
                 date = null;
@@ -103,6 +106,7 @@ public final class MemoriesViewModel extends ViewModel {
         date = null;
         attempted = null;
         key = null;
+        savedMemoryId = null;
         rows.clear();
         nextPage = 0;
         hasMore = false;

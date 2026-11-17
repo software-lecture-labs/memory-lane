@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="photo_add">Fotoğraf ekle (%1$d hakkın kaldı)</string>
+    <string name="photo_add_full">En fazla 5 fotoğraf eklenebilir</string>
+    <string name="photo_hint">JPEG veya PNG; 5 MB\'ı aşan ya da farklı biçimdeki fotoğraflar yüklemeden önce küçültülür.</string>
+    <string name="photo_row">%1$d. fotoğraf · %2$s</string>
+    <string name="photo_preparing">%1$d fotoğraf hazırlanıyor…</string>
+    <string name="photo_remove">Kaldır</string>
+    <string name="photo_retry">Yüklenemeyenleri tekrar dene</string>
+    <string name="photo_give_up">Bu fotoğraflardan vazgeç</string>
+
+    <string name="photo_status_ready">Anı kaydedilince yüklenecek</string>
+    <string name="photo_status_uploading">Yükleniyor…</string>
+    <string name="photo_status_waiting">Sunucu yoğun, birazdan yeniden denenecek</string>
+    <string name="photo_status_uploaded">Yüklendi</string>
+    <string name="photo_status_failed">Yüklenemedi: %1$s</string>
+    <string name="photo_status_rejected">Kabul edilmedi: %1$s</string>
+
+    <string name="photo_progress">Fotoğraflar yükleniyor (%1$d/%2$d)</string>
+    <string name="photo_partial">Anı kaydedildi, %1$d fotoğraf yüklenemedi.</string>
+    <string name="photo_done">Anı ve %1$d fotoğraf kaydedildi.</string>
+    <string name="photo_done_with_rejected">Anı ve %1$d fotoğraf kaydedildi; %2$d fotoğraf kabul edilmedi: %3$s</string>
+    <string name="photo_pick_unsupported">Bu fotoğrafın biçimi bu telefonda açılamadı, başka bir fotoğraf seç.</string>
+    <string name="photo_pick_unreadable">Fotoğraf okunamadı, tekrar seçmeyi dene.</string>
+</resources>
