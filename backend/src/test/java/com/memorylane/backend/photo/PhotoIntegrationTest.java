@@ -141,9 +141,7 @@ class PhotoIntegrationTest {
                 upload(owner.token(), memory, UUID.randomUUID().toString(), PhotoFileTest.PNG, "image/jpeg"));
         assertError(413, "FILE_TOO_LARGE",
                 upload(owner.token(), memory, UUID.randomUUID().toString(), PhotoFileTest.jpegOfSize(5_000_001), "image/jpeg"));
-        // Above the servlet multipart limit: stopped before the controller, same contract body.
-        assertError(413, "FILE_TOO_LARGE",
-                upload(owner.token(), memory, UUID.randomUUID().toString(), PhotoFileTest.jpegOfSize(6_500_000), "image/jpeg"));
+        assertRefusedAboveServletLimit(owner.token(), memory);
         assertError(400, "INVALID_INPUT", upload(owner.token(), memory, "not-a-uuid", PhotoFileTest.JPEG, "image/jpeg"));
         assertError(400, "INVALID_INPUT", upload(owner.token(), memory, UUID.randomUUID().toString(), null, null));
 
@@ -265,6 +263,23 @@ class PhotoIntegrationTest {
         var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
         if (token != null) request.header("Authorization", "Bearer " + token);
         return request;
+    }
+
+    /**
+     * Above the servlet multipart limit the request is refused before the controller runs. The
+     * server may answer 413 and close the connection before the client has finished sending the
+     * body, so the client sees either the 413 body or a broken connection depending on timing
+     * (this made CI flaky). Both mean the upload was refused; the caller then checks that nothing
+     * was stored. The 413 body for this case is checked without the network in PhotoHttpContractTest.
+     */
+    private void assertRefusedAboveServletLimit(String token, String memory) throws Exception {
+        HttpResponse<String> response;
+        try {
+            response = upload(token, memory, UUID.randomUUID().toString(), PhotoFileTest.jpegOfSize(6_500_000), "image/jpeg");
+        } catch (IOException closedWhileSending) {
+            return;
+        }
+        assertError(413, "FILE_TOO_LARGE", response);
     }
 
     private void assertError(int status, String code, HttpResponse<String> response) throws Exception {

@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.TransientDataAccessResourceException;
@@ -22,6 +24,7 @@ import java.util.UUID;
  */
 public class SessionAuthenticationFilter extends OncePerRequestFilter {
     static final String USER_ID = SessionAuthenticationFilter.class.getName() + ".userId";
+    private static final Logger log = LoggerFactory.getLogger(SessionAuthenticationFilter.class);
 
     // Filters are created while the web server starts, before JPA is ready, so AuthService is
     // looked up on the first request instead of at construction.
@@ -57,6 +60,8 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
                 | CannotCreateTransactionException e) {
             // Same exception types as AuthErrors.database(), which cannot share this list
             // because annotation values must be literals.
+            log.warn("Database unavailable while checking the session for {} {}: {}",
+                    request.getMethod(), request.getRequestURI(), e.getMessage());
             reject(response, AuthFailure.databaseUnavailable());
             return;
         }
