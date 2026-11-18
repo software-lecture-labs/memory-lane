@@ -1,9 +1,11 @@
 package com.memorylane.feature.auth.ui;
 
+import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.memorylane.core.network.ApiError;
 import com.memorylane.core.network.ApiResult;
 import com.memorylane.core.network.Cancellable;
 import com.memorylane.feature.auth.data.AuthRepository;
@@ -11,32 +13,58 @@ import com.memorylane.feature.auth.data.AuthRequest;
 import com.memorylane.feature.auth.data.UserResponse;
 
 public final class RegisterViewModel extends ViewModel {
+    private static final String EMAIL_IN_USE = "EMAIL_IN_USE";
+
     private final MutableLiveData<RegisterUiState> state = new MutableLiveData<>(
             new RegisterUiState(RegisterUiState.EmailError.NONE, RegisterUiState.PasswordError.NONE,
-                    RegisterUiState.ConfirmError.NONE, RegisterUiState.Focus.NONE));
+                    RegisterUiState.ConfirmError.NONE, RegisterUiState.Focus.NONE, null));
 
     private final MutableLiveData<Boolean> busy = new MutableLiveData<>(false);
-    private final MutableLiveData<ApiResult<UserResponse>> result = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> registered = new MutableLiveData<>(false);
     private Cancellable request;
+
+    // Field texts live here so a recreated view gets them back. The inputs do not save their own
+    // text (saveEnabled="false"), which keeps the password out of the saved instance state.
+    private String email = "";
+    private String password = "";
+    private String confirm = "";
 
     LiveData<Boolean> busy() { return busy; }
 
-    /** Kept until consumed so a recreated view still receives a result that arrived meanwhile. */
-    LiveData<ApiResult<UserResponse>> result() { return result; }
+    /** True until consumed, so a recreated view still sees a success that arrived meanwhile. */
+    LiveData<Boolean> registered() { return registered; }
 
-    void consumeResult() { result.setValue(null); }
+    void consumeRegistered() { registered.setValue(false); }
+
+    String email() { return email; }
+    String password() { return password; }
+    String confirm() { return confirm; }
 
     void register(AuthRepository repository, String email, String password, String confirm) {
         if (Boolean.TRUE.equals(busy.getValue())) return;
-        consumeResult();
+        // A new attempt starts clean: this also drops EMAIL_IN_USE and any earlier server error.
         onRegisterClicked(email, password, confirm);
         if (state.getValue().getFocus() != RegisterUiState.Focus.NONE) return;
         busy.setValue(true);
         // Values are sent unchanged; the server trims and lowercases the address itself.
-        request = repository.register(new AuthRequest(email, password), response -> {
-            busy.setValue(false);
-            result.setValue(response);
-        });
+        request = repository.register(new AuthRequest(email, password), this::onResult);
+    }
+
+    private void onResult(ApiResult<UserResponse> response) {
+        busy.setValue(false);
+        if (response.isSuccess()) {
+            registered.setValue(true);
+            return;
+        }
+        ApiError error = response.getError() != null ? response.getError() : ApiError.unexpected();
+        RegisterUiState current = state.getValue();
+        if (error.getKind() == ApiError.Kind.HTTP && EMAIL_IN_USE.equals(error.getCode())) {
+            update(RegisterUiState.EmailError.IN_USE, current.getPasswordError(),
+                    current.getConfirmError(), RegisterUiState.Focus.EMAIL, null);
+        } else {
+            update(current.getEmailError(), current.getPasswordError(), current.getConfirmError(),
+                    RegisterUiState.Focus.NONE, error);
+        }
     }
 
     @Override
@@ -59,36 +87,47 @@ public final class RegisterViewModel extends ViewModel {
                         ? RegisterUiState.Focus.PASSWORD
                         : confirmError != RegisterUiState.ConfirmError.NONE
                                 ? RegisterUiState.Focus.CONFIRM : RegisterUiState.Focus.NONE;
-        state.setValue(new RegisterUiState(emailError, passwordError, confirmError, focus));
+        update(emailError, passwordError, confirmError, focus, null);
     }
 
-    public void onEmailChanged() {
+    /** A new address may be free, so this also clears EMAIL_IN_USE. */
+    public void onEmailChanged(String email) {
+        this.email = email;
         RegisterUiState current = state.getValue();
-        state.setValue(new RegisterUiState(RegisterUiState.EmailError.NONE,
-                current.getPasswordError(), current.getConfirmError(), RegisterUiState.Focus.NONE));
+        update(RegisterUiState.EmailError.NONE, current.getPasswordError(),
+                current.getConfirmError(), RegisterUiState.Focus.NONE, null);
     }
 
-    public void onPasswordChanged() {
+    /** Keeps the email error, including EMAIL_IN_USE: the address is still taken. */
+    public void onPasswordChanged(String password) {
+        this.password = password;
         RegisterUiState current = state.getValue();
         // A mismatch depends on both fields, so editing the password also clears it.
         RegisterUiState.ConfirmError confirmError =
                 current.getConfirmError() == RegisterUiState.ConfirmError.MISMATCH
                         ? RegisterUiState.ConfirmError.NONE : current.getConfirmError();
-        state.setValue(new RegisterUiState(current.getEmailError(),
-                RegisterUiState.PasswordError.NONE, confirmError, RegisterUiState.Focus.NONE));
+        update(current.getEmailError(), RegisterUiState.PasswordError.NONE, confirmError,
+                RegisterUiState.Focus.NONE, null);
     }
 
-    public void onConfirmChanged() {
+    /** Keeps the email error, including EMAIL_IN_USE. */
+    public void onConfirmChanged(String confirm) {
+        this.confirm = confirm;
         RegisterUiState current = state.getValue();
-        state.setValue(new RegisterUiState(current.getEmailError(), current.getPasswordError(),
-                RegisterUiState.ConfirmError.NONE, RegisterUiState.Focus.NONE));
+        update(current.getEmailError(), current.getPasswordError(),
+                RegisterUiState.ConfirmError.NONE, RegisterUiState.Focus.NONE, null);
+    }
+
+    private void update(RegisterUiState.EmailError emailError,
+                        RegisterUiState.PasswordError passwordError,
+                        RegisterUiState.ConfirmError confirmError,
+                        RegisterUiState.Focus focus, @Nullable ApiError serverError) {
+        state.setValue(new RegisterUiState(emailError, passwordError, confirmError, focus, serverError));
     }
 
     private static RegisterUiState.EmailError emailError(String email) {
-        String address = email.trim();
-        if (address.isEmpty()) return RegisterUiState.EmailError.REQUIRED;
-        return address.length() <= AuthInputRules.EMAIL_MAX_LENGTH
-                && AuthInputRules.EMAIL.matcher(address).matches()
+        if (AuthInputRules.strip(email).isEmpty()) return RegisterUiState.EmailError.REQUIRED;
+        return AuthInputRules.isValidEmail(email)
                 ? RegisterUiState.EmailError.NONE : RegisterUiState.EmailError.INVALID;
     }
 

@@ -18,6 +18,8 @@ import androidx.annotation.StringRes;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -29,13 +31,13 @@ import com.memorylane.core.network.ApiError;
 import com.memorylane.core.ui.ErrorMessages;
 import com.memorylane.databinding.FragmentRegisterBinding;
 
+import java.util.function.Consumer;
+
 /**
  * Account creation. Registration does not sign the user in (see docs/api-contract.md), so on
  * success this screen returns to the screen that opened it, which is the login screen.
  */
 public final class RegisterFragment extends Fragment {
-    private static final String EMAIL_IN_USE = "EMAIL_IN_USE";
-
     private FragmentRegisterBinding binding;
     private RegisterViewModel viewModel;
     // Changing the transformation method rewrites the text; that is not a user edit.
@@ -70,20 +72,21 @@ public final class RegisterFragment extends Fragment {
         binding.backButton.setOnClickListener(button -> goBack());
         binding.loginLink.setOnClickListener(button -> goBack());
 
+        // Restored before the watchers are attached, so restoring is not taken for a user edit
+        // that would clear the errors kept in the ViewModel.
+        restore(binding.emailInput, viewModel.email());
+        restore(binding.passwordInput, viewModel.password());
+        restore(binding.confirmInput, viewModel.confirm());
         onEdit(binding.emailInput, viewModel::onEmailChanged);
         onEdit(binding.passwordInput, viewModel::onPasswordChanged);
         onEdit(binding.confirmInput, viewModel::onConfirmChanged);
 
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
         viewModel.busy().observe(getViewLifecycleOwner(), this::renderBusy);
-        viewModel.result().observe(getViewLifecycleOwner(), result -> {
-            if (result == null) return;
-            viewModel.consumeResult();
-            if (result.isSuccess()) {
-                onRegistered();
-            } else {
-                showServerError(result.getError());
-            }
+        viewModel.registered().observe(getViewLifecycleOwner(), registered -> {
+            if (!Boolean.TRUE.equals(registered)) return;
+            viewModel.consumeRegistered();
+            onRegistered();
         });
     }
 
@@ -101,19 +104,14 @@ public final class RegisterFragment extends Fragment {
         goBack();
     }
 
-    private void showServerError(ApiError error) {
-        String message = ErrorMessages.describe(requireContext(), error);
-        if (error.getKind() == ApiError.Kind.HTTP && EMAIL_IN_USE.equals(error.getCode())) {
-            binding.emailLayout.setError(message);
-            binding.emailInput.requestFocus();
-            return;
-        }
-        binding.registerError.setText(message);
-        binding.registerError.setVisibility(View.VISIBLE);
-    }
-
     private void goBack() {
-        NavHostFragment.findNavController(this).popBackStack();
+        NavController navController = NavHostFragment.findNavController(this);
+        NavDestination current = navController.getCurrentDestination();
+        // A fast double tap delivers a second click after the first pop; popping again would
+        // also close the login screen underneath.
+        if (current != null && current.getId() == R.id.registerFragment) {
+            navController.popBackStack();
+        }
     }
 
     private void renderBusy(boolean busy) {
@@ -130,6 +128,10 @@ public final class RegisterFragment extends Fragment {
         binding.emailLayout.setError(message(emailMessage(state.getEmailError())));
         binding.passwordLayout.setError(message(passwordMessage(state.getPasswordError())));
         binding.confirmLayout.setError(message(confirmMessage(state.getConfirmError())));
+        ApiError serverError = state.getServerError();
+        binding.registerError.setText(serverError == null
+                ? null : ErrorMessages.describe(requireContext(), serverError));
+        binding.registerError.setVisibility(serverError == null ? View.GONE : View.VISIBLE);
         switch (state.getFocus()) {
             case EMAIL:
                 binding.emailInput.requestFocus();
@@ -155,6 +157,7 @@ public final class RegisterFragment extends Fragment {
         switch (error) {
             case REQUIRED: return R.string.login_email_required;
             case INVALID: return R.string.login_email_invalid;
+            case IN_USE: return R.string.register_email_in_use;
             default: return 0;
         }
     }
@@ -197,16 +200,20 @@ public final class RegisterFragment extends Fragment {
         layout.setEndIconActivated(show);
     }
 
-    private void onEdit(EditText input, Runnable onChanged) {
+    private void onEdit(EditText input, Consumer<String> onChanged) {
         input.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (togglingVisibility) return;
-                onChanged.run();
-                binding.registerError.setVisibility(View.GONE);
+                onChanged.accept(s.toString());
             }
             @Override public void afterTextChanged(Editable value) { }
         });
+    }
+
+    private static void restore(EditText input, String value) {
+        input.setText(value);
+        input.setSelection(value.length());
     }
 
     private static String text(EditText input) {

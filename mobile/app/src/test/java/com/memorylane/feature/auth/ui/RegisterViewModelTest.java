@@ -1,6 +1,8 @@
 package com.memorylane.feature.auth.ui;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
@@ -40,21 +42,40 @@ public class RegisterViewModelTest {
 
     @Test
     public void emptyOrBlankEmailIsRequiredAndFocused() {
-        for (String email : new String[] {"", "   "}) {
+        // U+2003 EM SPACE and U+3000 IDEOGRAPHIC SPACE are whitespace that trim() would keep.
+        for (String email : new String[] {"", "   ", " \t　"}) {
             viewModel.onRegisterClicked(email, PASSWORD, PASSWORD);
-            assertEquals(RegisterUiState.EmailError.REQUIRED, state().getEmailError());
+            assertEquals(email, RegisterUiState.EmailError.REQUIRED, state().getEmailError());
             assertEquals(RegisterUiState.Focus.EMAIL, state().getFocus());
         }
     }
 
     @Test
     public void malformedEmailIsInvalid() {
+        // U+00A0 NO-BREAK SPACE and U+0007 BELL are rejected by the server as well.
         for (String email : new String[] {"user", "user@", "@example.com", "user@example",
-                "user name@example.com", "user@@example.com", "user@example..com"}) {
+                "user name@example.com", "user@@example.com", "user name@example.com",
+                "user\u0007@example.com", "user@example.", "user@.com"}) {
             viewModel.onRegisterClicked(email, PASSWORD, PASSWORD);
             assertEquals(email, RegisterUiState.EmailError.INVALID, state().getEmailError());
             assertEquals(RegisterUiState.Focus.EMAIL, state().getFocus());
         }
+    }
+
+    @Test
+    public void addressesTheServerAcceptsAreNotRejected() {
+        for (String email : new String[] {"dilan@örnek.com", "ışık@example.com",
+                "o'brien@example.com", "a!b#c$d&e*f=g?h^i{j|k}l~m@example.com",
+                "user@mail." + "a".repeat(40) + ".com", "user@-example.com", "user@example..com"}) {
+            viewModel.onRegisterClicked(email, PASSWORD, PASSWORD);
+            assertEquals(email, RegisterUiState.EmailError.NONE, state().getEmailError());
+        }
+    }
+
+    @Test
+    public void unicodeWhitespaceAroundEmailIsStripped() {
+        viewModel.onRegisterClicked("  user@example.com　\n", PASSWORD, PASSWORD);
+        assertNoErrors();
     }
 
     @Test
@@ -147,25 +168,35 @@ public class RegisterViewModelTest {
     @Test
     public void editingEachFieldClearsOnlyItsOwnErrorWithoutMovingFocus() {
         viewModel.onRegisterClicked("invalid", "short", "");
-        viewModel.onEmailChanged();
+        viewModel.onEmailChanged("invalid2");
         assertEquals(RegisterUiState.EmailError.NONE, state().getEmailError());
         assertEquals(RegisterUiState.PasswordError.TOO_SHORT, state().getPasswordError());
         assertEquals(RegisterUiState.ConfirmError.REQUIRED, state().getConfirmError());
         assertEquals(RegisterUiState.Focus.NONE, state().getFocus());
 
-        viewModel.onPasswordChanged();
+        viewModel.onPasswordChanged("shorter");
         assertEquals(RegisterUiState.PasswordError.NONE, state().getPasswordError());
         assertEquals(RegisterUiState.ConfirmError.REQUIRED, state().getConfirmError());
 
-        viewModel.onConfirmChanged();
+        viewModel.onConfirmChanged("x");
         assertNoErrors();
     }
 
     @Test
     public void editingPasswordAlsoClearsMismatch() {
         viewModel.onRegisterClicked(EMAIL, PASSWORD, "something else entirely");
-        viewModel.onPasswordChanged();
+        viewModel.onPasswordChanged(PASSWORD + "!");
         assertNoErrors();
+    }
+
+    @Test
+    public void fieldTextsAreKeptForARecreatedView() {
+        viewModel.onEmailChanged(EMAIL);
+        viewModel.onPasswordChanged(PASSWORD);
+        viewModel.onConfirmChanged("typed so far");
+        assertEquals(EMAIL, viewModel.email());
+        assertEquals(PASSWORD, viewModel.password());
+        assertEquals("typed so far", viewModel.confirm());
     }
 
     @Test
@@ -176,19 +207,86 @@ public class RegisterViewModelTest {
     }
 
     @Test
-    public void validInputSendsOneUnchangedRequestAndKeepsResultForNewObserver() {
+    public void validInputSendsOneUnchangedRequestAndKeepsSuccessForNewObserver() {
         viewModel.register(repository, "  User@Example.com ", PASSWORD, PASSWORD);
         viewModel.register(repository, "  User@Example.com ", PASSWORD, PASSWORD);
         assertEquals(1, repository.pending.size());
         assertEquals(List.of("  User@Example.com "), repository.emails);
         assertEquals(Boolean.TRUE, viewModel.busy().getValue());
 
-        ApiError failure = ApiError.network();
-        repository.pending.get(0).onResult(ApiResult.failure(failure));
-        List<ApiError> delivered = new ArrayList<>();
-        viewModel.result().observeForever(result -> delivered.add(result.getError()));
-        assertEquals(List.of(failure), delivered);
+        repository.pending.get(0).onResult(ApiResult.success(null));
+        List<Boolean> delivered = new ArrayList<>();
+        viewModel.registered().observeForever(delivered::add);
+        assertEquals(List.of(true), delivered);
         assertEquals(Boolean.FALSE, viewModel.busy().getValue());
+
+        viewModel.consumeRegistered();
+        assertEquals(Boolean.FALSE, viewModel.registered().getValue());
+    }
+
+    @Test
+    public void emailInUseIsKeptInStateAsEmailErrorAndFocusesEmail() {
+        failWith(emailInUse());
+        assertEquals(RegisterUiState.EmailError.IN_USE, state().getEmailError());
+        assertEquals(RegisterUiState.Focus.EMAIL, state().getFocus());
+        assertNull(state().getServerError());
+        assertEquals(Boolean.FALSE, viewModel.registered().getValue());
+    }
+
+    @Test
+    public void emailInUseSurvivesPasswordAndConfirmEdits() {
+        failWith(emailInUse());
+        viewModel.onPasswordChanged(PASSWORD + " new");
+        assertEquals(RegisterUiState.EmailError.IN_USE, state().getEmailError());
+        viewModel.onConfirmChanged(PASSWORD + " new");
+        assertEquals(RegisterUiState.EmailError.IN_USE, state().getEmailError());
+        assertEquals(RegisterUiState.Focus.NONE, state().getFocus());
+    }
+
+    @Test
+    public void editingEmailClearsEmailInUse() {
+        failWith(emailInUse());
+        viewModel.onEmailChanged("other@example.com");
+        assertNoErrors();
+    }
+
+    @Test
+    public void newRequestClearsEmailInUse() {
+        failWith(emailInUse());
+        viewModel.register(repository, "other@example.com", PASSWORD, PASSWORD);
+        assertNoErrors();
+        assertEquals(2, repository.pending.size());
+    }
+
+    @Test
+    public void generalServerErrorIsKeptInStateWithoutFieldErrors() {
+        ApiError failure = ApiError.http(429, "TOO_MANY_REQUESTS", "Çok fazla deneme.");
+        failWith(failure);
+        assertSame(failure, state().getServerError());
+        assertEquals(RegisterUiState.EmailError.NONE, state().getEmailError());
+        assertEquals(RegisterUiState.Focus.NONE, state().getFocus());
+    }
+
+    @Test
+    public void editingAnyFieldClearsGeneralServerError() {
+        failWith(ApiError.network());
+        viewModel.onPasswordChanged(PASSWORD + "!");
+        assertNull(state().getServerError());
+
+        failWith(ApiError.network());
+        viewModel.onConfirmChanged("x");
+        assertNull(state().getServerError());
+
+        failWith(ApiError.network());
+        viewModel.onEmailChanged(EMAIL);
+        assertNull(state().getServerError());
+    }
+
+    @Test
+    public void newRequestClearsGeneralServerError() {
+        failWith(ApiError.network());
+        viewModel.register(repository, EMAIL, PASSWORD, PASSWORD);
+        assertNull(state().getServerError());
     }
 
     @Test
@@ -200,11 +298,22 @@ public class RegisterViewModelTest {
 
     private RegisterUiState state() { return viewModel.getState().getValue(); }
 
+    /** Sends a valid request and answers the latest one with the given error. */
+    private void failWith(ApiError error) {
+        viewModel.register(repository, EMAIL, PASSWORD, PASSWORD);
+        repository.pending.get(repository.pending.size() - 1).onResult(ApiResult.failure(error));
+    }
+
+    private static ApiError emailInUse() {
+        return ApiError.http(409, "EMAIL_IN_USE", "Bu e-posta zaten kayıtlı.");
+    }
+
     private void assertNoErrors() {
         assertEquals(RegisterUiState.EmailError.NONE, state().getEmailError());
         assertEquals(RegisterUiState.PasswordError.NONE, state().getPasswordError());
         assertEquals(RegisterUiState.ConfirmError.NONE, state().getConfirmError());
         assertEquals(RegisterUiState.Focus.NONE, state().getFocus());
+        assertNull(state().getServerError());
     }
 
     /** Records register calls. AuthRequest has no getters, so the email is read from its JSON wire form. */

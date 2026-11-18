@@ -16,5 +16,6 @@
     <string name="register_password_too_long">Şifre en fazla 128 karakter olabilir.</string>
     <string name="register_confirm_required">Şifreni tekrar gir.</string>
     <string name="register_confirm_mismatch">Şifreler eşleşmiyor.</string>
+    <string name="register_email_in_use">Bu e-posta zaten kayıtlı.</string>
     <string name="register_success">Hesabın oluşturuldu. Şimdi giriş yapabilirsin.</string>
 </resources>
