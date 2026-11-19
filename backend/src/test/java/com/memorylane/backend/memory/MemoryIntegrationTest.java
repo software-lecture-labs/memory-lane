@@ -92,6 +92,55 @@ class MemoryIntegrationTest {
                 .path("totalElements").asInt());
     }
 
+    @Test
+    void createFormRulesAreEnforcedOverHttpAndRejectedRequestsWriteNothing() throws Exception {
+        String owner = session(UUID.randomUUID() + "@example.test", true);
+        String emoji = new String(Character.toChars(0x1F600));
+        String future = java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(2).toString();
+
+        // PostgreSQL VARCHAR(n) counts characters, so the 100 / 3000 limits hold for emoji too.
+        var full = new java.util.HashMap<String, Object>(java.util.Map.of(
+                "title", emoji.repeat(100), "description", emoji.repeat(3000), "memoryDate", "2024-02-29",
+                "category", "TRAVEL", "emotion", "HAPPY",
+                "location", java.util.Map.of("latitude", 41.0082, "longitude", 28.9784)));
+        var created = send("POST", "/memories", owner, UUID.randomUUID().toString(), json.writeValueAsString(full));
+        assertEquals(201, created.statusCode(), created.body());
+        var detail = json.readTree(created.body());
+        assertEquals(emoji.repeat(100), detail.path("title").asString());
+        assertEquals(emoji.repeat(3000), detail.path("description").asString());
+        assertEquals("2024-02-29", detail.path("memoryDate").asString());
+        assertEquals("TRAVEL", detail.path("category").asString());
+        assertEquals("HAPPY", detail.path("emotion").asString());
+        assertEquals(41.0082, detail.path("location").path("latitude").asDouble());
+        assertEquals(28.9784, detail.path("location").path("longitude").asDouble());
+
+        var minimal = json.readTree(create(owner, UUID.randomUUID().toString(), "Sade").body());
+        assertEquals("OTHER", minimal.path("category").asString());
+        assertTrue(minimal.path("emotion").isNull());
+        assertTrue(minimal.path("location").isNull());
+        assertEquals("", minimal.path("description").asString());
+
+        var rejected = java.util.List.of(
+                java.util.Map.of("title", "a".repeat(101), "memoryDate", "2026-01-01"),
+                java.util.Map.of("title", "Uzun", "description", "a".repeat(3001), "memoryDate", "2026-01-01"),
+                java.util.Map.of("title", "Tarihsiz"),
+                java.util.Map.of("title", "Gelecek", "memoryDate", future),
+                java.util.Map.of("title", "Kategori", "memoryDate", "2026-01-01", "category", "Gezi"),
+                java.util.Map.of("title", "Duygu", "memoryDate", "2026-01-01", "emotion", "ANGRY"),
+                java.util.Map.of("title", "Konum", "memoryDate", "2026-01-01",
+                        "location", java.util.Map.of("latitude", 91, "longitude", 0)),
+                java.util.Map.of("title", "Alan", "memoryDate", "2026-01-01", "ownerId", UUID.randomUUID().toString()));
+        for (var body : rejected) {
+            var response = send("POST", "/memories", owner, UUID.randomUUID().toString(), json.writeValueAsString(body));
+            assertEquals(400, response.statusCode(), body.keySet() + " " + response.body());
+            var error = json.readTree(response.body());
+            assertEquals("INVALID_INPUT", error.path("code").asString());
+            assertFalse(response.body().contains("Exception"), response.body());
+        }
+        assertEquals(2, json.readTree(send("GET", "/memories", owner, null, null).body())
+                .path("totalElements").asInt());
+    }
+
     private HttpResponse<String> create(String token, String key, String title) throws Exception {
         return send("POST", "/memories", token, key,
                 json.writeValueAsString(java.util.Map.of("title", title, "memoryDate", "2026-01-01")));
