@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Year header: badge, year and a lavender line, as in the Stitch timeline. TalkBack reads the
+     whole row as one heading, set from code ("2024 yılındaki anılar"). -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="@dimen/ml_space_sm"
+    android:paddingBottom="@dimen/ml_space_md">
+
+    <FrameLayout
+        android:layout_width="@dimen/memory_year_badge"
+        android:layout_height="@dimen/memory_year_badge"
+        android:background="@drawable/memory_year_badge"
+        android:importantForAccessibility="noHideDescendants">
+
+        <ImageView
+            android:layout_width="@dimen/memory_icon_inline"
+            android:layout_height="@dimen/memory_icon_inline"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_tab_memories"
+            app:tint="@color/ml_primary" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/memory_year"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ml_space_sm"
+        android:importantForAccessibility="no"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Title"
+        tools:text="2024" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="@dimen/memory_year_rule"
+        android:layout_marginStart="@dimen/ml_space_sm"
+        android:layout_weight="1"
+        android:background="@drawable/memory_year_rule"
+        android:importantForAccessibility="no" />
+</LinearLayout>

@@ -1,173 +1,239 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Memory list. The header area scrolls away with the list (AppBarLayout "scroll"), the add
+     button stays above the bottom navigation, and the list pads its bottom so the last card can
+     scroll clear of the button (clipToPadding=false). Top inset is applied by MainActivity. -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/memory_app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="@dimen/ml_space_md">
-
-        <com.memorylane.core.ui.widget.ScreenHeaderView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:headerSubtitle="@string/memories_subtitle"
-            app:headerTitle="@string/memories_title" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/memory_login"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/memory_login" />
+        android:background="@color/ml_canvas"
+        app:elevation="0dp"
+        app:liftOnScroll="false">
 
         <LinearLayout
-            android:id="@+id/memory_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:paddingHorizontal="@dimen/ml_space_md"
+            android:paddingTop="@dimen/ml_space_md"
+            app:layout_scrollFlags="scroll">
 
-            <TextView
+            <com.memorylane.core.ui.widget.ScreenHeaderView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/memory_form_title"
-                android:textAppearance="@style/TextAppearance.MemoryLane.Title" />
+                app:headerSubtitle="@string/memory_list_subtitle"
+                app:headerTitle="@string/memories_title" />
 
-            <EditText
-                android:id="@+id/memory_title"
+            <!-- Temporary inline add form (ML-07 commit 5 moves it to its own screen). -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/memory_form"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/memory_title_hint"
-                android:inputType="textCapSentences"
-                android:importantForAutofill="no"
-                android:saveEnabled="false" />
-
-            <EditText
-                android:id="@+id/memory_description"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/memory_description_hint"
-                android:inputType="textCapSentences|textMultiLine"
-                android:importantForAutofill="no"
-                android:saveEnabled="false" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/memory_date"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/memory_date_select" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/memory_save"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/memory_save" />
-
-            <TextView
-                android:id="@+id/memory_save_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:accessibilityLiveRegion="polite" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/memory_refresh"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/memory_load" />
-
-            <LinearLayout
-                android:id="@+id/memory_rows"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-
-            <TextView
-                android:id="@+id/memory_list_status"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:accessibilityLiveRegion="polite" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/memory_more"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/memory_more"
-                android:visibility="gone" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/memory_logout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/memory_logout" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ml_space_lg"
-            android:text="@string/health_section_title"
-            android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
-
-        <!-- Shown only after a successful health response. -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/health_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ml_space_sm"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="@dimen/ml_icon_status"
-                    android:layout_height="@dimen/ml_icon_status"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_status_ok" />
+                android:layout_marginTop="@dimen/ml_space_md"
+                android:visibility="gone"
+                app:strokeColor="@color/memory_card_stroke"
+                tools:visibility="visible">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/ml_space_md"
-                    android:layout_weight="1"
                     android:orientation="vertical">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/health_ok_title"
+                        android:text="@string/memory_form_title"
                         android:textAppearance="@style/TextAppearance.MemoryLane.Title" />
 
-                    <TextView
-                        android:id="@+id/health_database"
+                    <EditText
+                        android:id="@+id/memory_title_input"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/ml_space_xs"
-                        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
-                        tools:text="Veritabanı: UP" />
+                        android:hint="@string/memory_title_hint"
+                        android:importantForAutofill="no"
+                        android:inputType="textCapSentences"
+                        android:minHeight="@dimen/ml_button_height"
+                        android:saveEnabled="false" />
+
+                    <EditText
+                        android:id="@+id/memory_description_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/memory_description_hint"
+                        android:importantForAutofill="no"
+                        android:inputType="textCapSentences|textMultiLine"
+                        android:minHeight="@dimen/ml_button_height"
+                        android:saveEnabled="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/memory_date_button"
+                        style="@style/Widget.MemoryLane.Button.Ghost"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/memory_date_select" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/memory_save"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/ml_space_sm"
+                        android:text="@string/memory_save" />
 
                     <TextView
-                        android:id="@+id/health_address"
+                        android:id="@+id/memory_save_status"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
-                        tools:text="Adres: http://10.0.2.2:8080/" />
+                        android:accessibilityLiveRegion="polite"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted" />
                 </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            </com.google.android.material.card.MaterialCardView>
 
-        <com.memorylane.core.ui.widget.StateView
-            android:id="@+id/health_state"
+            <!-- Temporary until ML-07 commit 6 moves them to the profile tab. -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_md"
+                android:text="@string/health_section_title"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/health_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="@dimen/ml_icon_status"
+                        android:layout_height="@dimen/ml_icon_status"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_status_ok" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/ml_space_md"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/health_ok_title"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+                        <TextView
+                            android:id="@+id/health_database"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                            tools:text="Veritabanı: UP" />
+
+                        <TextView
+                            android:id="@+id/health_address"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                            tools:text="Adres: http://10.0.2.2:8080/" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.memorylane.core.ui.widget.StateView
+                android:id="@+id/health_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/memory_logout"
+                style="@style/Widget.MemoryLane.Button.Ghost"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="@dimen/ml_space_sm"
+                android:text="@string/memory_logout"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/memory_list"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ml_space_lg" />
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="@dimen/ml_space_md"
+            android:paddingTop="@dimen/ml_space_md"
+            android:paddingBottom="@dimen/memory_list_bottom_padding"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:itemCount="3"
+            tools:listitem="@layout/item_memory" />
+
+        <!-- Loading, empty, error and signed-out states; scrolls when the screen is short
+             (landscape) so the message and its button stay reachable. Top-aligned on purpose:
+             with a scrolling header this view is taller than the visible area, so centring
+             would push the message down behind the add button. -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/memory_status"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="@dimen/memory_list_bottom_padding"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/ml_space_lg"
+                android:paddingTop="@dimen/memory_status_top"
+                android:paddingBottom="@dimen/ml_space_lg">
+
+                <com.memorylane.core.ui.widget.StateView
+                    android:id="@+id/memory_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/memory_sign_in"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_md"
+                    android:text="@string/memory_list_sign_in"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </FrameLayout>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/memory_add"
+        style="@style/Widget.MemoryLane.ExtendedFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/ml_space_md"
+        android:contentDescription="@string/memory_list_add_description"
+        android:text="@string/memory_list_add"
+        app:icon="@drawable/ic_add" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

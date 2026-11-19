@@ -72,7 +72,7 @@
         <item name="cornerRadius">@dimen/ml_radius_pill</item>
     </style>
 
-    <style name="Widget.MemoryLane.Button.Ghost" parent="Widget.Material3.Button.OutlinedButton" tools:ignore="UnusedResources">
+    <style name="Widget.MemoryLane.Button.Ghost" parent="Widget.Material3.Button.OutlinedButton">
         <item name="android:minHeight">@dimen/ml_button_height</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
@@ -105,6 +105,27 @@
         <item name="boxStrokeWidthFocused">@dimen/ml_stroke_regular</item>
         <item name="hintTextColor">@color/ml_primary</item>
         <item name="errorTextColor">@color/ml_error</item>
+    </style>
+
+    <!-- Add button: raspberry pill with white icon and text, as in the Stitch "Anılar" screen. -->
+    <style name="Widget.MemoryLane.ExtendedFab" parent="Widget.Material3.ExtendedFloatingActionButton.Icon.Primary">
+        <item name="backgroundTint">@color/ml_primary</item>
+        <item name="iconTint">@color/ml_on_primary</item>
+        <item name="android:textColor">@color/ml_on_primary</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Button</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.MemoryLane.Pill</item>
+    </style>
+
+    <style name="ShapeAppearance.MemoryLane.Pill" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Memory card title: one step below Title, bold like the Stitch card heading. -->
+    <style name="TextAppearance.MemoryLane.CardTitle" parent="TextAppearance.MemoryLane.Title">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/memory_card_title</item>
     </style>
 
     <style name="Widget.MemoryLane.BottomNavigation" parent="Widget.Material3.BottomNavigationView">

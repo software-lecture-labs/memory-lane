@@ -1,9 +1,11 @@
 package com.memorylane.feature.memories.ui;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.memorylane.core.network.ApiError;
 import com.memorylane.core.network.ApiResult;
@@ -32,38 +34,34 @@ import java.util.UUID;
  *       becomes SIGNED_OUT and {@link #sessionExpired()} tells the screen to clear the token.</li>
  * </ul>
  *
- * <p>Temporary (until ML-07 commits 4 and 5): the old screen still reads the form fields and the
- * list mirror fields below and binds through {@link #attach(MemoryRepository, String)}. The
- * mirror fields are derived from the state in one place and are not a second source of truth.
+ * <p>Temporary (until ML-07 commit 5): the inline form fields and {@link #save()} below serve
+ * the add button until the separate create screen replaces them.
  */
 public final class MemoriesViewModel extends ViewModel {
     private static final int UNAUTHORIZED = 401;
 
     private enum Operation { FIRST_PAGE, REFRESH, NEXT_PAGE }
 
+    private final MemoryListRepository listRepository;
+    @Nullable private final MemoryRepository saveRepository;
+
     private final MutableLiveData<MemoryListUiState> state =
             new MutableLiveData<>(MemoryListUiState.signedOut());
     private final MutableLiveData<Boolean> sessionExpired = new MutableLiveData<>(false);
 
-    private MemoryListRepository listRepository;
-    @Nullable private MemoryRepository saveRepository;
-
+    /** Authorization header value of the current session; null when signed out. */
+    @Nullable private String session;
+    /** Every memory loaded so far, in server order; the input of the row mapper. */
+    private final List<MemoryApi.Memory> loaded = new ArrayList<>();
     private int nextPage;
     private int generation;
     @Nullable private Cancellable listRequest;
     @Nullable private Operation running;
     @Nullable private Operation failed;
 
-    // --- Temporary fields read by the old MemoriesFragment; removed in commits 4 and 5. ---
-    final MutableLiveData<Integer> changes = new MutableLiveData<>(0);
-    /** Authorization header value of the current session; null when signed out. */
-    String session;
-    /** Every memory loaded so far, in server order; also the input of the row mapper. */
-    final List<MemoryApi.Memory> rows = new ArrayList<>();
-    boolean hasMore;
-    boolean loaded;
-    boolean loading;
-    ApiError listError;
+    // --- Temporary inline form; replaced by the create screen in commit 5. ---
+    final MutableLiveData<Integer> formChanges = new MutableLiveData<>(0);
+    boolean formOpen;
     LocalDate date;
     String title = "";
     String description = "";
@@ -73,6 +71,26 @@ public final class MemoriesViewModel extends ViewModel {
     private String key;
     private Cancellable saveRequest;
 
+    public MemoriesViewModel(@NonNull MemoryListRepository listRepository,
+                             @Nullable MemoryRepository saveRepository) {
+        this.listRepository = Objects.requireNonNull(listRepository, "listRepository");
+        this.saveRepository = saveRepository;
+    }
+
+    public static ViewModelProvider.Factory factory(MemoryListRepository listRepository,
+                                                    @Nullable MemoryRepository saveRepository) {
+        return new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                if (!modelClass.isAssignableFrom(MemoriesViewModel.class)) {
+                    throw new IllegalArgumentException("Unsupported ViewModel: " + modelClass.getName());
+                }
+                return modelClass.cast(new MemoriesViewModel(listRepository, saveRepository));
+            }
+        };
+    }
+
     public LiveData<MemoryListUiState> getState() { return state; }
 
     /** True once a request was rejected with 401, until {@link #consumeSessionExpired()}. */
@@ -80,20 +98,11 @@ public final class MemoriesViewModel extends ViewModel {
 
     public void consumeSessionExpired() { sessionExpired.setValue(false); }
 
-    /** Old screen binding: the remote repository serves both the list and saving. */
-    void attach(MemoryRepository repository, @Nullable String authorization) {
-        attach(repository, repository, authorization);
-    }
-
     /**
-     * Binds the repositories and the current session. Same session: nothing happens, so a
-     * recreated view keeps the loaded list. New session: everything restarts. No session:
-     * SIGNED_OUT.
+     * Sets the current session. Same session: nothing happens, so a recreated view keeps the
+     * loaded list. New session: everything restarts. Null: SIGNED_OUT.
      */
-    void attach(MemoryListRepository listRepository, @Nullable MemoryRepository saveRepository,
-                @Nullable String authorization) {
-        this.listRepository = Objects.requireNonNull(listRepository, "listRepository");
-        this.saveRepository = saveRepository;
+    public void setSession(@Nullable String authorization) {
         if (Objects.equals(session, authorization)) return;
         clear();
         session = authorization;
@@ -135,19 +144,6 @@ public final class MemoriesViewModel extends ViewModel {
         }
     }
 
-    /** Old screen: its refresh button calls load(0). */
-    void load(int page) { refresh(); }
-
-    /** Old screen: its "more" button. */
-    void more() { loadMore(); }
-
-    /** Signs out locally: stops all requests and shows SIGNED_OUT. */
-    void reset() {
-        clear();
-        session = null;
-        publish(MemoryListUiState.signedOut());
-    }
-
     private void requestFirstPage() {
         publish(MemoryListUiState.loading());
         request(Operation.FIRST_PAGE, 0);
@@ -163,12 +159,6 @@ public final class MemoriesViewModel extends ViewModel {
             running = null;
             onPage(operation, page, result);
         });
-        // Skipped if a repository answered synchronously and the refresh is already over.
-        if (operation == Operation.REFRESH && running == Operation.REFRESH && id == generation) {
-            // A refresh keeps the state (rows stay); only the old screen's mirror shows it.
-            loading = true;
-            publishChanges();
-        }
     }
 
     private void onPage(Operation operation, int page, ApiResult<MemoryApi.Page> result) {
@@ -182,7 +172,7 @@ public final class MemoriesViewModel extends ViewModel {
             return;
         }
         List<MemoryApi.Memory> merged = new ArrayList<>();
-        if (operation == Operation.NEXT_PAGE) merged.addAll(rows);
+        if (operation == Operation.NEXT_PAGE) merged.addAll(loaded);
         merged.addAll(body.content());
         List<MemoryListItem> items;
         try {
@@ -192,8 +182,8 @@ public final class MemoriesViewModel extends ViewModel {
             return;
         }
         failed = null;
-        rows.clear();
-        rows.addAll(merged);
+        loaded.clear();
+        loaded.addAll(merged);
         nextPage = page + 1;
         publish(items.isEmpty()
                 ? MemoryListUiState.empty()
@@ -202,7 +192,7 @@ public final class MemoriesViewModel extends ViewModel {
 
     private void onListFailure(Operation operation, ApiError error) {
         if (error.getHttpStatus() == UNAUTHORIZED) {
-            expireSession(error);
+            expireSession();
             return;
         }
         failed = operation;
@@ -212,15 +202,14 @@ public final class MemoriesViewModel extends ViewModel {
                 : MemoryListUiState.error(error));
     }
 
-    private void expireSession(ApiError error) {
-        reset();
-        // The old screen clears the stored token when it sees a 401 in listError.
-        listError = error;
+    private void expireSession() {
+        clear();
+        session = null;
+        publish(MemoryListUiState.signedOut());
         sessionExpired.setValue(true);
-        publishChanges();
     }
 
-    /** Temporary save path for the old screen; replaced by the create screen in commit 5. */
+    /** Temporary save path for the inline form; replaced by the create screen in commit 5. */
     void save() {
         if (session == null || saveRepository == null || saving || date == null || title.trim().isEmpty()) {
             return;
@@ -232,45 +221,37 @@ public final class MemoriesViewModel extends ViewModel {
         }
         saving = true;
         saveError = null;
-        publishChanges();
+        publishForm();
         saveRequest = saveRepository.save(session, key, draft, result -> {
             saving = false;
             saveRequest = null;
             if (result.isSuccess() && result.getData() != null) {
-                title = "";
-                description = "";
-                date = null;
-                attempted = null;
-                key = null;
-                publishChanges();
+                clearForm();
+                publishForm();
                 refresh();
                 return;
             }
             ApiError error = result.isSuccess() ? ApiError.parse() : result.getError();
             if (error != null && error.getHttpStatus() == UNAUTHORIZED) {
-                expireSession(error);
+                expireSession();
                 return;
             }
             saveError = error;
-            publishChanges();
+            publishForm();
         });
+    }
+
+    /** Temporary: the add button opens and closes the inline form. */
+    void toggleForm() {
+        formOpen = !formOpen;
+        publishForm();
     }
 
     private MemoryListUiState current() { return state.getValue(); }
 
-    private void publish(MemoryListUiState next) {
-        state.setValue(next);
-        // Mirror for the old screen, derived from the single state above.
-        hasMore = next.hasMore();
-        loaded = next.getStatus() == MemoryListUiState.Status.CONTENT
-                || next.getStatus() == MemoryListUiState.Status.EMPTY;
-        loading = next.getStatus() == MemoryListUiState.Status.LOADING || next.isLoadingMore()
-                || running == Operation.REFRESH;
-        listError = next.getError();
-        publishChanges();
-    }
+    private void publish(MemoryListUiState next) { state.setValue(next); }
 
-    private void publishChanges() { changes.setValue(changes.getValue() + 1); }
+    private void publishForm() { formChanges.setValue(formChanges.getValue() + 1); }
 
     /** Stops every request and forgets the list and the form. */
     private void clear() {
@@ -278,9 +259,15 @@ public final class MemoriesViewModel extends ViewModel {
         if (saveRequest != null) saveRequest.cancel();
         saveRequest = null;
         generation++;
-        rows.clear();
+        loaded.clear();
         nextPage = 0;
         failed = null;
+        clearForm();
+        publishForm();
+    }
+
+    private void clearForm() {
+        formOpen = false;
         title = "";
         description = "";
         date = null;
@@ -298,6 +285,7 @@ public final class MemoriesViewModel extends ViewModel {
 
     @Override
     protected void onCleared() {
-        clear();
+        cancelList();
+        if (saveRequest != null) saveRequest.cancel();
     }
 }

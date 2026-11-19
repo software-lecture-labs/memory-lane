@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Memory list colors from the Stitch "Anılar" screen, on top of the shared palette in colors.xml.
-     tools:ignore="UnusedResources" is dropped once a layout references the color. -->
-<resources xmlns:tools="http://schemas.android.com/tools">
+<!-- Memory list colors from the Stitch "Anılar" screen, on top of the shared palette in colors.xml. -->
+<resources>
     <!-- Soft pink card border; ml_outline is a grey plum tint that reads as grey on white cards. -->
-    <color name="memory_card_stroke" tools:ignore="UnusedResources">#F0D7E8</color>
-    <!-- Pink wash behind the year badge and the date row icon. -->
-    <color name="memory_pink_soft" tools:ignore="UnusedResources">#FFF0F6</color>
+    <color name="memory_card_stroke">#F0D7E8</color>
+    <!-- Pink wash behind the year badge. -->
+    <color name="memory_pink_soft">#FFF0F6</color>
 </resources>

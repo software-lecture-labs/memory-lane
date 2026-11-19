@@ -2,13 +2,17 @@ package com.memorylane.feature.memories.ui;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.memorylane.core.network.ApiError;
+import com.memorylane.feature.health.ui.HealthViewModel;
 import com.memorylane.feature.memories.data.FakeMemoryListRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
 
@@ -26,13 +30,13 @@ public class MemoriesViewModelTest {
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
     private final FakeMemoryListRepository repository = new FakeMemoryListRepository();
-    private final MemoriesViewModel viewModel = new MemoriesViewModel();
+    private final MemoriesViewModel viewModel = new MemoriesViewModel(repository, null);
 
     // --- Session ---
 
     @Test
     public void withoutSessionItIsSignedOutAndRequestsNothing() {
-        viewModel.attach(repository, null, null);
+        viewModel.setSession(null);
 
         assertEquals(MemoryListUiState.Status.SIGNED_OUT, status());
         assertTrue(repository.requests.isEmpty());
@@ -47,7 +51,7 @@ public class MemoriesViewModelTest {
         repository.last().succeed(FakeMemoryListRepository.sampleMemories(), false);
 
         // A recreated view binds again with the same token.
-        viewModel.attach(repository, null, SESSION_A);
+        viewModel.setSession(SESSION_A);
 
         assertEquals(1, repository.requests.size());
         assertEquals(MemoryListUiState.Status.CONTENT, status());
@@ -58,7 +62,7 @@ public class MemoriesViewModelTest {
         signIn();
         FakeMemoryListRepository.Request old = repository.last();
 
-        viewModel.attach(repository, null, SESSION_B);
+        viewModel.setSession(SESSION_B);
 
         assertTrue(old.isCancelled());
         assertEquals(2, repository.requests.size());
@@ -75,7 +79,7 @@ public class MemoriesViewModelTest {
         viewModel.loadMore();
         FakeMemoryListRepository.Request pending = repository.last();
 
-        viewModel.attach(repository, null, null);
+        viewModel.setSession(null);
 
         assertTrue(pending.isCancelled());
         assertEquals(MemoryListUiState.Status.SIGNED_OUT, status());
@@ -343,7 +347,7 @@ public class MemoriesViewModelTest {
 
         viewModel.consumeSessionExpired();
         assertEquals(Boolean.FALSE, viewModel.sessionExpired().getValue());
-        viewModel.attach(repository, null, SESSION_B);
+        viewModel.setSession(SESSION_B);
         assertEquals(2, repository.requests.size());
     }
 
@@ -356,7 +360,7 @@ public class MemoriesViewModelTest {
         assertEquals(Boolean.FALSE, viewModel.sessionExpired().getValue());
     }
 
-    // --- Lifecycle and the old screen ---
+    // --- Lifecycle ---
 
     @Test
     public void clearingTheViewModelCancelsThePendingRequest() {
@@ -368,54 +372,32 @@ public class MemoriesViewModelTest {
     }
 
     @Test
-    public void resetSignsOutLocally() {
+    public void expiredSessionAnswerAfterSignOutIsIgnored() {
         signIn();
-        viewModel.reset();
+        FakeMemoryListRepository.Request pending = repository.last();
+        viewModel.setSession(null);
 
-        assertTrue(repository.last().isCancelled());
-        assertEquals(MemoryListUiState.Status.SIGNED_OUT, status());
-        assertNull(viewModel.session);
+        pending.fail(unauthorized());
+
+        assertEquals(Boolean.FALSE, viewModel.sessionExpired().getValue());
     }
 
     @Test
-    public void oldScreenFieldsMirrorTheState() {
-        List<Integer> changes = new ArrayList<>();
-        viewModel.changes.observeForever(changes::add);
-        signIn();
-        assertTrue(viewModel.loading);
-        assertFalse(viewModel.loaded);
+    public void factoryCreatesOnlyThisViewModel() {
+        ViewModelProvider.Factory factory = MemoriesViewModel.factory(repository, null);
 
-        repository.last().succeed(FakeMemoryListRepository.sampleMemories(), true);
-        assertFalse(viewModel.loading);
-        assertTrue(viewModel.loaded);
-        assertTrue(viewModel.hasMore);
-        assertEquals(3, viewModel.rows.size());
-        assertNull(viewModel.listError);
-
-        viewModel.refresh();
-        assertTrue("The old screen shows a refresh as loading", viewModel.loading);
-        assertTrue(changes.size() > 3);
-    }
-
-    @Test
-    public void oldScreenSeesTheUnauthorizedErrorSoItClearsTheToken() {
-        signIn();
-        ApiError expired = unauthorized();
-        repository.last().fail(expired);
-
-        assertSame(expired, viewModel.listError);
-        assertNull(viewModel.session);
-        assertTrue(viewModel.rows.isEmpty());
+        assertNotNull(factory.create(MemoriesViewModel.class));
+        assertThrows(IllegalArgumentException.class, () -> factory.create(HealthViewModel.class));
     }
 
     private void signIn() {
-        viewModel.attach(repository, null, SESSION_A);
+        viewModel.setSession(SESSION_A);
     }
 
     private void assertSignedOutAfterExpiry() {
         assertEquals(MemoryListUiState.Status.SIGNED_OUT, status());
         assertEquals(Boolean.TRUE, viewModel.sessionExpired().getValue());
-        assertNull(viewModel.session);
+        assertTrue(state().getItems().isEmpty());
     }
 
     private MemoryListUiState state() { return viewModel.getState().getValue(); }

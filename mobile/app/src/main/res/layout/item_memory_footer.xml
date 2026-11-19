@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- End of the list: progress while the next page loads, the error of a failed page or refresh
+     with a retry button, or the "load more" button. Only one of them is visible. -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/ml_space_md">
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/footer_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/memory_list_loading_more"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/footer_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:accessibilityLiveRegion="polite"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+        android:textColor="@color/ml_error"
+        android:visibility="gone"
+        tools:text="@string/error_network"
+        tools:visibility="visible" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/footer_action"
+        style="@style/Widget.MemoryLane.Button.Ghost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_sm"
+        android:visibility="gone"
+        tools:text="@string/memory_list_load_more"
+        tools:visibility="visible" />
+</LinearLayout>
