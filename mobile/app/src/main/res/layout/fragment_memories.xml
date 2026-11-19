@@ -37,34 +37,157 @@
                 android:text="@string/memory_form_title"
                 android:textAppearance="@style/TextAppearance.MemoryLane.Title" />
 
-            <EditText
-                android:id="@+id/memory_title"
+            <!-- Text is not truncated: the counter turns red over the limit and saving is refused. -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/memory_title_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm"
                 android:hint="@string/memory_title_hint"
-                android:inputType="textCapSentences"
-                android:importantForAutofill="no"
-                android:saveEnabled="false" />
+                app:counterEnabled="true"
+                app:counterMaxLength="100">
 
-            <EditText
-                android:id="@+id/memory_description"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/memory_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapSentences"
+                    android:saveEnabled="false" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/memory_description_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm"
                 android:hint="@string/memory_description_hint"
-                android:inputType="textCapSentences|textMultiLine"
-                android:importantForAutofill="no"
-                android:saveEnabled="false" />
+                app:counterEnabled="true"
+                app:counterMaxLength="3000">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/memory_date"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/memory_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:minLines="3"
+                    android:saveEnabled="false" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/memory_date_select" />
+                android:layout_marginTop="@dimen/ml_space_sm"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/memory_date"
+                    style="@style/Widget.MemoryLane.Button.Ghost"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/memory_date_select" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/memory_today"
+                    style="@style/Widget.MemoryLane.Button.Secondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/ml_space_sm"
+                    android:text="@string/memory_date_today" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/memory_date_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                android:textColor="@color/ml_error"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_md"
+                android:text="@string/memory_category_label"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/memory_categories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:saveEnabled="false"
+                app:selectionRequired="true"
+                app:singleSelection="true" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm"
+                android:text="@string/memory_emotion_label"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/memory_emotions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:saveEnabled="false"
+                app:singleSelection="true" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm"
+                android:text="@string/memory_location_label"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/memory_latitude_layout"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/memory_latitude_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/memory_latitude"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:saveEnabled="false" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/memory_longitude_layout"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/ml_space_sm"
+                    android:layout_weight="1"
+                    android:hint="@string/memory_longitude_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/memory_longitude"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:saveEnabled="false" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/memory_save"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_md"
                 android:text="@string/memory_save" />
 
             <TextView

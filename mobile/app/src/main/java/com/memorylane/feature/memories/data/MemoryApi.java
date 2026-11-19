@@ -17,7 +17,11 @@ public interface MemoryApi {
     @GET("api/v1/memories")
     Call<Page> list(@Header("Authorization") String session, @Query("page") int page);
 
-    record Draft(String title, String description, String memoryDate) {}
+    /** Create body; Gson leaves out null emotion/location, which the server reads as "not given". */
+    record Draft(String title, String description, String memoryDate, String category,
+                 String emotion, Location location) {}
+
+    record Location(double latitude, double longitude) {}
 
     record Memory(String id, String title, String description, String memoryDate) {}
 
