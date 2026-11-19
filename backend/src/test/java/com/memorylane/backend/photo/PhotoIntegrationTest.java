@@ -62,10 +62,10 @@ class PhotoIntegrationTest {
         assertEquals(201, first.statusCode(), first.body());
         JsonNode photo = json.readTree(first.body());
         assertEquals(0, photo.path("order").asInt());
-        assertEquals("image/jpeg", photo.path("contentType").asText());
+        assertEquals("image/jpeg", photo.path("contentType").asString());
         assertEquals(PhotoFileTest.JPEG.length, photo.path("sizeBytes").asLong());
-        assertEquals(memory, photo.path("memoryId").asText());
-        assertEquals(photo.path("contentUrl").asText(), first.headers().firstValue("Location").orElseThrow());
+        assertEquals(memory, photo.path("memoryId").asString());
+        assertEquals(photo.path("contentUrl").asString(), first.headers().firstValue("Location").orElseThrow());
 
         var second = upload(owner.token(), memory, UUID.randomUUID().toString(), PhotoFileTest.PNG, "image/png");
         assertEquals(201, second.statusCode(), second.body());
@@ -74,9 +74,9 @@ class PhotoIntegrationTest {
         JsonNode list = json.readTree(send("GET", "/memories/" + memory + "/photos", owner.token()).body());
         assertEquals(2, list.size());
         assertEquals(photo.path("id"), list.get(0).path("id"));
-        assertEquals("image/png", list.get(1).path("contentType").asText());
+        assertEquals("image/png", list.get(1).path("contentType").asString());
 
-        var content = http.send(request(photo.path("contentUrl").asText(), owner.token()).GET().build(),
+        var content = http.send(request(photo.path("contentUrl").asString(), owner.token()).GET().build(),
                 HttpResponse.BodyHandlers.ofByteArray());
         assertEquals(200, content.statusCode());
         assertArrayEquals(PhotoFileTest.JPEG, content.body());
@@ -105,7 +105,7 @@ class PhotoIntegrationTest {
 
         var conflict = upload(owner.token(), memory, key, PhotoFileTest.jpegOfSize(64), "image/jpeg");
         assertEquals(409, conflict.statusCode());
-        assertEquals("IDEMPOTENCY_CONFLICT", json.readTree(conflict.body()).path("code").asText());
+        assertEquals("IDEMPOTENCY_CONFLICT", json.readTree(conflict.body()).path("code").asString());
 
         assertEquals(1, photoRows(memory));
         assertEquals(filesAfterFirst, storedFiles());
@@ -124,7 +124,7 @@ class PhotoIntegrationTest {
 
         var sixth = upload(owner.token(), memory, UUID.randomUUID().toString(), PhotoFileTest.PNG, "image/png");
         assertEquals(409, sixth.statusCode());
-        assertEquals("PHOTO_LIMIT_REACHED", json.readTree(sixth.body()).path("code").asText());
+        assertEquals("PHOTO_LIMIT_REACHED", json.readTree(sixth.body()).path("code").asString());
         assertEquals(200, upload(owner.token(), memory, firstKey, PhotoFileTest.JPEG, "image/jpeg").statusCode());
         assertEquals(PhotoService.MAX_PHOTOS_PER_MEMORY, photoRows(memory));
     }
@@ -170,7 +170,7 @@ class PhotoIntegrationTest {
         Session other = session();
         String memory = memory(owner);
         var uploaded = upload(owner.token(), memory, UUID.randomUUID().toString(), PhotoFileTest.JPEG, "image/jpeg");
-        String contentUrl = json.readTree(uploaded.body()).path("contentUrl").asText();
+        String contentUrl = json.readTree(uploaded.body()).path("contentUrl").asString();
 
         assertError(404, "MEMORY_NOT_FOUND", upload(other.token(), memory, UUID.randomUUID().toString(), PhotoFileTest.PNG, "image/png"));
         assertError(404, "MEMORY_NOT_FOUND", send("GET", "/memories/" + memory + "/photos", other.token()));
@@ -209,7 +209,7 @@ class PhotoIntegrationTest {
         var login = sendJson("/auth/login", credentials, null);
         assertEquals(200, login.statusCode(), login.body());
         JsonNode body = json.readTree(login.body());
-        return new Session(UUID.fromString(body.path("user").path("id").asText()), body.path("accessToken").asText());
+        return new Session(UUID.fromString(body.path("user").path("id").asString()), body.path("accessToken").asString());
     }
 
     private String memory(Session owner) throws Exception {
@@ -220,7 +220,7 @@ class PhotoIntegrationTest {
                         json.writeValueAsString(Map.of("title", "Fotoğraflı anı", "memoryDate", "2026-01-01"))));
         var created = http.send(request.build(), HttpResponse.BodyHandlers.ofString());
         assertEquals(201, created.statusCode(), created.body());
-        return json.readTree(created.body()).path("id").asText();
+        return json.readTree(created.body()).path("id").asString();
     }
 
     /** Sends one multipart part named "file"; with null bytes only an unrelated text part is sent. */
@@ -284,7 +284,7 @@ class PhotoIntegrationTest {
 
     private void assertError(int status, String code, HttpResponse<String> response) throws Exception {
         assertEquals(status, response.statusCode(), response.body());
-        assertEquals(code, json.readTree(response.body()).path("code").asText(), response.body());
+        assertEquals(code, json.readTree(response.body()).path("code").asString(), response.body());
     }
 
     private long photoRows(String memory) {

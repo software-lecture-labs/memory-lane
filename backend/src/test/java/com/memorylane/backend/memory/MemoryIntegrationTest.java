@@ -44,10 +44,10 @@ class MemoryIntegrationTest {
         var created = create(owner, key, "  İlk anı  ");
         assertEquals(201, created.statusCode(), created.body());
         var detail = json.readTree(created.body());
-        assertEquals("İlk anı", detail.path("title").asText());
-        assertEquals("OTHER", detail.path("category").asText());
+        assertEquals("İlk anı", detail.path("title").asString());
+        assertEquals("OTHER", detail.path("category").asString());
         assertTrue(detail.path("photos").isArray());
-        assertEquals("/api/v1/memories/" + detail.path("id").asText(),
+        assertEquals("/api/v1/memories/" + detail.path("id").asString(),
                 created.headers().firstValue("Location").orElseThrow());
 
         var replay = create(owner, key, "İlk anı");
@@ -103,7 +103,7 @@ class MemoryIntegrationTest {
         if (register) assertEquals(201, send("POST", "/auth/register", null, null, credentials).statusCode());
         var response = send("POST", "/auth/login", null, null, credentials);
         assertEquals(200, response.statusCode(), response.body());
-        return json.readTree(response.body()).path("accessToken").asText();
+        return json.readTree(response.body()).path("accessToken").asString();
     }
 
     private HttpResponse<String> send(String method, String path, String token, String key, String body)
