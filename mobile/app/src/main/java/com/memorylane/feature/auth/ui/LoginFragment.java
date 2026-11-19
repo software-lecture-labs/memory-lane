@@ -55,7 +55,8 @@ public final class LoginFragment extends Fragment {
                 binding.passwordLayout.setError(ErrorMessages.describe(requireContext(), result.getError()));
                 return;
             }
-            AppContainer.from(requireContext()).startSession(result.getData().getAccessToken());
+            AppContainer.from(requireContext()).startSession(result.getData().getAccessToken(),
+                    result.getData().getUser().getEmail());
             binding.passwordInput.setText("");
             NavHostFragment.findNavController(this).navigate(R.id.memoriesFragment, null,
                     new NavOptions.Builder().setPopUpTo(R.id.memoriesFragment, true).build());
