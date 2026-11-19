@@ -10,9 +10,12 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 import java.io.IOException;
+import java.net.ConnectException;
+import java.sql.SQLException;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,12 +49,14 @@ class ErrorLoggingTest {
 
     @Test
     void databaseOutageIsAWarningWithoutStackTrace(CapturedOutput output) {
-        var response = errors.database(new DataAccessResourceFailureException("Connection refused"),
-                request("GET", "/api/v1/memories"));
+        var response = errors.database(refusedConnection(), request("GET", "/api/v1/memories"));
 
         assertEquals(503, response.getStatusCode().value());
         assertTrue(output.getOut().contains("WARN"), output.getOut());
-        assertTrue(output.getOut().contains("Database unavailable during GET /api/v1/memories: Connection refused"));
+        // The innermost cause, not Spring's wrapper message, is what tells why the request failed.
+        assertTrue(output.getOut().contains("Database unavailable during GET /api/v1/memories: Connection refused"),
+                output.getOut());
+        assertFalse(output.getOut().contains("Could not open JPA EntityManager"));
         assertFalse(output.getOut().contains("ERROR"));
         assertFalse(output.getOut().contains("\tat "));
         assertNoSecrets(output);
@@ -78,7 +83,7 @@ class ErrorLoggingTest {
     @Test
     void sessionFilterLogsDatabaseOutageBeforeAnsweringWith503(CapturedOutput output) throws Exception {
         AuthService auth = mock(AuthService.class);
-        when(auth.me(any())).thenThrow(new DataAccessResourceFailureException("Connection refused"));
+        when(auth.me(any())).thenThrow(refusedConnection());
         var filter = new SessionAuthenticationFilter(
                 new StaticListableBeanFactory(Map.of("auth", auth)).getBeanProvider(AuthService.class),
                 new tools.jackson.databind.ObjectMapper());
@@ -93,6 +98,22 @@ class ErrorLoggingTest {
                 "Database unavailable while checking the session for GET /api/v1/memories: Connection refused"),
                 output.getOut());
         assertNoSecrets(output);
+    }
+
+    @Test
+    void anErrorWithoutCauseOrMessageIsStillNamed() {
+        assertEquals("Connection refused",
+                AuthErrors.rootCause(new DataAccessResourceFailureException("Connection refused")));
+        assertEquals("ConnectException",
+                AuthErrors.rootCause(new CannotCreateTransactionException("wrapper", new ConnectException())));
+    }
+
+    // How a stopped PostgreSQL reaches the handlers: the driver's error, wrapped by Spring when it
+    // tries to open the transaction. Only the innermost message says what went wrong.
+    private static CannotCreateTransactionException refusedConnection() {
+        return new CannotCreateTransactionException("Could not open JPA EntityManager for transaction",
+                new SQLException("Connection to localhost:5432 refused.", "08001",
+                        new ConnectException("Connection refused")));
     }
 
     private static MockHttpServletRequest request(String method, String path) {
