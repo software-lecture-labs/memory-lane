@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory list screen (ML-07). tools:ignore="UnusedResources" is temporary: each entry drops it
+     in the commit whose layout or code starts using it. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <!-- Header -->
+    <string name="memory_list_subtitle" tools:ignore="UnusedResources">Güzel anılarını güvenle biriktir.</string>
+
+    <!-- Loading and paging -->
+    <string name="memory_list_loading" tools:ignore="UnusedResources">Anıların yükleniyor…</string>
+    <string name="memory_list_loading_more" tools:ignore="UnusedResources">Daha fazla anı yükleniyor…</string>
+    <string name="memory_list_load_more" tools:ignore="UnusedResources">Daha fazla anı göster</string>
+
+    <!-- Empty, error and signed-out states -->
+    <string name="memory_list_empty_title" tools:ignore="UnusedResources">Henüz anın yok</string>
+    <string name="memory_list_empty_message" tools:ignore="UnusedResources">İlk anını eklemek için “Anı Ekle” düğmesine dokun.</string>
+    <string name="memory_list_error_title" tools:ignore="UnusedResources">Anılar yüklenemedi</string>
+    <string name="memory_list_signed_out_title" tools:ignore="UnusedResources">Anıların seni bekliyor</string>
+    <string name="memory_list_signed_out_message" tools:ignore="UnusedResources">Anılarını görmek ve yenilerini eklemek için giriş yap.</string>
+    <string name="memory_list_sign_in" tools:ignore="UnusedResources">Giriş yap</string>
+
+    <!-- Year header: the year itself is shown as a number; this is what TalkBack reads. -->
+    <string name="memory_list_year_description" tools:ignore="UnusedResources">%1$d yılındaki anılar</string>
+
+    <!-- Add button -->
+    <string name="memory_list_add" tools:ignore="UnusedResources">Anı Ekle</string>
+    <string name="memory_list_add_description" tools:ignore="UnusedResources">Yeni anı ekle</string>
+
+    <!-- Card date, e.g. "28 Ekim 2024"; formatted with the Turkish locale. -->
+    <string name="memory_list_date_pattern" translatable="false" tools:ignore="UnusedResources">d MMMM yyyy</string>
+</resources>
