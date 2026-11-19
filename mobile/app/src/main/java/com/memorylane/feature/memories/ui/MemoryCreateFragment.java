@@ -67,7 +67,7 @@ public final class MemoryCreateFragment extends Fragment {
         dateFormat = DateTimeFormatter.ofPattern(getString(R.string.memory_list_date_pattern), TURKISH);
         ViewCompat.setAccessibilityHeading(binding.createHeading, true);
 
-        binding.createBack.setOnClickListener(button -> goBack());
+        binding.createClose.setOnClickListener(button -> goBack());
         binding.createDateCard.setOnClickListener(card -> openDatePicker());
         binding.createSave.setOnClickListener(button -> viewModel.save(app.authorization()));
 
@@ -120,7 +120,7 @@ public final class MemoryCreateFragment extends Fragment {
         binding.createTitleInput.setEnabled(!saving);
         binding.createDescriptionInput.setEnabled(!saving);
         binding.createDateCard.setEnabled(!saving);
-        binding.createBack.setEnabled(!saving);
+        binding.createClose.setEnabled(!saving);
 
         switch (state.getFocus()) {
             case TITLE:

@@ -1,63 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One memory card: date row, title and up to two lines of description.
-     Uses the shared Widget.MemoryLane.Card style (24dp corners) with the pink Stitch border. -->
-<com.google.android.material.card.MaterialCardView
+<!-- One memory as a notebook page (Stitch "Anılar", photo-less card): white 32dp card with the
+     pink border, a raspberry-to-lavender margin stripe, the date in a pink pill, the title and
+     up to two lines of description. A strip of washi tape overlaps the top edge, so the card
+     sits in a frame that does not clip its children. -->
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/ml_space_md"
-    app:strokeColor="@color/memory_card_stroke">
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Widget.MemoryLane.Card.Scrapbook"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_marginTop="@dimen/memory_tape_overlap">
 
-        <!-- A compound drawable cannot shrink the 24dp icon to the 16dp inline size. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            tools:ignore="UseCompoundDrawables">
+            android:orientation="horizontal">
 
-            <ImageView
-                android:layout_width="@dimen/memory_icon_inline"
-                android:layout_height="@dimen/memory_icon_inline"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_calendar"
-                app:tint="@color/ml_primary" />
+            <View
+                android:layout_width="@dimen/memory_card_stripe"
+                android:layout_height="match_parent"
+                android:background="@drawable/memory_card_stripe"
+                android:importantForAccessibility="no" />
 
-            <TextView
-                android:id="@+id/memory_date"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/ml_space_xs"
-                android:textAppearance="@style/TextAppearance.MemoryLane.Label"
-                android:textColor="@color/ml_plum_muted"
-                tools:text="28 Ekim 2024" />
+                android:layout_marginStart="@dimen/ml_space_md"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- A compound drawable cannot shrink the 24dp icon to the 16dp inline size. -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/memory_pill_pink"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/ml_space_sm"
+                    android:paddingVertical="@dimen/ml_space_xs"
+                    tools:ignore="UseCompoundDrawables">
+
+                    <ImageView
+                        android:layout_width="@dimen/memory_icon_inline"
+                        android:layout_height="@dimen/memory_icon_inline"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="@color/ml_primary" />
+
+                    <TextView
+                        android:id="@+id/memory_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/ml_space_xs"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                        android:textColor="@color/ml_primary"
+                        tools:text="28 Ekim 2024" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/memory_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle"
+                    tools:text="Bursa’da bir sonbahar günü" />
+
+                <TextView
+                    android:id="@+id/memory_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_xs"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                    tools:text="Tophane yamaçlarında ılık rüzgar eşliğinde kestane şekeri molası ve eski sokaklarda uzun bir yürüyüş." />
+            </LinearLayout>
         </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/memory_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ml_space_sm"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle"
-            tools:text="Bursa’da bir sonbahar günü" />
-
-        <TextView
-            android:id="@+id/memory_description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ml_space_xs"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
-            tools:text="Tophane yamaçlarında ılık rüzgar eşliğinde kestane şekeri molası ve eski sokaklarda uzun bir yürüyüş." />
-    </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+    <!-- Decoration only; drawn above the card (higher elevation), slightly askew like real tape. -->
+    <View
+        android:layout_width="@dimen/memory_tape_width"
+        android:layout_height="@dimen/memory_tape_height"
+        android:layout_gravity="top|center_horizontal"
+        android:background="@drawable/memory_tape"
+        android:elevation="@dimen/memory_tape_elevation"
+        android:importantForAccessibility="no"
+        android:rotation="-2" />
+</FrameLayout>

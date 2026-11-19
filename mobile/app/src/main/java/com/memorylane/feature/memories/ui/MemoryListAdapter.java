@@ -78,6 +78,9 @@ final class MemoryListAdapter extends ListAdapter<MemoryListItem, RecyclerView.V
         void bind(MemoryListItem item) {
             // Locale.ROOT keeps plain digits; a year is not a quantity to group ("2.024").
             binding.memoryYear.setText(String.format(Locale.ROOT, "%d", item.getYear()));
+            // Alternating badge colours by year, as on the Stitch timeline; stable for a given year.
+            binding.memoryYearBadge.setBackgroundResource(item.getYear() % 2 == 0
+                    ? R.drawable.memory_year_badge_peach : R.drawable.memory_year_badge_lavender);
             binding.getRoot().setContentDescription(binding.getRoot().getContext()
                     .getString(R.string.memory_list_year_description, item.getYear()));
         }

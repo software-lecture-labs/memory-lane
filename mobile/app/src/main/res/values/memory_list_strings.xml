@@ -2,7 +2,11 @@
 <!-- Memory list screen (ML-07). -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
     <!-- Header -->
-    <string name="memory_list_subtitle">Güzel anılarını güvenle biriktir.</string>
+    <string name="memory_list_badge">Kişisel Günlük &amp; Arşiv</string>
+    <string name="memory_list_subtitle">Güzel anılarını güvenle ve sevgiyle biriktir.</string>
+    <!-- Small note at the end of each year line and after the last memory. -->
+    <string name="memory_list_year_note">anı defteri</string>
+    <string name="memory_list_end">Geçmişin güzellikleri burada korunuyor.</string>
 
     <!-- Loading and paging -->
     <string name="memory_list_loading">Anıların yükleniyor…</string>

@@ -6,17 +6,19 @@
          "I" instead of the Turkish "İ" on a non-Turkish phone. -->
     <string name="memory_create_badge">YENİ SAYFA</string>
     <string name="memory_create_heading">Yeni Anı</string>
-    <string name="memory_create_back">Geri dön</string>
+    <string name="memory_create_close">Kapat</string>
+    <string name="memory_create_save">Kaydet</string>
 
-    <string name="memory_create_title_label">Anı başlığı</string>
-    <string name="memory_create_title_hint">Örn: Bursa’da bir sonbahar günü</string>
-    <string name="memory_create_date_label">Anı tarihi</string>
+    <string name="memory_create_title_label">Anı Başlığı</string>
+    <string name="memory_create_title_note">günün adı</string>
+    <string name="memory_create_title_hint">Örn: Bursa’da Bir Sonbahar Günü</string>
+    <string name="memory_create_date_label">Anı Tarihi</string>
     <string name="memory_create_date_empty">Tarih seç</string>
-    <string name="memory_create_date_change">Değiştir</string>
+    <string name="memory_create_date_change">değiştir</string>
     <string name="memory_create_date_picker_title">Anının tarihini seç</string>
-    <string name="memory_create_description_label">Hislerin ve anlatın</string>
+    <string name="memory_create_description_label">Hislerin &amp; Anlatın</string>
+    <string name="memory_create_description_note">sevgili günlük…</string>
     <string name="memory_create_description_hint">O güne dair hissettiklerini, kokuları, duyduklarını yaz…</string>
-    <string name="memory_create_save">Anıyı kaydet</string>
 
     <!-- Validation and result messages -->
     <string name="memory_create_title_required">Anına bir başlık ver.</string>

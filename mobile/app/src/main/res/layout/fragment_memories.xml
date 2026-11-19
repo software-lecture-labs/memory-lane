@@ -25,6 +25,16 @@
             android:paddingTop="@dimen/ml_space_md"
             app:layout_scrollFlags="scroll">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/ml_space_sm"
+                android:background="@drawable/memory_pill_butter"
+                android:paddingHorizontal="@dimen/ml_space_md"
+                android:paddingVertical="@dimen/ml_space_xs"
+                android:text="@string/memory_list_badge"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold" />
+
             <com.memorylane.core.ui.widget.ScreenHeaderView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

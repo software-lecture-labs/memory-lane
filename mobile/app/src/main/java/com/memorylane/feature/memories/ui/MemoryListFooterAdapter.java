@@ -13,9 +13,12 @@ import com.memorylane.databinding.ItemMemoryFooterBinding;
 
 import java.util.Objects;
 
-/** Zero or one row after the memories: next-page progress, an error with retry, or "load more". */
+/**
+ * Zero or one row after the memories: next-page progress, an error with retry, "load more", or
+ * the closing note once the last page is shown.
+ */
 final class MemoryListFooterAdapter extends RecyclerView.Adapter<MemoryListFooterAdapter.Holder> {
-    enum Mode { NONE, LOADING, ERROR, LOAD_MORE }
+    enum Mode { NONE, LOADING, ERROR, LOAD_MORE, END }
 
     private final Runnable onLoadMore;
     private final Runnable onRetry;
@@ -59,6 +62,7 @@ final class MemoryListFooterAdapter extends RecyclerView.Adapter<MemoryListFoote
     public void onBindViewHolder(@NonNull Holder holder, int position) {
         ItemMemoryFooterBinding binding = holder.binding;
         binding.footerProgress.setVisibility(mode == Mode.LOADING ? View.VISIBLE : View.GONE);
+        binding.footerEnd.setVisibility(mode == Mode.END ? View.VISIBLE : View.GONE);
         binding.footerMessage.setVisibility(mode == Mode.ERROR ? View.VISIBLE : View.GONE);
         binding.footerMessage.setText(message);
         boolean hasAction = mode == Mode.ERROR || mode == Mode.LOAD_MORE;

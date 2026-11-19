@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- End of the list: progress while the next page loads, the error of a failed page or refresh
-     with a retry button, or the "load more" button. Only one of them is visible. -->
+     with a retry button, the "load more" button, or the closing note after the last memory.
+     Only one of them is visible. -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -39,4 +41,33 @@
         android:visibility="gone"
         tools:text="@string/memory_list_load_more"
         tools:visibility="visible" />
+
+    <!-- Closing note after the last memory (Stitch: heart in a lavender circle). A compound
+         drawable cannot carry the icon's own circle background and padding. -->
+    <LinearLayout
+        android:id="@+id/footer_end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingVertical="@dimen/ml_space_md"
+        android:visibility="gone"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_width="@dimen/memory_create_icon_box"
+            android:layout_height="@dimen/memory_create_icon_box"
+            android:background="@drawable/memory_create_date_icon_bg"
+            android:importantForAccessibility="no"
+            android:padding="@dimen/ml_space_sm"
+            android:src="@drawable/ic_favorite"
+            app:tint="@color/ml_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_sm"
+            android:text="@string/memory_list_end"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Note" />
+    </LinearLayout>
 </LinearLayout>

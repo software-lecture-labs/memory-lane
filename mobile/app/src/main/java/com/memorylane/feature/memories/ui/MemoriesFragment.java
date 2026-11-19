@@ -60,6 +60,17 @@ public class MemoriesFragment extends Fragment {
                 getString(R.string.memory_list_date_pattern), TURKISH));
         footerAdapter = new MemoryListFooterAdapter(viewModel::loadMore, viewModel::retry);
         binding.memoryList.setAdapter(new ConcatAdapter(listAdapter, footerAdapter));
+        listAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                // LinearLayoutManager keeps the first visible row in place, so a memory added
+                // at the top (e.g. just created) would land above the viewport. Follow it only
+                // when the reader was already at the top; never jump while they scroll.
+                if (positionStart == 0 && binding != null && !binding.memoryList.canScrollVertically(-1)) {
+                    binding.memoryList.scrollToPosition(0);
+                }
+            }
+        });
         binding.memoryList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView list, int dx, int dy) {
@@ -135,9 +146,13 @@ public class MemoriesFragment extends Fragment {
                 break;
         }
 
-        listAdapter.submitList(content ? state.getItems() : Collections.emptyList());
-        footerAdapter.submit(footerMode(state), content && state.getError() != null
-                ? describe(state.getError()) : null);
+        MemoryListFooterAdapter.Mode footer = footerMode(state);
+        String footerMessage = content && state.getError() != null ? describe(state.getError()) : null;
+        // ListAdapter applies rows after a background diff. Updating the footer first would make
+        // it the only row for a moment; RecyclerView then keeps it anchored on screen and the
+        // new rows end up above the viewport. So the footer follows once the rows are in.
+        listAdapter.submitList(content ? state.getItems() : Collections.emptyList(),
+                () -> footerAdapter.submit(footer, footerMessage));
     }
 
     private static MemoryListFooterAdapter.Mode footerMode(MemoryListUiState state) {
@@ -145,7 +160,7 @@ public class MemoriesFragment extends Fragment {
         if (state.isLoadingMore()) return MemoryListFooterAdapter.Mode.LOADING;
         if (state.getError() != null) return MemoryListFooterAdapter.Mode.ERROR;
         if (state.canLoadMore()) return MemoryListFooterAdapter.Mode.LOAD_MORE;
-        return MemoryListFooterAdapter.Mode.NONE;
+        return MemoryListFooterAdapter.Mode.END;
     }
 
     private String describe(@Nullable ApiError error) {

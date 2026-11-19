@@ -13,8 +13,8 @@
 
     <color name="ml_lavender">#DCCEFF</color>
     <color name="ml_lavender_pressed" tools:ignore="UnusedResources">#CFC0F5</color>
-    <color name="ml_peach" tools:ignore="UnusedResources">#FFD0B5</color>
-    <color name="ml_butter" tools:ignore="UnusedResources">#FFE69A</color>
+    <color name="ml_peach">#FFD0B5</color>
+    <color name="ml_butter">#FFE69A</color>
     <color name="ml_mint" tools:ignore="UnusedResources">#C9EBDD</color>
 
     <!-- Deep plum is the only text color on pastel surfaces; alpha variants follow DESIGN.md. -->
