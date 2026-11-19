@@ -4,11 +4,13 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
@@ -33,9 +35,8 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = navHost.getNavController();
         ViewCompat.setOnApplyWindowInsetsListener(binding.navHost, (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            boolean isLogin = navController.getCurrentDestination() != null
-                    && navController.getCurrentDestination().getId() == R.id.loginFragment;
-            int bottom = isLogin
+            // Without the bottom bar the screen pads itself above the keyboard or gesture area.
+            int bottom = hidesBottomNav(navController.getCurrentDestination())
                     ? Math.max(insets.getInsets(WindowInsetsCompat.Type.ime()).bottom, bars.bottom)
                     : 0;
             view.setPadding(bars.left, bars.top, bars.right, bottom);
@@ -43,8 +44,14 @@ public class MainActivity extends AppCompatActivity {
         });
         NavigationUI.setupWithNavController(binding.bottomNav, navController);
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            binding.bottomNav.setVisibility(destination.getId() == R.id.loginFragment ? View.GONE : View.VISIBLE);
+            binding.bottomNav.setVisibility(hidesBottomNav(destination) ? View.GONE : View.VISIBLE);
             ViewCompat.requestApplyInsets(binding.navHost);
         });
+    }
+
+    /** Full-screen form screens: login and the new memory form (a stack screen, not a tab). */
+    private static boolean hidesBottomNav(@Nullable NavDestination destination) {
+        return destination != null && (destination.getId() == R.id.loginFragment
+                || destination.getId() == R.id.memoryCreateFragment);
     }
 }

@@ -1,8 +1,6 @@
 package com.memorylane.feature.memories.ui;
 
-import android.app.DatePickerDialog;
 import android.os.Bundle;
-import android.widget.TextView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,27 +8,35 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.recyclerview.widget.ConcatAdapter;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
 import com.memorylane.core.network.ApiError;
 import com.memorylane.core.ui.ErrorMessages;
-import com.memorylane.core.ui.UiState;
 import com.memorylane.databinding.FragmentMemoriesBinding;
-import com.memorylane.feature.health.data.HealthResponse;
-import com.memorylane.feature.health.ui.HealthViewModel;
 
-import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.Locale;
 
+/** Memory list: draws {@link MemoryListUiState} in {@link #render} and forwards taps to the ViewModel. */
 public class MemoriesFragment extends Fragment {
+    private static final Locale TURKISH = Locale.forLanguageTag("tr-TR");
+
     private FragmentMemoriesBinding binding;
-    private HealthViewModel healthViewModel;
-    private String baseUrl;
     private AppContainer app;
-    private MemoriesViewModel model;
-    private boolean rendering;
+    private MemoriesViewModel viewModel;
+    private MemoryListAdapter listAdapter;
+    private MemoryListFooterAdapter footerAdapter;
+    @Nullable private MemoryListUiState.Status renderedStatus;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -42,137 +48,146 @@ public class MemoriesFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        AppContainer appContainer = AppContainer.from(requireContext());
-        app = appContainer;
-        model = new ViewModelProvider(this).get(MemoriesViewModel.class);
-        model.attach(app.getMemoryRepository(), app.authorization());
-        binding.memoryLogin.setOnClickListener(button ->
-                NavHostFragment.findNavController(this).navigate(R.id.loginFragment));
-        binding.memoryDate.setOnClickListener(button -> chooseDate());
-        binding.memorySave.setOnClickListener(button -> save());
-        binding.memoryRefresh.setOnClickListener(button -> model.load(0));
-        binding.memoryMore.setOnClickListener(button -> model.more());
-        binding.memoryLogout.setOnClickListener(button -> {
-            app.endSession();
-            model.reset();
-            renderMemories();
-        });
-        binding.memoryTitle.addTextChangedListener(draftWatcher());
-        binding.memoryDescription.addTextChangedListener(draftWatcher());
-        model.changes.observe(getViewLifecycleOwner(), ignored -> renderMemories());
-        baseUrl = appContainer.getBaseUrl();
-        healthViewModel = new ViewModelProvider(this, HealthViewModel.factory(appContainer.getHealthRepository()))
-                .get(HealthViewModel.class);
-        healthViewModel.getState().observe(getViewLifecycleOwner(), this::renderHealth);
-        healthViewModel.loadIfNeeded();
-    }
+        app = AppContainer.from(requireContext());
+        viewModel = new ViewModelProvider(this, MemoriesViewModel.factory(app.getMemoryRepository()))
+                .get(MemoriesViewModel.class);
 
-    private void chooseDate() {
-        LocalDate day = model.date == null ? LocalDate.now() : model.date;
-        DatePickerDialog picker = new DatePickerDialog(requireContext(), (view, year, month, date) -> {
-            model.date = LocalDate.of(year, month + 1, date);
-            if (binding != null) renderDate();
-        }, day.getYear(), day.getMonthValue() - 1, day.getDayOfMonth());
-        picker.getDatePicker().setMaxDate(System.currentTimeMillis());
-        picker.show();
-    }
-
-    private void renderDate() {
-        binding.memoryDate.setText(model.date == null ? getString(R.string.memory_date_select) : model.date.toString());
-    }
-
-    private void save() {
-        captureDraft();
-        if (model.title.trim().isEmpty()) {
-            binding.memoryTitle.setError(getString(R.string.memory_title_missing));
-        } else if (model.date == null) {
-            binding.memorySaveStatus.setText(R.string.memory_date_missing);
-        } else {
-            model.save();
-        }
-    }
-
-    private android.text.TextWatcher draftWatcher() {
-        return new android.text.TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
-            @Override public void afterTextChanged(android.text.Editable value) {
-                if (!rendering) captureDraft();
+        listAdapter = new MemoryListAdapter(DateTimeFormatter.ofPattern(
+                getString(R.string.memory_list_date_pattern), TURKISH));
+        footerAdapter = new MemoryListFooterAdapter(viewModel::loadMore, viewModel::retry);
+        binding.memoryList.setAdapter(new ConcatAdapter(listAdapter, footerAdapter));
+        listAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                // LinearLayoutManager keeps the first visible row in place, so a memory added
+                // at the top (e.g. just created) would land above the viewport. Follow it only
+                // when the reader was already at the top; never jump while they scroll.
+                if (positionStart == 0 && binding != null && !binding.memoryList.canScrollVertically(-1)) {
+                    binding.memoryList.scrollToPosition(0);
+                }
             }
-        };
-    }
+        });
+        binding.memoryList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView list, int dx, int dy) {
+                // Icon only while reading down the list, full label again when scrolling back.
+                if (dy > 0) binding.memoryAdd.shrink();
+                else if (dy < 0) binding.memoryAdd.extend();
+            }
+        });
 
-    private void captureDraft() {
-        model.title = binding.memoryTitle.getText().toString();
-        model.description = binding.memoryDescription.getText().toString();
-    }
+        binding.memorySignIn.setOnClickListener(button -> openLogin());
+        binding.memoryAdd.setOnClickListener(button -> openCreate());
 
-    private void renderMemories() {
-        if (unauthorized(model.saveError) || unauthorized(model.listError)) {
+        viewModel.getState().observe(getViewLifecycleOwner(), this::render);
+        observeCreatedMemory();
+        viewModel.sessionExpired().observe(getViewLifecycleOwner(), expired -> {
+            if (!Boolean.TRUE.equals(expired)) return;
+            viewModel.consumeSessionExpired();
             app.clearSession();
-            model.reset();
-        }
-        boolean signedIn = model.session != null;
-        binding.memoryLogin.setVisibility(signedIn ? View.GONE : View.VISIBLE);
-        binding.memoryContent.setVisibility(signedIn ? View.VISIBLE : View.GONE);
-        binding.memoryTitle.setEnabled(!model.saving);
-        binding.memoryDescription.setEnabled(!model.saving);
-        binding.memoryDate.setEnabled(!model.saving);
-        binding.memorySave.setEnabled(!model.saving);
-        rendering = true;
-        if (!binding.memoryTitle.getText().toString().equals(model.title)) binding.memoryTitle.setText(model.title);
-        if (!binding.memoryDescription.getText().toString().equals(model.description)) {
-            binding.memoryDescription.setText(model.description);
-        }
-        rendering = false;
-        renderDate();
-        binding.memorySaveStatus.setText(model.saving ? getString(R.string.memory_saving) : error(model.saveError));
-        binding.memoryListStatus.setText(model.loading ? getString(R.string.memory_loading)
-                : model.listError != null ? error(model.listError)
-                : model.loaded && model.rows.isEmpty() ? getString(R.string.memory_empty) : "");
-        binding.memoryRows.removeAllViews();
-        for (var item : model.rows) {
-            TextView row = new TextView(requireContext());
-            row.setText(getString(R.string.memory_row, item.title(), item.memoryDate()));
-            binding.memoryRows.addView(row);
-        }
-        binding.memoryMore.setEnabled(!model.loading);
-        binding.memoryMore.setVisibility(model.hasMore ? View.VISIBLE : View.GONE);
+            Snackbar.make(binding.getRoot(), R.string.memory_list_session_expired, Snackbar.LENGTH_LONG).show();
+        });
+        // Each time the view comes back (e.g. from the profile tab after signing out) the list
+        // follows the current session: a different or missing token resets it.
+        viewModel.setSession(app.authorization());
     }
 
-    private boolean unauthorized(ApiError error) {
-        return error != null && error.getHttpStatus() == 401;
-    }
+    private void render(MemoryListUiState state) {
+        MemoryListUiState.Status status = state.getStatus();
+        boolean signedIn = status != MemoryListUiState.Status.SIGNED_OUT;
+        boolean content = status == MemoryListUiState.Status.CONTENT;
 
-    private String error(ApiError error) {
-        return error == null ? "" : ErrorMessages.describe(requireContext(), error);
-    }
+        binding.memoryList.setVisibility(content ? View.VISIBLE : View.GONE);
+        binding.memoryStatus.setVisibility(content ? View.GONE : View.VISIBLE);
+        if (!content && status != renderedStatus) {
+            // A short message cannot scroll the header back in, so bring it back when the list
+            // gives way to a message (e.g. the session expired while scrolled down).
+            binding.memoryAppBar.setExpanded(true, true);
+        }
+        renderedStatus = status;
+        binding.memorySignIn.setVisibility(signedIn ? View.GONE : View.VISIBLE);
+        if (signedIn) {
+            binding.memoryAdd.show();
+        } else {
+            binding.memoryAdd.hide();
+        }
 
-    private void renderHealth(UiState<HealthResponse> state) {
-        switch (state.getStatus()) {
-            case LOADING:
-                binding.healthCard.setVisibility(View.GONE);
-                binding.healthState.showLoading(getString(R.string.health_checking));
+        switch (status) {
+            case SIGNED_OUT:
+                binding.memoryState.showEmpty(getString(R.string.memory_list_signed_out_title),
+                        getString(R.string.memory_list_signed_out_message));
                 break;
-            case SUCCESS:
-                binding.healthState.hide();
-                binding.healthCard.setVisibility(View.VISIBLE);
-                HealthResponse health = state.getData();
-                String database = health == null || health.getDatabase() == null ? "-" : health.getDatabase();
-                binding.healthDatabase.setText(getString(R.string.health_ok_detail, database));
-                binding.healthAddress.setText(getString(R.string.health_server_address, baseUrl));
+            case LOADING:
+                binding.memoryState.showLoading(getString(R.string.memory_list_loading));
+                break;
+            case EMPTY:
+                binding.memoryState.showEmpty(getString(R.string.memory_list_empty_title),
+                        getString(R.string.memory_list_empty_message));
                 break;
             case ERROR:
+                binding.memoryState.showError(getString(R.string.memory_list_error_title),
+                        describe(state.getError()), viewModel::retry);
+                break;
+            case CONTENT:
             default:
-                // Health has no "empty" result; anything that is not a success is shown as an error.
-                ApiError error = state.getError() != null ? state.getError() : ApiError.unexpected();
-                binding.healthCard.setVisibility(View.GONE);
-                binding.healthState.showError(
-                        getString(R.string.error_title),
-                        ErrorMessages.describe(requireContext(), error),
-                        healthViewModel::refresh);
+                binding.memoryState.hide();
                 break;
         }
+
+        MemoryListFooterAdapter.Mode footer = footerMode(state);
+        String footerMessage = content && state.getError() != null ? describe(state.getError()) : null;
+        // ListAdapter applies rows after a background diff. Updating the footer first would make
+        // it the only row for a moment; RecyclerView then keeps it anchored on screen and the
+        // new rows end up above the viewport. So the footer follows once the rows are in.
+        listAdapter.submitList(content ? state.getItems() : Collections.emptyList(),
+                () -> footerAdapter.submit(footer, footerMessage));
+    }
+
+    private static MemoryListFooterAdapter.Mode footerMode(MemoryListUiState state) {
+        if (state.getStatus() != MemoryListUiState.Status.CONTENT) return MemoryListFooterAdapter.Mode.NONE;
+        if (state.isLoadingMore()) return MemoryListFooterAdapter.Mode.LOADING;
+        if (state.getError() != null) return MemoryListFooterAdapter.Mode.ERROR;
+        if (state.canLoadMore()) return MemoryListFooterAdapter.Mode.LOAD_MORE;
+        return MemoryListFooterAdapter.Mode.END;
+    }
+
+    private String describe(@Nullable ApiError error) {
+        return ErrorMessages.describe(requireContext(), error != null ? error : ApiError.unexpected());
+    }
+
+    private void openLogin() {
+        navigateFromList(R.id.loginFragment);
+    }
+
+    private void openCreate() {
+        navigateFromList(R.id.action_memoriesFragment_to_memoryCreateFragment);
+    }
+
+    /** A fast double tap delivers a second click after the first navigation; it is ignored. */
+    private void navigateFromList(int destinationOrAction) {
+        NavController navController = NavHostFragment.findNavController(this);
+        NavDestination current = navController.getCurrentDestination();
+        if (current != null && current.getId() == R.id.memoriesFragment) {
+            navController.navigate(destinationOrAction);
+        }
+    }
+
+    /**
+     * The create screen leaves {@link MemoryCreateFragment#RESULT_CREATED} on this entry after a
+     * save; refresh once and remove it so a later view does not refresh again.
+     */
+    private void observeCreatedMemory() {
+        SavedStateHandle results = NavHostFragment.findNavController(this)
+                .getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle();
+        results.<Boolean>getLiveData(MemoryCreateFragment.RESULT_CREATED, false)
+                .observe(getViewLifecycleOwner(), created -> {
+                    if (!Boolean.TRUE.equals(created)) return;
+                    results.set(MemoryCreateFragment.RESULT_CREATED, false);
+                    viewModel.refresh();
+                    Snackbar.make(binding.getRoot(), R.string.memory_create_saved, Snackbar.LENGTH_SHORT)
+                            .setAnchorView(binding.memoryAdd)
+                            .show();
+                });
     }
 
     @Override

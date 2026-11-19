@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- New memory screen (ML-07), following the Stitch "Anı oluşturma" screen. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="memory_create_label">Anı Ekle</string>
+    <!-- Written in capitals here: textAllCaps would follow the device locale and turn "i" into
+         "I" instead of the Turkish "İ" on a non-Turkish phone. -->
+    <string name="memory_create_badge">YENİ SAYFA</string>
+    <string name="memory_create_heading">Yeni Anı</string>
+    <string name="memory_create_close">Kapat</string>
+    <string name="memory_create_save">Kaydet</string>
+
+    <string name="memory_create_title_label">Anı Başlığı</string>
+    <string name="memory_create_title_note">günün adı</string>
+    <string name="memory_create_title_hint">Örn: Bursa’da Bir Sonbahar Günü</string>
+    <string name="memory_create_date_label">Anı Tarihi</string>
+    <string name="memory_create_date_empty">Tarih seç</string>
+    <string name="memory_create_date_change">değiştir</string>
+    <string name="memory_create_date_picker_title">Anının tarihini seç</string>
+    <string name="memory_create_description_label">Hislerin &amp; Anlatın</string>
+    <string name="memory_create_description_note">sevgili günlük…</string>
+    <string name="memory_create_description_hint">O güne dair hissettiklerini, kokuları, duyduklarını yaz…</string>
+
+    <!-- Validation and result messages -->
+    <string name="memory_create_title_required">Anına bir başlık ver.</string>
+    <string name="memory_create_title_too_long">Başlık en fazla 100 karakter olabilir.</string>
+    <string name="memory_create_description_too_long">Açıklama en fazla 3000 karakter olabilir.</string>
+    <string name="memory_create_date_required">Anının tarihini seç.</string>
+    <string name="memory_create_date_future">Anı tarihi gelecekte olamaz.</string>
+    <string name="memory_create_saved">Anın kaydedildi.</string>
+</resources>

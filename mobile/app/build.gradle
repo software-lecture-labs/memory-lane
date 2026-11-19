@@ -61,6 +61,8 @@ dependencies {
     implementation 'androidx.navigation:navigation-ui:2.10.2'
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.11.0'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.11.0'
+    // Declared directly: the memory list uses it, so it must not depend on Material's transitive version.
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'com.squareup.retrofit2:retrofit:2.11.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'

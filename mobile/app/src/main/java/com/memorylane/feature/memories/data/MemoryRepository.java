@@ -4,7 +4,8 @@ import com.memorylane.core.network.ApiCaller;
 import com.memorylane.core.network.Cancellable;
 import com.memorylane.core.network.ResultCallback;
 
-public final class MemoryRepository {
+/** Remote memories over HTTP; serves both the list and the create screen. */
+public final class MemoryRepository implements MemoryListRepository, MemoryCreateRepository {
     private final MemoryApi api;
     private final ApiCaller caller;
 
@@ -13,12 +14,14 @@ public final class MemoryRepository {
         this.caller = caller;
     }
 
-    public Cancellable save(String session, String key, MemoryApi.Draft draft,
-                            ResultCallback<MemoryApi.Memory> callback) {
-        return caller.enqueue(api.create(session, key, draft), callback);
+    @Override
+    public Cancellable create(String authorization, String idempotencyKey, MemoryApi.Draft draft,
+                              ResultCallback<MemoryApi.Memory> callback) {
+        return caller.enqueue(api.create(authorization, idempotencyKey, draft), callback);
     }
 
-    public Cancellable list(String session, int page, ResultCallback<MemoryApi.Page> callback) {
-        return caller.enqueue(api.list(session, page), callback);
+    @Override
+    public Cancellable list(String authorization, int page, ResultCallback<MemoryApi.Page> callback) {
+        return caller.enqueue(api.list(authorization, page), callback);
     }
 }

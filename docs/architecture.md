@@ -96,6 +96,19 @@ Sunucu adresi `mobile/local.properties` içindeki `memorylane.apiBaseUrl` değer
 
 Tasarım değerleri "Warm Nostalgia Scrapbook" tasarım sisteminden `res/values` altına aktarılır (renk, ölçü, yazı ve bileşen stilleri); ana renk tasarım sistemi belgesindeki `#D93678`'dir. Layout'lar hex, dp veya sp değeri yazmaz; bu kaynakları kullanır. Ortak bileşenler `ScreenHeaderView` (ekran başlığı), `StateView` (yükleniyor/hata/boş), birincil/ikincil/ghost buton, kart, form alanı ve alt menü stilleridir. Henüz bir ekranda kullanılmayan stiller `tools:ignore="UnusedResources"` ile işaretlidir; kullanıldıklarında işaret kaldırılır. Plus Jakarta Sans fontu çevrimdışı ve Google Play servisleri olmayan cihazlarda da aynı görünmesi için OFL 1.1 lisansıyla uygulamaya gömülüdür (`mobile/third_party/plus-jakarta-sans/OFL.txt`).
 
+### Anı ekranları (ML-07)
+
+Anılar sekmesi (`MemoriesFragment`) ve oluşturma ekranı (`MemoryCreateFragment`) bu katmanları izler. Liste ekranı yalnız `MemoryListRepository`, oluşturma ekranı yalnız `MemoryCreateRepository` arayüzünü bilir (ISP/DIP); `AppContainer` ikisine de aynı uzak `MemoryRepository` örneğini verir. Testler arayüzlerin sahte uygulamalarıyla çalışır.
+
+- Liste durumu tek bir değişmez `MemoryListUiState` nesnesidir: SIGNED_OUT, LOADING, CONTENT, EMPTY, ERROR ve CONTENT içinde `loadingMore`, `hasMore` ve satırlar korunarak taşınan sayfa/yenileme hatası. Fragment tek bir `render(state)` ile çizer.
+- `MemoryListMapper` yüklenen bütün sayfaları birlikte satırlara çevirir: en yeni anı üstte, her yılın önünde bir yıl başlığı, sayfa sınırında tekrar eden kayıt bir kez. Sözleşmeye uymayan kayıt (kimlik, başlık veya `YYYY-MM-DD` tarihi yok) gizlenmez; ekran PARSE hatası gösterir.
+- `MemoriesViewModel` aynı anda tek liste isteği çalıştırır. Yenileme ve oturum değişikliği süren isteği iptal eder; her isteğin nesil numarası olduğu için geç gelen yanıt yok sayılır. Yenileme sırasında satırlar ekranda kalır. Herhangi bir istekte 401 oturumu kapatır, satırları siler ve ekrana token'ı temizletir.
+- `MemoryCreateViewModel` sunucudaki `MemoryInput` kurallarını erken uygular (başlık 1–100, açıklama en fazla 3000 Unicode karakter, tarih zorunlu ve gelecekte olamaz). Aynı taslağın yeniden denenmesi aynı `Idempotency-Key`'i kullanır; taslak değişince yeni anahtar alınır. Başarılı kayıt, Navigation'ın `SavedStateHandle`'ı ile liste girişine sonuç bırakır; liste bir kez yenilenir.
+- Alan metinleri ViewModel'de tutulur ve `saveEnabled="false"` alanlara görünüm oluşturulurken izleyiciler bağlanmadan önce yazılır; ekran döndürme hataları silen bir kullanıcı düzenlemesi gibi görünmez. Gezinme düğmeleri hızlı çift dokunmaya karşı `getCurrentDestination()` ile korunur.
+- Çıkış Profil sekmesindedir. Token `AppContainer`'dan silinir ve sunucuda iptal edilir; Anılar sekmesi görünümü geri geldiğinde `setSession(null)` ile listeyi sıfırlar.
+
+Anı ekranları ortak kart stilinden türeyen `Widget.MemoryLane.Card.Scrapbook` stilini kullanır: saf beyaz zemin, 32dp köşe ve `#F0D7E8` kenarlık. Material 3'ün yüksekliğe göre birincil renk tonlaması yalnız bu kartlarda kapatılır; ortak `Widget.MemoryLane.Card` değişmez. Konum, fotoğraf, duygu ve kategori alanları backend karşılıkları mobilde bağlanana kadar arayüze eklenmez.
+
 Değerlendirilen alternatifler:
 
 | Konu | Seçim | Alternatif ve seçilmeme nedeni |
@@ -106,7 +119,7 @@ Değerlendirilen alternatifler:
 | HTTP/JSON | Retrofit + OkHttp + Gson | HttpURLConnection veya yalın OkHttp ile JSON dönüşümü ve hata eşlemesi her istekte tekrarlanır. |
 | Paketler | Özellik bazlı | Katman bazlı (ui/data/model) yapıda özellik sayısı arttıkça ilgili dosyalar dağılır; ilk iskeletteki boş klasörler bu yapıyla değiştirildi. |
 
-Bilinen sınırlar: Giriş ekranı PR #9, anı kaydı ve listesi PR #12 ile bu temelin üzerine eklendi; harita, profil ve fotoğraf içeriği ilgili kartlarda eklenecektir. Testler JVM birim testleridir (ağ katmanı MockWebServer ile gerçek HTTP üzerinden); cihaz üzerinde otomatik UI testi henüz yoktur.
+Bilinen sınırlar: Giriş ekranı PR #9, anı kaydı ve listesi PR #12 ile bu temelin üzerine eklendi; ML-07 liste ve oluşturma ekranlarını yeniden yazdı, oturum ve sunucu durumu Profil sekmesine taşındı. Harita, anı detayı/düzenleme, mobil arama ve fotoğraf içeriği ilgili kartlarda eklenecektir. Testler JVM birim testleridir (ağ katmanı MockWebServer ile gerçek HTTP üzerinden); cihaz üzerinde otomatik UI testi henüz yoktur, ekranlar emülatörde elle doğrulanır.
 
 ## Veri saklama ve yedekleme kararı
 

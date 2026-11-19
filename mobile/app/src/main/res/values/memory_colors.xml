@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory screens' colors from the Stitch "Anılar" and "Anı oluşturma" screens, on top of the
+     shared palette in colors.xml. -->
+<resources>
+    <!-- Soft pink card border; ml_outline is a grey plum tint that reads as grey on white cards. -->
+    <color name="memory_card_stroke">#F0D7E8</color>
+    <!-- Pink wash behind badges and the date pill. -->
+    <color name="memory_pink_soft">#FFF0F6</color>
+    <!-- Butter washi tape at 85% opacity, so the card edge shows through as on paper. -->
+    <color name="memory_tape">#D9FFE69A</color>
+</resources>
