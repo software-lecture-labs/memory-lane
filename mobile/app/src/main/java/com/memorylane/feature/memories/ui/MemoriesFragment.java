@@ -44,22 +44,22 @@ public class MemoriesFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         AppContainer appContainer = AppContainer.from(requireContext());
         app = appContainer;
-        model = new ViewModelProvider(this).get(MemoriesViewModel.class);
-        model.attach(app.getMemoryRepository(), app.authorization());
+        model = new ViewModelProvider(this, MemoriesViewModel.factory(app.getMemoryRepository()))
+                .get(MemoriesViewModel.class);
+        model.attach(app.authorization());
         binding.memoryLogin.setOnClickListener(button ->
                 NavHostFragment.findNavController(this).navigate(R.id.loginFragment));
         binding.memoryDate.setOnClickListener(button -> chooseDate());
-        binding.memorySave.setOnClickListener(button -> save());
+        binding.memorySave.setOnClickListener(button -> model.save());
         binding.memoryRefresh.setOnClickListener(button -> model.load(0));
         binding.memoryMore.setOnClickListener(button -> model.more());
         binding.memoryLogout.setOnClickListener(button -> {
             app.endSession();
-            model.reset();
-            renderMemories();
+            model.onLogout();
         });
-        binding.memoryTitle.addTextChangedListener(draftWatcher());
-        binding.memoryDescription.addTextChangedListener(draftWatcher());
-        model.changes.observe(getViewLifecycleOwner(), ignored -> renderMemories());
+        binding.memoryTitle.addTextChangedListener(draftWatcher(model::onTitleChanged));
+        binding.memoryDescription.addTextChangedListener(draftWatcher(model::onDescriptionChanged));
+        model.state().observe(getViewLifecycleOwner(), this::renderMemories);
         baseUrl = appContainer.getBaseUrl();
         healthViewModel = new ViewModelProvider(this, HealthViewModel.factory(appContainer.getHealthRepository()))
                 .get(HealthViewModel.class);
@@ -68,80 +68,57 @@ public class MemoriesFragment extends Fragment {
     }
 
     private void chooseDate() {
-        LocalDate day = model.date == null ? LocalDate.now() : model.date;
+        LocalDate selected = model.state().getValue().date();
+        LocalDate day = selected == null ? LocalDate.now() : selected;
         DatePickerDialog picker = new DatePickerDialog(requireContext(), (view, year, month, date) -> {
-            model.date = LocalDate.of(year, month + 1, date);
-            if (binding != null) renderDate();
+            model.onDateSelected(LocalDate.of(year, month + 1, date));
         }, day.getYear(), day.getMonthValue() - 1, day.getDayOfMonth());
         picker.getDatePicker().setMaxDate(System.currentTimeMillis());
         picker.show();
     }
 
-    private void renderDate() {
-        binding.memoryDate.setText(model.date == null ? getString(R.string.memory_date_select) : model.date.toString());
-    }
-
-    private void save() {
-        captureDraft();
-        if (model.title.trim().isEmpty()) {
-            binding.memoryTitle.setError(getString(R.string.memory_title_missing));
-        } else if (model.date == null) {
-            binding.memorySaveStatus.setText(R.string.memory_date_missing);
-        } else {
-            model.save();
-        }
-    }
-
-    private android.text.TextWatcher draftWatcher() {
+    private android.text.TextWatcher draftWatcher(java.util.function.Consumer<String> event) {
         return new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
             @Override public void afterTextChanged(android.text.Editable value) {
-                if (!rendering) captureDraft();
+                if (!rendering) event.accept(value.toString());
             }
         };
     }
 
-    private void captureDraft() {
-        model.title = binding.memoryTitle.getText().toString();
-        model.description = binding.memoryDescription.getText().toString();
-    }
-
-    private void renderMemories() {
-        if (unauthorized(model.saveError) || unauthorized(model.listError)) {
-            app.clearSession();
-            model.reset();
-        }
-        boolean signedIn = model.session != null;
+    private void renderMemories(MemoriesUiState state) {
+        if (state.sessionExpired()) app.clearSession();
+        boolean signedIn = state.signedIn();
         binding.memoryLogin.setVisibility(signedIn ? View.GONE : View.VISIBLE);
         binding.memoryContent.setVisibility(signedIn ? View.VISIBLE : View.GONE);
-        binding.memoryTitle.setEnabled(!model.saving);
-        binding.memoryDescription.setEnabled(!model.saving);
-        binding.memoryDate.setEnabled(!model.saving);
-        binding.memorySave.setEnabled(!model.saving);
+        binding.memoryTitle.setEnabled(!state.saving());
+        binding.memoryDescription.setEnabled(!state.saving());
+        binding.memoryDate.setEnabled(!state.saving());
+        binding.memorySave.setEnabled(!state.saving());
         rendering = true;
-        if (!binding.memoryTitle.getText().toString().equals(model.title)) binding.memoryTitle.setText(model.title);
-        if (!binding.memoryDescription.getText().toString().equals(model.description)) {
-            binding.memoryDescription.setText(model.description);
+        if (!binding.memoryTitle.getText().toString().equals(state.title())) binding.memoryTitle.setText(state.title());
+        if (!binding.memoryDescription.getText().toString().equals(state.description())) {
+            binding.memoryDescription.setText(state.description());
         }
         rendering = false;
-        renderDate();
-        binding.memorySaveStatus.setText(model.saving ? getString(R.string.memory_saving) : error(model.saveError));
-        binding.memoryListStatus.setText(model.loading ? getString(R.string.memory_loading)
-                : model.listError != null ? error(model.listError)
-                : model.loaded && model.rows.isEmpty() ? getString(R.string.memory_empty) : "");
+        binding.memoryDate.setText(state.date() == null
+                ? getString(R.string.memory_date_select) : state.date().toString());
+        binding.memoryTitle.setError(state.validation() == MemoriesUiState.Validation.TITLE_REQUIRED
+                ? getString(R.string.memory_title_missing) : null);
+        binding.memorySaveStatus.setText(state.saving() ? getString(R.string.memory_saving) : state.validation() == MemoriesUiState.Validation.DATE_REQUIRED
+                        ? getString(R.string.memory_date_missing) : error(state.saveError()));
+        binding.memoryListStatus.setText(state.loading() ? getString(R.string.memory_loading)
+                : state.listError() != null ? error(state.listError())
+                : state.loaded() && state.rows().isEmpty() ? getString(R.string.memory_empty) : "");
         binding.memoryRows.removeAllViews();
-        for (var item : model.rows) {
+        for (var item : state.rows()) {
             TextView row = new TextView(requireContext());
             row.setText(getString(R.string.memory_row, item.title(), item.memoryDate()));
             binding.memoryRows.addView(row);
         }
-        binding.memoryMore.setEnabled(!model.loading);
-        binding.memoryMore.setVisibility(model.hasMore ? View.VISIBLE : View.GONE);
-    }
-
-    private boolean unauthorized(ApiError error) {
-        return error != null && error.getHttpStatus() == 401;
+        binding.memoryMore.setEnabled(!state.loading());
+        binding.memoryMore.setVisibility(state.hasMore() ? View.VISIBLE : View.GONE);
     }
 
     private String error(ApiError error) {
