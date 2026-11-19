@@ -139,8 +139,7 @@ public class MemoriesFragment extends Fragment {
         binding.memoryTitle.setEnabled(!model.saving);
         binding.memoryDescription.setEnabled(!model.saving);
         binding.memoryDate.setEnabled(!model.saving);
-        // Saving waits until picked photos are copied, so none is left out of this memory.
-        binding.memorySave.setEnabled(!model.saving && !photoModel.preparing());
+        renderSave();
         rendering = true;
         if (!binding.memoryTitle.getText().toString().equals(model.title)) binding.memoryTitle.setText(model.title);
         if (!binding.memoryDescription.getText().toString().equals(model.description)) {
@@ -148,7 +147,6 @@ public class MemoriesFragment extends Fragment {
         }
         rendering = false;
         renderDate();
-        binding.memorySaveStatus.setText(model.saving ? getString(R.string.memory_saving) : error(model.saveError));
         binding.memoryListStatus.setText(model.loading ? getString(R.string.memory_loading)
                 : model.listError != null ? error(model.listError)
                 : model.loaded && model.rows.isEmpty() ? getString(R.string.memory_empty) : "");
@@ -172,7 +170,17 @@ public class MemoriesFragment extends Fragment {
             return;
         }
         photoSection.render();
-        binding.memorySave.setEnabled(!model.saving && !photoModel.preparing());
+        renderSave();
+    }
+
+    // Saving waits until picked photos are copied, so none is left out of this memory, and until
+    // the previous memory's photos are uploaded or given up, so they cannot go to the new one.
+    private void renderSave() {
+        boolean waitsForPhotos = photoModel.busy();
+        binding.memorySave.setEnabled(!model.saving && !photoModel.preparing() && !waitsForPhotos);
+        binding.memorySaveStatus.setText(model.saving ? getString(R.string.memory_saving)
+                : model.saveError != null ? error(model.saveError)
+                : waitsForPhotos ? getString(R.string.photo_save_waits) : "");
     }
 
     private boolean unauthorized(ApiError error) {

@@ -123,8 +123,16 @@ public final class PhotoUploadQueue {
         return removed;
     }
 
-    /** Starts uploading to a memory that was just saved. */
+    /**
+     * Starts uploading to a memory that was just saved. A queue belongs to one memory for good:
+     * starting it again for the same memory does nothing (nothing is sent twice), and starting it
+     * for another memory is refused, so photos picked for one memory never end up in the next.
+     */
     public void start(String session, String memoryId) {
+        if (started()) {
+            if (this.memoryId.equals(memoryId)) return;
+            throw new IllegalStateException("Photo queue already belongs to another memory");
+        }
         this.session = session;
         this.memoryId = memoryId;
         uploadNext();

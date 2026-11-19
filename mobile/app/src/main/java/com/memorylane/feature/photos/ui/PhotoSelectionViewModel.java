@@ -101,9 +101,21 @@ public class PhotoSelectionViewModel extends ViewModel {
         publish();
     }
 
-    /** Called once the memory is saved; a memory saved without photos needs nothing here. */
+    /**
+     * True while the photos of a saved memory are still uploading or waiting for "Tekrar dene" /
+     * "Vazgeç". The screen does not save another memory meanwhile: these photos belong to the
+     * earlier one.
+     */
+    public boolean busy() {
+        return queue.started();
+    }
+
+    /**
+     * Called once the memory is saved; a memory saved without photos needs nothing here. A queue
+     * still busy with an earlier memory is left alone instead of being handed the new one.
+     */
     public void startUpload(String session, String memoryId) {
-        if (queue.items().isEmpty()) return;
+        if (queue.items().isEmpty() || busy()) return;
         queue.start(session, memoryId);
     }
 

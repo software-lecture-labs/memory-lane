@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.memorylane.core.network.ApiError;
@@ -194,6 +195,52 @@ public class PhotoUploadQueueTest {
         assertTrue(watched[0].idle());
     }
 
+    @Test
+    public void startingAgainForTheSameMemorySendsNothingTwice() {
+        queue.add(photo("a"));
+        queue.add(photo("b"));
+        queue.start("Bearer t", "m1");
+
+        queue.start("Bearer t", "m1");
+
+        assertEquals(1, uploads.calls.size());
+        uploads.answer(0, success());
+        uploads.answer(1, success());
+        assertEquals(2, uploads.calls.size());
+        assertEquals(2, queue.count(Status.UPLOADED));
+    }
+
+    @Test
+    public void aQueueUploadingForOneMemoryIsNeverMovedToAnother() {
+        queue.add(photo("a"));
+        queue.add(photo("b"));
+        queue.start("Bearer t", "m1");
+
+        // A second memory saved while the first photo is still on its way.
+        assertThrows(IllegalStateException.class, () -> queue.start("Bearer t", "m2"));
+        uploads.answer(0, success());
+
+        assertEquals(2, uploads.calls.size());
+        assertEquals("m1", uploads.calls.get(0).memoryId);
+        assertEquals("m1", uploads.calls.get(1).memoryId);
+    }
+
+    @Test
+    public void photosWaitingForRetryStayWithTheirOwnMemory() {
+        queue.add(photo("a"));
+        queue.add(photo("b"));
+        queue.start("Bearer t", "m1");
+        uploads.answer(0, ApiResult.failure(ApiError.network()));
+
+        // The queue is idle and waiting for "Tekrar dene" when the next memory is saved.
+        assertThrows(IllegalStateException.class, () -> queue.start("Bearer t", "m2"));
+        queue.retry();
+
+        assertEquals(2, uploads.calls.size());
+        assertEquals("m1", uploads.calls.get(1).memoryId);
+        assertSame(uploads.calls.get(0).photo, uploads.calls.get(1).photo);
+    }
+
     private static PreparedPhoto photo(String key) {
         return new PreparedPhoto(key, new File(key + ".jpg"), "image/jpeg");
     }
@@ -203,11 +250,13 @@ public class PhotoUploadQueueTest {
     }
 
     private static final class Call {
+        final String memoryId;
         final PreparedPhoto photo;
         final ResultCallback<PhotoApi.Photo> callback;
         boolean cancelled;
 
-        Call(PreparedPhoto photo, ResultCallback<PhotoApi.Photo> callback) {
+        Call(String memoryId, PreparedPhoto photo, ResultCallback<PhotoApi.Photo> callback) {
+            this.memoryId = memoryId;
             this.photo = photo;
             this.callback = callback;
         }
@@ -220,7 +269,7 @@ public class PhotoUploadQueueTest {
         @Override
         public Cancellable upload(String session, String memoryId, PreparedPhoto photo,
                                   ResultCallback<PhotoApi.Photo> callback) {
-            Call call = new Call(photo, callback);
+            Call call = new Call(memoryId, photo, callback);
             calls.add(call);
             return () -> call.cancelled = true;
         }
