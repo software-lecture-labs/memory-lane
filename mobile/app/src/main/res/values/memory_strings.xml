@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Inline add form and sign-out button on the memories tab. Temporary: the form moves to the
-     create screen (ML-07 commit 5) and sign-out to the profile tab (commit 6). -->
+<!-- Sign-out button on the memories tab. Temporary: moves to the profile tab in ML-07 commit 6. -->
 <resources>
-    <string name="memory_form_title">Yeni anı</string>
-    <string name="memory_title_hint">Başlık</string>
-    <string name="memory_description_hint">Açıklama</string>
-    <string name="memory_date_select">Tarih seç</string>
-    <string name="memory_date_missing">Anının tarihini seç.</string>
-    <string name="memory_title_missing">Başlık zorunludur.</string>
-    <string name="memory_save">Anıyı kaydet</string>
-    <string name="memory_saving">Anı kaydediliyor…</string>
     <string name="memory_logout">Çıkış yap</string>
 </resources>

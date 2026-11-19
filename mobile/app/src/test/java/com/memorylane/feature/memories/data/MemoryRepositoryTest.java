@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.memorylane.core.network.ApiCaller;
 import com.memorylane.core.network.ApiClient;
 import com.memorylane.core.network.ApiError;
@@ -25,7 +26,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 
-/** The remote MemoryRepository against local HTTP, through the MemoryListRepository interface. */
+/** The remote MemoryRepository against local HTTP, through its list and create interfaces. */
 public class MemoryRepositoryTest {
     private static final String AUTHORIZATION = "Bearer sahte-test-tokeni";
     private static final String PAGE = "{\"content\":[{\"id\":\"m1\",\"title\":\"Bursa\","
@@ -33,16 +34,69 @@ public class MemoryRepositoryTest {
             + "\"photoCount\":2}],\"page\":1,\"size\":20,\"totalElements\":21,\"totalPages\":2,"
             + "\"hasNext\":false}";
 
+    private static final String KEY = "6f1c2b9e-1d1a-4c55-9a51-2f6a1c0b7e44";
+    private static final String CREATED = "{\"id\":\"m9\",\"title\":\"Bursa\",\"description\":\"\","
+            + "\"memoryDate\":\"2024-10-28\",\"category\":\"OTHER\",\"emotion\":null,\"location\":null,"
+            + "\"photoCount\":0,\"coverPhotoId\":null,\"photos\":[]}";
+
     private final Gson gson = new Gson();
     private MockWebServer server;
     private MemoryListRepository repository;
+    private MemoryCreateRepository creator;
 
     @Before
     public void setUp() throws IOException {
         server = new MockWebServer();
         server.start();
         MemoryApi api = ApiClient.create(server.url("/").toString(), gson).create(MemoryApi.class);
-        repository = new MemoryRepository(api, new ApiCaller(gson));
+        MemoryRepository remote = new MemoryRepository(api, new ApiCaller(gson));
+        repository = remote;
+        creator = remote;
+    }
+
+    @Test
+    public void createPostsTheDraftWithSessionAndIdempotencyKey() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(201).setBody(CREATED));
+
+        ApiResult<MemoryApi.Memory> result = create();
+
+        assertTrue(result.isSuccess());
+        assertEquals(new MemoryApi.Memory("m9", "Bursa", "", "2024-10-28"), result.getData());
+        RecordedRequest sent = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(sent);
+        assertEquals("POST", sent.getMethod());
+        assertEquals("/api/v1/memories", sent.getPath());
+        assertEquals(AUTHORIZATION, sent.getHeader("Authorization"));
+        assertEquals(KEY, sent.getHeader("Idempotency-Key"));
+        JsonObject body = gson.fromJson(sent.getBody().readUtf8(), JsonObject.class);
+        assertEquals(3, body.size());
+        assertEquals("Bursa", body.get("title").getAsString());
+        assertEquals("Kestane", body.get("description").getAsString());
+        assertEquals("2024-10-28", body.get("memoryDate").getAsString());
+    }
+
+    @Test
+    public void createKeepsServerValidationErrors() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(400)
+                .setBody("{\"code\":\"INVALID_INPUT\",\"message\":\"Anı tarihi gelecekte olamaz.\"}"));
+
+        ApiError error = create().getError();
+
+        assertNotNull(error);
+        assertEquals(400, error.getHttpStatus());
+        assertEquals("INVALID_INPUT", error.getCode());
+        assertEquals("Anı tarihi gelecekte olamaz.", error.getMessage());
+    }
+
+    private ApiResult<MemoryApi.Memory> create() throws InterruptedException {
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<ApiResult<MemoryApi.Memory>> holder = new AtomicReference<>();
+        creator.create(AUTHORIZATION, KEY, new MemoryApi.Draft("Bursa", "Kestane", "2024-10-28"), result -> {
+            holder.set(result);
+            done.countDown();
+        });
+        assertTrue("request did not finish", done.await(20, TimeUnit.SECONDS));
+        return holder.get();
     }
 
     @After

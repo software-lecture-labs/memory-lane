@@ -1,9 +1,6 @@
 package com.memorylane.feature.memories.ui;
 
-import android.app.DatePickerDialog;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +8,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
@@ -28,7 +26,6 @@ import com.memorylane.databinding.FragmentMemoriesBinding;
 import com.memorylane.feature.health.data.HealthResponse;
 import com.memorylane.feature.health.ui.HealthViewModel;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Locale;
@@ -44,8 +41,6 @@ public class MemoriesFragment extends Fragment {
     private MemoryListAdapter listAdapter;
     private MemoryListFooterAdapter footerAdapter;
     @Nullable private MemoryListUiState.Status renderedStatus;
-    // Writing the form from the ViewModel must not be taken for a user edit.
-    private boolean renderingForm;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -58,8 +53,8 @@ public class MemoriesFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         app = AppContainer.from(requireContext());
-        viewModel = new ViewModelProvider(this, MemoriesViewModel.factory(
-                app.getMemoryRepository(), app.getMemoryRepository())).get(MemoriesViewModel.class);
+        viewModel = new ViewModelProvider(this, MemoriesViewModel.factory(app.getMemoryRepository()))
+                .get(MemoriesViewModel.class);
 
         listAdapter = new MemoryListAdapter(DateTimeFormatter.ofPattern(
                 getString(R.string.memory_list_date_pattern), TURKISH));
@@ -75,18 +70,14 @@ public class MemoriesFragment extends Fragment {
         });
 
         binding.memorySignIn.setOnClickListener(button -> openLogin());
-        binding.memoryAdd.setOnClickListener(button -> {
-            viewModel.toggleForm();
-            binding.memoryAppBar.setExpanded(true, true);
-        });
+        binding.memoryAdd.setOnClickListener(button -> openCreate());
         binding.memoryLogout.setOnClickListener(button -> {
             app.endSession();
             viewModel.setSession(null);
         });
-        bindForm();
 
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
-        viewModel.formChanges.observe(getViewLifecycleOwner(), ignored -> renderForm());
+        observeCreatedMemory();
         viewModel.sessionExpired().observe(getViewLifecycleOwner(), expired -> {
             if (!Boolean.TRUE.equals(expired)) return;
             viewModel.consumeSessionExpired();
@@ -162,74 +153,38 @@ public class MemoriesFragment extends Fragment {
     }
 
     private void openLogin() {
+        navigateFromList(R.id.loginFragment);
+    }
+
+    private void openCreate() {
+        navigateFromList(R.id.action_memoriesFragment_to_memoryCreateFragment);
+    }
+
+    /** A fast double tap delivers a second click after the first navigation; it is ignored. */
+    private void navigateFromList(int destinationOrAction) {
         NavController navController = NavHostFragment.findNavController(this);
         NavDestination current = navController.getCurrentDestination();
-        // A fast double tap must not navigate twice.
         if (current != null && current.getId() == R.id.memoriesFragment) {
-            navController.navigate(R.id.loginFragment);
+            navController.navigate(destinationOrAction);
         }
     }
 
-    // --- Temporary inline form; replaced by the create screen in ML-07 commit 5. ---
-
-    private void bindForm() {
-        binding.memoryDateButton.setOnClickListener(button -> chooseDate());
-        binding.memorySave.setOnClickListener(button -> save());
-        TextWatcher watcher = new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
-            @Override public void afterTextChanged(Editable value) {
-                if (!renderingForm) captureDraft();
-            }
-        };
-        binding.memoryTitleInput.addTextChangedListener(watcher);
-        binding.memoryDescriptionInput.addTextChangedListener(watcher);
-    }
-
-    private void chooseDate() {
-        LocalDate day = viewModel.date == null ? LocalDate.now() : viewModel.date;
-        DatePickerDialog picker = new DatePickerDialog(requireContext(), (picked, year, month, dayOfMonth) -> {
-            viewModel.date = LocalDate.of(year, month + 1, dayOfMonth);
-            if (binding != null) renderForm();
-        }, day.getYear(), day.getMonthValue() - 1, day.getDayOfMonth());
-        picker.getDatePicker().setMaxDate(System.currentTimeMillis());
-        picker.show();
-    }
-
-    private void save() {
-        captureDraft();
-        if (viewModel.title.trim().isEmpty()) {
-            binding.memoryTitleInput.setError(getString(R.string.memory_title_missing));
-        } else if (viewModel.date == null) {
-            binding.memorySaveStatus.setText(R.string.memory_date_missing);
-        } else {
-            viewModel.save();
-        }
-    }
-
-    private void captureDraft() {
-        viewModel.title = String.valueOf(binding.memoryTitleInput.getText());
-        viewModel.description = String.valueOf(binding.memoryDescriptionInput.getText());
-    }
-
-    private void renderForm() {
-        binding.memoryForm.setVisibility(viewModel.formOpen ? View.VISIBLE : View.GONE);
-        binding.memoryTitleInput.setEnabled(!viewModel.saving);
-        binding.memoryDescriptionInput.setEnabled(!viewModel.saving);
-        binding.memoryDateButton.setEnabled(!viewModel.saving);
-        binding.memorySave.setEnabled(!viewModel.saving);
-        renderingForm = true;
-        if (!String.valueOf(binding.memoryTitleInput.getText()).equals(viewModel.title)) {
-            binding.memoryTitleInput.setText(viewModel.title);
-        }
-        if (!String.valueOf(binding.memoryDescriptionInput.getText()).equals(viewModel.description)) {
-            binding.memoryDescriptionInput.setText(viewModel.description);
-        }
-        renderingForm = false;
-        binding.memoryDateButton.setText(viewModel.date == null
-                ? getString(R.string.memory_date_select) : viewModel.date.toString());
-        binding.memorySaveStatus.setText(viewModel.saving ? getString(R.string.memory_saving)
-                : viewModel.saveError == null ? "" : describe(viewModel.saveError));
+    /**
+     * The create screen leaves {@link MemoryCreateFragment#RESULT_CREATED} on this entry after a
+     * save; refresh once and remove it so a later view does not refresh again.
+     */
+    private void observeCreatedMemory() {
+        SavedStateHandle results = NavHostFragment.findNavController(this)
+                .getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle();
+        results.<Boolean>getLiveData(MemoryCreateFragment.RESULT_CREATED, false)
+                .observe(getViewLifecycleOwner(), created -> {
+                    if (!Boolean.TRUE.equals(created)) return;
+                    results.set(MemoryCreateFragment.RESULT_CREATED, false);
+                    viewModel.refresh();
+                    Snackbar.make(binding.getRoot(), R.string.memory_create_saved, Snackbar.LENGTH_SHORT)
+                            .setAnchorView(binding.memoryAdd)
+                            .show();
+                });
     }
 
     // --- Temporary server health card; moves to the profile tab in ML-07 commit 6. ---

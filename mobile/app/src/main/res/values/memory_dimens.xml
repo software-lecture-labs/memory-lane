@@ -10,4 +10,6 @@
     <dimen name="memory_icon_inline">16dp</dimen>
     <dimen name="memory_year_badge">32dp</dimen>
     <dimen name="memory_year_rule">4dp</dimen>
+    <!-- Create screen: round back button and the lavender box behind the calendar icon. -->
+    <dimen name="memory_create_icon_box">40dp</dimen>
 </resources>

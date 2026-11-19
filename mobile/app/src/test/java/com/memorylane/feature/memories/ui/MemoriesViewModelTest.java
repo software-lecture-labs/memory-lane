@@ -30,7 +30,7 @@ public class MemoriesViewModelTest {
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
     private final FakeMemoryListRepository repository = new FakeMemoryListRepository();
-    private final MemoriesViewModel viewModel = new MemoriesViewModel(repository, null);
+    private final MemoriesViewModel viewModel = new MemoriesViewModel(repository);
 
     // --- Session ---
 
@@ -384,7 +384,7 @@ public class MemoriesViewModelTest {
 
     @Test
     public void factoryCreatesOnlyThisViewModel() {
-        ViewModelProvider.Factory factory = MemoriesViewModel.factory(repository, null);
+        ViewModelProvider.Factory factory = MemoriesViewModel.factory(repository);
 
         assertNotNull(factory.create(MemoriesViewModel.class));
         assertThrows(IllegalArgumentException.class, () -> factory.create(HealthViewModel.class));

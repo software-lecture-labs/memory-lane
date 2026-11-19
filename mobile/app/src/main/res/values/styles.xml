@@ -44,7 +44,7 @@
         <item name="android:textSize">@dimen/ml_text_label_large</item>
     </style>
 
-    <style name="TextAppearance.MemoryLane.Caption" parent="TextAppearance.Material3.LabelSmall" tools:ignore="UnusedResources">
+    <style name="TextAppearance.MemoryLane.Caption" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
         <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
         <item name="android:textSize">@dimen/ml_text_caption</item>
