@@ -15,6 +15,7 @@ import com.memorylane.feature.auth.data.AuthRepository;
 import com.memorylane.feature.auth.data.RemoteAuthRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
 import com.memorylane.feature.memories.data.MemoryRepository;
+import com.memorylane.feature.memories.data.RemoteMemoryRepository;
 
 import retrofit2.Retrofit;
 
@@ -38,7 +39,7 @@ public final class AppContainer {
         caller = new ApiCaller(gson);
         authApi = retrofit.create(AuthApi.class);
         authRepository = new RemoteAuthRepository(authApi, caller);
-        memoryRepository = new MemoryRepository(retrofit.create(MemoryApi.class), caller);
+        memoryRepository = new RemoteMemoryRepository(retrofit.create(MemoryApi.class), caller);
         this.baseUrl = retrofit.baseUrl().toString();
         this.healthRepository = new RemoteHealthRepository(retrofit.create(HealthApi.class), caller);
     }
