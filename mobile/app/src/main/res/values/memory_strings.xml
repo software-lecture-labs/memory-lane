@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Sign-out button on the memories tab. Temporary: moves to the profile tab in ML-07 commit 6. -->
-<resources>
-    <string name="memory_logout">Çıkış yap</string>
-</resources>

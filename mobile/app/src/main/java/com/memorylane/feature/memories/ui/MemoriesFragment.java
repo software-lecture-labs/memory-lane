@@ -21,10 +21,7 @@ import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
 import com.memorylane.core.network.ApiError;
 import com.memorylane.core.ui.ErrorMessages;
-import com.memorylane.core.ui.UiState;
 import com.memorylane.databinding.FragmentMemoriesBinding;
-import com.memorylane.feature.health.data.HealthResponse;
-import com.memorylane.feature.health.ui.HealthViewModel;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -37,7 +34,6 @@ public class MemoriesFragment extends Fragment {
     private FragmentMemoriesBinding binding;
     private AppContainer app;
     private MemoriesViewModel viewModel;
-    private HealthViewModel healthViewModel;
     private MemoryListAdapter listAdapter;
     private MemoryListFooterAdapter footerAdapter;
     @Nullable private MemoryListUiState.Status renderedStatus;
@@ -82,10 +78,6 @@ public class MemoriesFragment extends Fragment {
 
         binding.memorySignIn.setOnClickListener(button -> openLogin());
         binding.memoryAdd.setOnClickListener(button -> openCreate());
-        binding.memoryLogout.setOnClickListener(button -> {
-            app.endSession();
-            viewModel.setSession(null);
-        });
 
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
         observeCreatedMemory();
@@ -95,12 +87,9 @@ public class MemoriesFragment extends Fragment {
             app.clearSession();
             Snackbar.make(binding.getRoot(), R.string.memory_list_session_expired, Snackbar.LENGTH_LONG).show();
         });
+        // Each time the view comes back (e.g. from the profile tab after signing out) the list
+        // follows the current session: a different or missing token resets it.
         viewModel.setSession(app.authorization());
-
-        healthViewModel = new ViewModelProvider(this, HealthViewModel.factory(app.getHealthRepository()))
-                .get(HealthViewModel.class);
-        healthViewModel.getState().observe(getViewLifecycleOwner(), this::renderHealth);
-        healthViewModel.loadIfNeeded();
     }
 
     private void render(MemoryListUiState state) {
@@ -117,7 +106,6 @@ public class MemoriesFragment extends Fragment {
         }
         renderedStatus = status;
         binding.memorySignIn.setVisibility(signedIn ? View.GONE : View.VISIBLE);
-        binding.memoryLogout.setVisibility(signedIn ? View.VISIBLE : View.GONE);
         if (signedIn) {
             binding.memoryAdd.show();
         } else {
@@ -200,32 +188,6 @@ public class MemoriesFragment extends Fragment {
                             .setAnchorView(binding.memoryAdd)
                             .show();
                 });
-    }
-
-    // --- Temporary server health card; moves to the profile tab in ML-07 commit 6. ---
-
-    private void renderHealth(UiState<HealthResponse> state) {
-        switch (state.getStatus()) {
-            case LOADING:
-                binding.healthCard.setVisibility(View.GONE);
-                binding.healthState.showLoading(getString(R.string.health_checking));
-                break;
-            case SUCCESS:
-                binding.healthState.hide();
-                binding.healthCard.setVisibility(View.VISIBLE);
-                HealthResponse health = state.getData();
-                String database = health == null || health.getDatabase() == null ? "-" : health.getDatabase();
-                binding.healthDatabase.setText(getString(R.string.health_ok_detail, database));
-                binding.healthAddress.setText(getString(R.string.health_server_address, app.getBaseUrl()));
-                break;
-            case ERROR:
-            default:
-                // Health has no "empty" result; anything that is not a success is shown as an error.
-                binding.healthCard.setVisibility(View.GONE);
-                binding.healthState.showError(getString(R.string.error_title),
-                        describe(state.getError()), healthViewModel::refresh);
-                break;
-        }
     }
 
     @Override
