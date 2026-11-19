@@ -59,7 +59,7 @@ public final class LoginFragment extends Fragment {
                     result.getData().getUser().getEmail());
             binding.passwordInput.setText("");
             NavHostFragment.findNavController(this).navigate(R.id.memoriesFragment, null,
-                    new NavOptions.Builder().setPopUpTo(R.id.memoriesFragment, true).build());
+                    new NavOptions.Builder().setPopUpTo(R.id.nav_graph, true).build());
         });
     }
 
