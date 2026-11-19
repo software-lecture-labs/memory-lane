@@ -13,8 +13,9 @@ import java.util.Objects;
 /**
  * Everything the memory list screen draws. Immutable: every change produces a new state.
  *
- * <p>ERROR is a failed first load and replaces the list. A failed "load more" keeps CONTENT and
- * its rows and carries the error alongside them, so the rows already shown never disappear.
+ * <p>ERROR is a failed first load and replaces the list. A failed "load more" or refresh keeps
+ * CONTENT and its rows and carries the error alongside them, so the rows already shown never
+ * disappear.
  * EMPTY is only a successful load without memories; a connection error is never shown as empty.
  */
 public final class MemoryListUiState {
@@ -66,7 +67,7 @@ public final class MemoryListUiState {
         return new MemoryListUiState(Status.CONTENT, items, hasMore, true, null);
     }
 
-    /** The next page failed; rows and hasMore stay so the user can try again. */
+    /** The next page or a refresh failed; rows and hasMore stay so the user can try again. */
     public MemoryListUiState withLoadMoreError(@NonNull ApiError error) {
         requireContent();
         return new MemoryListUiState(Status.CONTENT, items, hasMore, false,
@@ -88,7 +89,7 @@ public final class MemoryListUiState {
 
     public boolean isLoadingMore() { return loadingMore; }
 
-    /** The first-load error for ERROR, or the last load-more error for CONTENT. */
+    /** The first-load error for ERROR, or the last load-more or refresh error for CONTENT. */
     @Nullable public ApiError getError() { return error; }
 
     /** The "load more" button is offered only when more exists and no request is running. */
