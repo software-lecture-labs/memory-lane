@@ -10,7 +10,7 @@ public class MemoryLaneApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        container = new AppContainer(BuildConfig.API_BASE_URL);
+        container = new AppContainer(BuildConfig.API_BASE_URL, this);
     }
 
     public AppContainer getContainer() {

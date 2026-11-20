@@ -61,6 +61,10 @@
                 android:layout_height="wrap_content"
                 android:text="@string/memory_date_select" />
 
+            <include
+                android:id="@+id/memory_photos"
+                layout="@layout/view_photo_section" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/memory_save"
                 android:layout_width="match_parent"
