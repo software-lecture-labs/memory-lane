@@ -7,6 +7,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,6 +62,38 @@ class LocalPhotoStorageTest {
         assertThrows(IllegalArgumentException.class, () -> storage.open("../outside.txt"));
         assertThrows(IllegalArgumentException.class, () -> storage.delete("../outside.txt"));
         assertTrue(Files.exists(outside));
+    }
+
+    @Test
+    void onlyOldPhotoFilesAreReportedAsKeys() throws Exception {
+        var storage = new LocalPhotoStorage(directory);
+        String old = storage.store(PhotoFileTest.JPEG);
+        String recent = storage.store(PhotoFileTest.PNG);
+        Path temporary = Files.write(directory.resolve("upload-123.tmp"), PhotoFileTest.JPEG);
+        Path unrelated = Files.writeString(directory.resolve("notes.txt"), "not a photo");
+        for (Path path : List.of(directory.resolve(old), temporary, unrelated)) age(path, Duration.ofHours(2));
+
+        assertEquals(List.of(old), storage.keysStoredBefore(Instant.now().minus(Duration.ofHours(1))));
+        assertTrue(Files.exists(directory.resolve(recent)));
+    }
+
+    @Test
+    void onlyOldUnfinishedUploadsAreRemoved() throws Exception {
+        var storage = new LocalPhotoStorage(directory);
+        String photo = storage.store(PhotoFileTest.JPEG);
+        Path abandoned = Files.write(directory.resolve("upload-1.tmp"), PhotoFileTest.JPEG);
+        Path inProgress = Files.write(directory.resolve("upload-2.tmp"), PhotoFileTest.JPEG);
+        age(abandoned, Duration.ofHours(2));
+        age(directory.resolve(photo), Duration.ofHours(2));
+
+        assertEquals(1, storage.removeIncompleteWrites(Instant.now().minus(Duration.ofHours(1))));
+        assertFalse(Files.exists(abandoned));
+        assertTrue(Files.exists(inProgress), "an upload still being written is left alone");
+        assertTrue(Files.exists(directory.resolve(photo)), "completed photos are never touched");
+    }
+
+    private static void age(Path path, Duration by) throws Exception {
+        Files.setLastModifiedTime(path, FileTime.from(Instant.now().minus(by)));
     }
 
     @Test
