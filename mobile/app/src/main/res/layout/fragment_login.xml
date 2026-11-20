@@ -166,5 +166,28 @@
                 android:background="@drawable/login_tape"
                 android:importantForAccessibility="no" />
         </FrameLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/ml_space_sm"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/login_no_account"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                android:textSize="@dimen/ml_text_label" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/register_link"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/ml_button_height"
+                android:paddingHorizontal="@dimen/ml_space_xs"
+                android:text="@string/login_go_register"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Button"
+                android:textColor="@color/ml_primary" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
