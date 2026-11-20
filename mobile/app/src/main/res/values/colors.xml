@@ -12,7 +12,7 @@
     <color name="ml_on_primary">#FFFFFF</color>
 
     <color name="ml_lavender">#DCCEFF</color>
-    <color name="ml_lavender_pressed" tools:ignore="UnusedResources">#CFC0F5</color>
+    <color name="ml_lavender_pressed">#CFC0F5</color>
     <color name="ml_peach" tools:ignore="UnusedResources">#FFD0B5</color>
     <color name="ml_butter" tools:ignore="UnusedResources">#FFE69A</color>
     <color name="ml_mint" tools:ignore="UnusedResources">#C9EBDD</color>
@@ -22,7 +22,7 @@
     <color name="ml_plum_muted">#B335263F</color>
     <color name="ml_plum_hint">#7335263F</color>
     <color name="ml_outline">#1F35263F</color>
-    <color name="ml_ghost_stroke" tools:ignore="UnusedResources">#3335263F</color>
+    <color name="ml_ghost_stroke">#3335263F</color>
 
     <color name="ml_error">#BA1A1A</color>
 </resources>

@@ -62,7 +62,7 @@
         <item name="cornerRadius">@dimen/ml_radius_pill</item>
     </style>
 
-    <style name="Widget.MemoryLane.Button.Secondary" parent="Widget.Material3.Button" tools:ignore="UnusedResources">
+    <style name="Widget.MemoryLane.Button.Secondary" parent="Widget.Material3.Button">
         <item name="android:minHeight">@dimen/ml_button_height</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
@@ -72,7 +72,7 @@
         <item name="cornerRadius">@dimen/ml_radius_pill</item>
     </style>
 
-    <style name="Widget.MemoryLane.Button.Ghost" parent="Widget.Material3.Button.OutlinedButton" tools:ignore="UnusedResources">
+    <style name="Widget.MemoryLane.Button.Ghost" parent="Widget.Material3.Button.OutlinedButton">
         <item name="android:minHeight">@dimen/ml_button_height</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
@@ -81,6 +81,12 @@
         <item name="strokeColor">@color/ml_ghost_stroke</item>
         <item name="strokeWidth">@dimen/ml_stroke_regular</item>
         <item name="cornerRadius">@dimen/ml_radius_pill</item>
+    </style>
+
+    <!-- Small inline actions inside a row, e.g. removing a picked photo. -->
+    <style name="Widget.MemoryLane.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Label</item>
+        <item name="android:textColor">@color/ml_primary</item>
     </style>
 
     <!-- Scrapbook card: white paper on the warm canvas. -->

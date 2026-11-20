@@ -53,7 +53,22 @@ public final class ApiCaller {
         return ApiResult.failure(ApiError.http(
                 response.code(),
                 body == null ? null : body.code,
-                body == null ? null : body.message));
+                body == null ? null : body.message,
+                retryAfterSeconds(response.headers().get("Retry-After"))));
+    }
+
+    // The backend sends whole seconds. The HTTP-date form is not used by our API and is treated as
+    // missing, so callers fall back to the contract's safe default instead of guessing a date.
+    static long retryAfterSeconds(@Nullable String header) {
+        if (header == null) {
+            return ApiError.NO_RETRY_AFTER;
+        }
+        try {
+            long seconds = Long.parseLong(header.trim());
+            return seconds >= 0 ? seconds : ApiError.NO_RETRY_AFTER;
+        } catch (NumberFormatException notSeconds) {
+            return ApiError.NO_RETRY_AFTER;
+        }
     }
 
     // Not every error has the contract body (a proxy page, or /api/health's own 503 shape), so a

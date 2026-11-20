@@ -15,6 +15,11 @@ import com.memorylane.feature.auth.data.AuthRepository;
 import com.memorylane.feature.auth.data.RemoteAuthRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
 import com.memorylane.feature.memories.data.MemoryRepository;
+import com.memorylane.feature.photos.data.DevicePhotoPreparer;
+import com.memorylane.feature.photos.data.PhotoApi;
+import com.memorylane.feature.photos.data.PhotoPreparer;
+import com.memorylane.feature.photos.data.PhotoUploads;
+import com.memorylane.feature.photos.data.RemotePhotoUploads;
 
 import retrofit2.Retrofit;
 
@@ -31,8 +36,11 @@ public final class AppContainer {
     private final MemoryRepository memoryRepository;
     private String token;
     private final HealthRepository healthRepository;
+    private final PhotoUploads photoUploads;
+    private final PhotoPreparer photoPreparer;
 
-    public AppContainer(String baseUrl) {
+    /** {@code appContext} must be the application context; the photo preparer outlives any screen. */
+    public AppContainer(String baseUrl, Context appContext) {
         Gson gson = new Gson();
         Retrofit retrofit = ApiClient.create(baseUrl, gson);
         caller = new ApiCaller(gson);
@@ -41,6 +49,8 @@ public final class AppContainer {
         memoryRepository = new MemoryRepository(retrofit.create(MemoryApi.class), caller);
         this.baseUrl = retrofit.baseUrl().toString();
         this.healthRepository = new RemoteHealthRepository(retrofit.create(HealthApi.class), caller);
+        this.photoUploads = new RemotePhotoUploads(retrofit.create(PhotoApi.class), caller);
+        this.photoPreparer = new DevicePhotoPreparer(appContext.getContentResolver(), appContext.getCacheDir());
     }
 
     public static AppContainer from(Context context) {
@@ -58,6 +68,10 @@ public final class AppContainer {
     public AuthRepository getAuthRepository() { return authRepository; }
 
     public MemoryRepository getMemoryRepository() { return memoryRepository; }
+
+    public PhotoUploads getPhotoUploads() { return photoUploads; }
+
+    public PhotoPreparer getPhotoPreparer() { return photoPreparer; }
 
     public String authorization() { return token == null ? null : "Bearer " + token; }
 

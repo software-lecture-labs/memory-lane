@@ -7,6 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -21,6 +23,8 @@ import com.memorylane.core.ui.UiState;
 import com.memorylane.databinding.FragmentMemoriesBinding;
 import com.memorylane.feature.health.data.HealthResponse;
 import com.memorylane.feature.health.ui.HealthViewModel;
+import com.memorylane.feature.photos.ui.PhotoSection;
+import com.memorylane.feature.photos.ui.PhotoSelectionViewModel;
 
 import java.time.LocalDate;
 
@@ -31,6 +35,10 @@ public class MemoriesFragment extends Fragment {
     private AppContainer app;
     private MemoriesViewModel model;
     private boolean rendering;
+    private PhotoSelectionViewModel photoModel;
+    private PhotoSection photoSection;
+    private final ActivityResultLauncher<PickVisualMediaRequest> photoPicker =
+            PhotoSection.registerPicker(this, uris -> photoModel.pick(uris));
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -55,8 +63,14 @@ public class MemoriesFragment extends Fragment {
         binding.memoryLogout.setOnClickListener(button -> {
             app.endSession();
             model.reset();
+            photoModel.clear();
             renderMemories();
         });
+        photoModel = new ViewModelProvider(this,
+                PhotoSelectionViewModel.factory(app.getPhotoUploads(), app.getPhotoPreparer()))
+                .get(PhotoSelectionViewModel.class);
+        photoSection = new PhotoSection(requireContext(), binding.memoryPhotos, photoModel, photoPicker);
+        photoModel.changes().observe(getViewLifecycleOwner(), ignored -> renderPhotos());
         binding.memoryTitle.addTextChangedListener(draftWatcher());
         binding.memoryDescription.addTextChangedListener(draftWatcher());
         model.changes.observe(getViewLifecycleOwner(), ignored -> renderMemories());
@@ -111,6 +125,13 @@ public class MemoriesFragment extends Fragment {
         if (unauthorized(model.saveError) || unauthorized(model.listError)) {
             app.clearSession();
             model.reset();
+            photoModel.clear();
+        }
+        // The picked photos are uploaded once the memory exists on the server (ML-03: memory first,
+        // then each photo separately); the id is handed over once.
+        if (model.savedMemoryId != null) {
+            photoModel.startUpload(model.session, model.savedMemoryId);
+            model.savedMemoryId = null;
         }
         boolean signedIn = model.session != null;
         binding.memoryLogin.setVisibility(signedIn ? View.GONE : View.VISIBLE);
@@ -118,7 +139,7 @@ public class MemoriesFragment extends Fragment {
         binding.memoryTitle.setEnabled(!model.saving);
         binding.memoryDescription.setEnabled(!model.saving);
         binding.memoryDate.setEnabled(!model.saving);
-        binding.memorySave.setEnabled(!model.saving);
+        renderSave();
         rendering = true;
         if (!binding.memoryTitle.getText().toString().equals(model.title)) binding.memoryTitle.setText(model.title);
         if (!binding.memoryDescription.getText().toString().equals(model.description)) {
@@ -126,7 +147,6 @@ public class MemoriesFragment extends Fragment {
         }
         rendering = false;
         renderDate();
-        binding.memorySaveStatus.setText(model.saving ? getString(R.string.memory_saving) : error(model.saveError));
         binding.memoryListStatus.setText(model.loading ? getString(R.string.memory_loading)
                 : model.listError != null ? error(model.listError)
                 : model.loaded && model.rows.isEmpty() ? getString(R.string.memory_empty) : "");
@@ -138,6 +158,29 @@ public class MemoriesFragment extends Fragment {
         }
         binding.memoryMore.setEnabled(!model.loading);
         binding.memoryMore.setVisibility(model.hasMore ? View.VISIBLE : View.GONE);
+    }
+
+    private void renderPhotos() {
+        if (photoModel.queue().sessionExpired()) {
+            // Same handling as an expired session on the memory requests.
+            app.clearSession();
+            model.reset();
+            photoModel.clear();
+            renderMemories();
+            return;
+        }
+        photoSection.render();
+        renderSave();
+    }
+
+    // Saving waits until picked photos are copied, so none is left out of this memory, and until
+    // the previous memory's photos are uploaded or given up, so they cannot go to the new one.
+    private void renderSave() {
+        boolean waitsForPhotos = photoModel.busy();
+        binding.memorySave.setEnabled(!model.saving && !photoModel.preparing() && !waitsForPhotos);
+        binding.memorySaveStatus.setText(model.saving ? getString(R.string.memory_saving)
+                : model.saveError != null ? error(model.saveError)
+                : waitsForPhotos ? getString(R.string.photo_save_waits) : "");
     }
 
     private boolean unauthorized(ApiError error) {
