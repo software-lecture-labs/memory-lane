@@ -5,6 +5,7 @@ import com.memorylane.backend.photo.PhotoController;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +44,7 @@ public class AuthErrors {
     public ResponseEntity<Map<String, String>> database(Exception exception, HttpServletRequest request) {
         // An outage is expected to happen and is already answered with 503; one line without the
         // stack trace keeps the log readable when every request fails the same way.
-        log.warn("Database unavailable during {}: {}", describe(request), exception.getMessage());
+        log.warn("Database unavailable during {}: {}", describe(request), rootCause(exception));
         return database();
     }
 
@@ -65,6 +66,16 @@ public class AuthErrors {
             log.error("Unexpected error during {}", describe(request), exception);
         }
         return response;
+    }
+
+    /**
+     * Message of the innermost cause. Spring wraps a refused connection a few times ("Could not open
+     * JPA EntityManager for transaction"), and only the innermost message says what actually went
+     * wrong, e.g. "Connection refused". Without the stack trace that line has to carry it.
+     */
+    static String rootCause(Throwable exception) {
+        Throwable root = NestedExceptionUtils.getMostSpecificCause(exception);
+        return root.getMessage() != null ? root.getMessage() : root.getClass().getSimpleName();
     }
 
     // Method and path only: headers, query strings and bodies may carry tokens or passwords.
