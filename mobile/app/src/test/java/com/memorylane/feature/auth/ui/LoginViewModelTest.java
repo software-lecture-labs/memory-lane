@@ -24,7 +24,10 @@ public class LoginViewModelTest {
     @Rule
     public InstantTaskExecutorRule instantTaskExecutorRule = new InstantTaskExecutorRule();
 
-    private final LoginViewModel viewModel = new LoginViewModel();
+    private final LoginViewModel viewModel = new LoginViewModel(new AuthRepository() {
+        public Cancellable login(AuthRequest request, ResultCallback<LoginResponse> callback) { throw new AssertionError(); }
+        public Cancellable register(AuthRequest request, ResultCallback<UserResponse> callback) { throw new AssertionError(); }
+    });
 
     @Test
     public void pendingLoginRejectsDuplicateAndKeepsResultForNewObserver() {
@@ -46,17 +49,18 @@ public class LoginViewModelTest {
                 throw new AssertionError("Unexpected registration");
             }
         };
-        viewModel.login(repository, "user@example.com", "secret");
-        viewModel.login(repository, "user@example.com", "secret");
+        var model = new LoginViewModel(repository);
+        model.login("user@example.com", "secret");
+        model.login("user@example.com", "secret");
         assertEquals(1, pending.size());
-        assertEquals(Boolean.TRUE, viewModel.busy().getValue());
+        assertEquals(Boolean.TRUE, model.busy().getValue());
 
         var failure = ApiError.network();
         pending.get(0).onResult(ApiResult.failure(failure));
         var delivered = new ArrayList<ApiError>();
-        viewModel.result().observeForever(result -> delivered.add(result.getError()));
+        model.result().observeForever(result -> delivered.add(result.getError()));
         assertEquals(List.of(failure), delivered);
-        assertEquals(Boolean.FALSE, viewModel.busy().getValue());
+        assertEquals(Boolean.FALSE, model.busy().getValue());
     }
 
     @Test
