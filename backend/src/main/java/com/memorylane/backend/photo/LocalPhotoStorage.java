@@ -99,10 +99,14 @@ class LocalPhotoStorage implements PhotoStorage {
 
     @Override
     public void quarantine(String key) throws IOException {
+        Path source = file(key);
         Path target = quarantined(key);
-        Files.move(file(key), target, StandardCopyOption.ATOMIC_MOVE);
-        // A move keeps the old modification time; the quarantine lifetime counts from now.
-        Files.setLastModifiedTime(target, FileTime.from(Instant.now()));
+        // The quarantine lifetime counts from now, and a move keeps the modification time, so it
+        // is set before moving. If it were set after, a failure there would leave the file in
+        // quarantine with its old time and the next sweep could delete it at once. This way a
+        // failed move only leaves the file looking new where it was; a later sweep tries again.
+        Files.setLastModifiedTime(source, FileTime.from(Instant.now()));
+        Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
     }
 
     @Override
