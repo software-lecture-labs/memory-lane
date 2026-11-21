@@ -48,6 +48,7 @@ import static org.mockito.Mockito.doThrow;
 @ExtendWith(OutputCaptureExtension.class)
 class PhotoFileCleanupIntegrationTest {
     private static final Path PHOTOS = temporaryDirectory();
+    private static final Path QUARANTINE = PHOTOS.resolve("quarantine");
 
     @Value("${local.server.port}") int port;
     @Autowired PhotoFileCleanup cleanup;
@@ -154,7 +155,7 @@ class PhotoFileCleanupIntegrationTest {
     }
 
     @Test
-    void sweepRemovesOldOrphansAndUnfinishedUploadsButKeepsPhotosInUse() throws Exception {
+    void sweepSetsOldOrphansAsideRemovesUnfinishedUploadsAndKeepsPhotosInUse() throws Exception {
         String inUse = photoInUse();
         String orphan = storage.store(PhotoFileTest.PNG);
         String recentOrphan = storage.store(PhotoFileTest.PNG);
@@ -163,14 +164,23 @@ class PhotoFileCleanupIntegrationTest {
         for (Path path : List.of(PHOTOS.resolve(inUse), PHOTOS.resolve(orphan), abandoned)) {
             Files.setLastModifiedTime(path, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
         }
+        // Moved to quarantine by earlier sweeps: one past the 7-day lifetime, one not yet.
+        String expired = storage.store(PhotoFileTest.PNG);
+        storage.quarantine(expired);
+        Files.setLastModifiedTime(QUARANTINE.resolve(expired), FileTime.from(Instant.now().minus(Duration.ofDays(8))));
+        String quarantinedRecently = storage.store(PhotoFileTest.PNG);
+        storage.quarantine(quarantinedRecently);
 
         cleanup.sweepOrphans();
 
         assertTrue(Files.exists(PHOTOS.resolve(inUse)), "a photo row still refers to it");
         assertFalse(Files.exists(PHOTOS.resolve(orphan)));
+        assertTrue(Files.exists(QUARANTINE.resolve(orphan)), "set aside, not deleted");
         assertTrue(Files.exists(PHOTOS.resolve(recentOrphan)), "may belong to an upload that has not committed yet");
         assertFalse(Files.exists(abandoned));
         assertTrue(Files.exists(inProgress));
+        assertFalse(Files.exists(QUARANTINE.resolve(expired)), "deleted after the quarantine lifetime");
+        assertTrue(Files.exists(QUARANTINE.resolve(quarantinedRecently)), "kept until the lifetime is over");
     }
 
     /** Uploads a photo through the service and returns the storage key its row refers to. */

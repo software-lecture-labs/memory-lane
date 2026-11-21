@@ -39,7 +39,7 @@ class LocalPhotoStorageTest {
         assertNotEquals(first, second);
         try (var files = Files.list(directory)) {
             assertEquals(List.of(first, second).stream().sorted().toList(),
-                    files.map(path -> path.getFileName().toString()).sorted().toList());
+                    files.filter(Files::isRegularFile).map(path -> path.getFileName().toString()).sorted().toList());
         }
     }
 

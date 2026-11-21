@@ -2,6 +2,7 @@ package com.memorylane.backend.photo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -32,14 +33,16 @@ import java.util.Set;
  *   <li>Inside the deleting transaction a {@code file_cleanup_jobs} row is written per file. It
  *       commits or rolls back together with the photo rows, so a rolled-back delete never loses a
  *       file that is still in use.</li>
- *   <li>After commit ({@code AFTER_COMMIT} event) the files are deleted right away and their jobs
- *       removed.</li>
+ *   <li>After commit ({@code AFTER_COMMIT} event) the files are deleted and their jobs removed.
+ *       This runs synchronously on the request's thread before the response is written, so the
+ *       response waits for it; a failure here is only logged and never changes the response.</li>
  *   <li>A delete that fails is logged and the job stays; {@link #retryDue()} tries again later with
  *       a growing delay, so a busy disk or a restart does not leave the file behind.</li>
  * </ol>
  *
  * {@link #sweepOrphans()} covers the cases no job was written for: an upload interrupted between
- * writing its file and committing its row, and half-written temporary files.
+ * writing its file and committing its row, and half-written temporary files. Such photo files are
+ * not deleted but set aside in quarantine for {@code memorylane.photos.quarantine-lifetime}.
  */
 @Component
 public class PhotoFileCleanup {
@@ -59,12 +62,15 @@ public class PhotoFileCleanup {
     private final PhotoStorage storage;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final Duration quarantineLifetime;
 
-    public PhotoFileCleanup(JdbcClient jdbc, PhotoStorage storage, ApplicationEventPublisher events, Clock clock) {
+    public PhotoFileCleanup(JdbcClient jdbc, PhotoStorage storage, ApplicationEventPublisher events, Clock clock,
+                            @Value("${memorylane.photos.quarantine-lifetime:P7D}") Duration quarantineLifetime) {
         this.jdbc = jdbc;
         this.storage = storage;
         this.events = events;
         this.clock = clock;
+        this.quarantineLifetime = quarantineLifetime;
     }
 
     /** Published inside the deleting transaction; handled only if that transaction commits. */
@@ -90,9 +96,12 @@ public class PhotoFileCleanup {
         events.publishEvent(new Queued(List.copyOf(jobIds)));
     }
 
-    // Runs after the deleting transaction committed, in a transaction of its own: the caller's
-    // response does not wait on or fail because of the files. If this throws (database gone right
-    // after the commit), the jobs are still stored and retryDue picks them up.
+    // Runs after the deleting transaction committed, in a transaction of its own. It is not
+    // asynchronous: Spring calls it from afterCompletion on the same thread, so the caller's
+    // response waits until the files are handled (a few local deletes). Spring catches and logs
+    // anything thrown here, so the caller's already committed delete still succeeds; the jobs stay
+    // stored and retryDue picks them up. @Async would avoid the wait but needs its own thread
+    // pool and error handling, which a few file deletes do not justify.
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteCommitted(Queued queued) {
@@ -117,32 +126,84 @@ public class PhotoFileCleanup {
     }
 
     /**
-     * Removes photo files no photo row refers to and uploads that never finished, once they are
-     * older than {@link #ORPHAN_AGE}. Without a database answer nothing is removed.
+     * Cleans up what no job covers, once it is older than {@link #ORPHAN_AGE}:
+     *
+     * <ul>
+     *   <li>uploads that never finished are removed;</li>
+     *   <li>photo files no photo row refers to are moved to quarantine, not deleted. The backend
+     *       may be connected to the wrong, an empty or a restored database, where every photo looks
+     *       orphaned; deleting would then destroy real photos.</li>
+     *   <li>quarantined photos older than the quarantine lifetime are deleted, unless a photo row
+     *       refers to them again (then they are kept and must be moved back by hand).</li>
+     * </ul>
+     *
+     * One file that fails is logged and skipped, the rest are still handled and it is tried again
+     * next time. Only when the directory cannot be listed or the database does not answer does the
+     * sweep stop, and then nothing more is moved or deleted.
      */
     @Scheduled(fixedDelayString = "${memorylane.photos.orphan-sweep-delay:PT6H}",
             initialDelayString = "${memorylane.photos.orphan-sweep-delay:PT6H}")
     public void sweepOrphans() {
-        Instant cutoff = clock.instant().minus(ORPHAN_AGE);
+        Instant now = clock.instant();
         try {
-            int incomplete = storage.removeIncompleteWrites(cutoff);
-            int orphans = 0;
-            List<String> candidates = storage.keysStoredBefore(cutoff);
-            for (int from = 0; from < candidates.size(); from += BATCH_SIZE) {
-                List<String> batch = candidates.subList(from, Math.min(from + BATCH_SIZE, candidates.size()));
+            int incomplete = storage.removeIncompleteWrites(now.minus(ORPHAN_AGE));
+            int setAside = 0;
+            for (List<String> batch : batches(storage.keysStoredBefore(now.minus(ORPHAN_AGE)))) {
                 Set<String> inUse = referenced(batch);
                 for (String key : batch) {
-                    if (inUse.contains(key)) continue;
-                    storage.delete(key);
-                    orphans++;
+                    if (!inUse.contains(key) && handled(key, "move to quarantine", () -> storage.quarantine(key))) {
+                        setAside++;
+                    }
                 }
             }
-            if (incomplete + orphans > 0) {
-                log.info("Removed {} unfinished uploads and {} photo files no photo refers to", incomplete, orphans);
+            int deleted = 0;
+            Instant expired = now.minus(quarantineLifetime);
+            List<String> due = new ArrayList<>();
+            storage.quarantined().forEach((key, since) -> {
+                if (since.isBefore(expired)) due.add(key);
+            });
+            for (List<String> batch : batches(due)) {
+                Set<String> inUse = referenced(batch);
+                for (String key : batch) {
+                    if (inUse.contains(key)) {
+                        // Its row is visible again (e.g. the right database is back): never delete a
+                        // photo in use. It stays in quarantine until someone moves it back.
+                        log.warn("Quarantined photo file {} is referenced by a photo again; not deleting it", key);
+                    } else if (handled(key, "delete from quarantine", () -> storage.deleteQuarantined(key))) {
+                        deleted++;
+                    }
+                }
+            }
+            if (incomplete + setAside + deleted > 0) {
+                log.info("Photo file sweep: {} unfinished uploads removed, {} unreferenced photos moved to quarantine, "
+                        + "{} deleted after the quarantine lifetime", incomplete, setAside, deleted);
             }
         } catch (IOException | DataAccessException error) {
-            log.warn("Photo file sweep stopped early; it runs again on schedule", error);
+            log.warn("Photo file sweep stopped early; nothing more is moved or deleted until the next run", error);
         }
+    }
+
+    private interface FileStep {
+        void run() throws IOException;
+    }
+
+    // Per file: a locked or unreadable file is logged and skipped instead of ending the sweep.
+    private static boolean handled(String key, String action, FileStep step) {
+        try {
+            step.run();
+            return true;
+        } catch (IOException | RuntimeException error) {
+            log.warn("Could not {} photo file {}; trying again on the next sweep", action, key, error);
+            return false;
+        }
+    }
+
+    private static List<List<String>> batches(List<String> keys) {
+        List<List<String>> batches = new ArrayList<>();
+        for (int from = 0; from < keys.size(); from += BATCH_SIZE) {
+            batches.add(keys.subList(from, Math.min(from + BATCH_SIZE, keys.size())));
+        }
+        return batches;
     }
 
     /** 1, 2, 4 … minutes, at most a day: a full disk or a locked file gets time to clear. */
