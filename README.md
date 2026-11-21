@@ -40,7 +40,7 @@ K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğr
 
 ## İlk sprint anı demosu (ML-07)
 
-1. Backend'i boş bir yerel PostgreSQL ile başlatın. Kayıt ekranı henüz hazır değilse `POST /api/v1/auth/register` ile iki test hesabı açın. İstek alanları [API sözleşmesinde](docs/api-contract.md#hesap-ve-oturum) yer alır.
+1. Backend'i boş bir yerel PostgreSQL ile başlatın. Android uygulamasında **Anılar → Anıların için giriş yap → Kayıt ol** ile iki test hesabı (A ve B) açın; şifre 15–128 karakter olmalıdır. Kayıt oturum açmaz, başarılı kayıttan sonra giriş ekranına dönülür. Hesaplar istenirse `POST /api/v1/auth/register` ile de açılabilir; istek alanları [API sözleşmesinde](docs/api-contract.md#hesap-ve-oturum) yer alır.
 2. Android uygulamasında **Anılar → Anıların için giriş yap** ile A hesabına girin. Başlık ve tarih seçip kaydedin. Yeni anı listede görünür. Başlıksız kayıt hata verir.
 3. Uygulamayı kapatıp yeniden açın. Token süreç belleğinde olduğu için A ile tekrar girince anı sunucudan yeniden yüklenir.
 4. Çıkış yapıp B hesabına girin. B'nin listesinde A'nın anısı görünmez.
@@ -95,7 +95,7 @@ macOS/Linux üzerinde `gradlew.bat` yerine `./gradlew` kullanın. Backend wrappe
 
 Hedef mimaride anıların asıl kaydı backend'de tutulacak; mobil oturum anahtarları yedeklere dahil edilmeyecek. Bu veri saklama ve senkronizasyon akışı henüz uygulanmadı; ayrıntılar mimari belgesindedir.
 
-Mobil uygulama Anılar sekmesiyle açılır. Sekme giriş ve anı akışının yanında `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
+Mobil uygulama Anılar sekmesiyle açılır. Sekme giriş ve anı akışının yanında `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Giriş ekranındaki **Kayıt ol** bağlantısı kayıt ekranını açar; giriş ve kayıt ekranlarında alt menü gizlenir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
 
 SDK yolları, parolalar, `.env`, imzalama anahtarları ve yerel ayarlar commitlenmez. Yanlışlıkla classpath altına konan application-local.properties/yml/yaml dosyaları da paketlemeden dışlanır.
 

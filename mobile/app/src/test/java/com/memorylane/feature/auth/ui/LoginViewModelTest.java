@@ -77,10 +77,19 @@ public class LoginViewModelTest {
     @Test
     public void malformedEmailIsInvalid() {
         for (String email : new String[] {"user", "user@", "@example.com", "user@example",
-                "user name@example.com", "user@@example.com", "user@example..com"}) {
+                "user name@example.com", "user@@example.com"}) {
             viewModel.onLoginClicked(email, "secret");
             assertEquals(email, LoginUiState.EmailError.INVALID, state().getEmailError());
             assertEquals(LoginUiState.Focus.EMAIL, state().getFocus());
+        }
+    }
+
+    @Test
+    public void addressesTheServerAcceptsAreNotRejected() {
+        for (String email : new String[] {"dilan@örnek.com", "o'brien@example.com",
+                " user@example.com　", "user@example..com"}) {
+            viewModel.onLoginClicked(email, "secret");
+            assertEquals(email, LoginUiState.EmailError.NONE, state().getEmailError());
         }
     }
 
