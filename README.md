@@ -59,7 +59,17 @@ Dosyalar backend'in diskinde, varsayılan olarak `backend/storage/photos` klasö
 2. [Supabase PostgreSQL CA sertifikasını](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt) indirip `backend/config/supabase-ca.crt` adıyla kaydedin. Backend, Session pooler üzerinden TLS ile bağlanır. Supabase Data API kapalıdır.
 3. JDK 17 ile `backend` klasöründen Windows'ta `.\gradlew.bat bootRun`, macOS/Linux'ta `./gradlew bootRun` çalıştırın. `GET http://localhost:8080/api/health` yanıtında veritabanı `UP` olmalıdır. Android uygulaması Spring Boot API adresini kullanır.
 
-Ekip bağlantısında Flyway kapalıdır. Şema sorumlusu, yalnızca güncel `main` üzerinden ve şema sahibi bağlantısıyla `SPRING_FLYWAY_ENABLED=true` kullanarak migration uygular. Türkçe arama migration’ı V4 uygulanmadan önce, silme ve fotoğraf sırası migration’ı V3 ana dala birleşmiş ve şemaya uygulanmış olmalıdır. Ortak ortamda yalnız deneme verisi kullanın. Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
+Uygulama veritabanına sınırlı `memorylane_app` kullanıcısıyla bağlanır: bu kullanıcı satır okuyup yazabilir, tablo oluşturamaz, silemez, boşaltamaz, değiştiremez ve migration geçmişini okuyamaz. Yetkiler ve güvenlik sınırları (en fazla 20 bağlantı, 30 sn sorgu süresi) [`backend/db/supabase/memorylane_app_role.sql`](backend/db/supabase/memorylane_app_role.sql) dosyasındadır; sonraki migration'ların oluşturduğu tablolara satır yetkisi otomatik verilir. Tam yetkili şema sahibi (`postgres`) bilgileri yalnız şema sorumlusundadır, Git dışındaki `backend/.env.owner` dosyasında durur ve yalnız migration için kullanılır; uygulama bu hesapla çalıştırılmaz.
+
+Ekip bağlantısında Flyway kapalıdır. Şema sorumlusu, yalnızca güncel `main` üzerinden ve şema sahibi bağlantısıyla `SPRING_FLYWAY_ENABLED=true` kullanarak migration uygular. Türkçe arama migration’ı V4 uygulanmadan önce, silme ve fotoğraf sırası migration’ı V3 ana dala birleşmiş ve şemaya uygulanmış olmalıdır. Ortak ortamda yalnız deneme verisi kullanın.
+
+Uygulamayı ortak veritabanında başlatmadan yalnız migration çalıştırmak için backend'in kullandığı Flyway sürümünün CLI imajı kullanılabilir (uygulamanın kendisi başlatılmaz, zamanlanmış işler çalışmaz). Önce prova yapın: şemayı veri olmadan (`pg_dump -n memorylane` ve kullanıcı tablolarında `--exclude-table-data`) geçici bir PostgreSQL 17 konteynerine aktarıp aynı komutu orada çalıştırın. `validateOnMigrate` uygulanmış migration dosyalarının değişmediğini de denetler.
+
+```powershell
+docker run --rm -e FLYWAY_USER -e FLYWAY_PASSWORD -v "${PWD}\src\main\resources\db\migration:/flyway/sql:ro" -v "${PWD}\config:/ca:ro" flyway/flyway:12.4.0 "-url=jdbc:postgresql://<host>:5432/postgres?sslmode=verify-full&sslrootcert=/ca/supabase-ca.crt" -schemas=memorylane -defaultSchema=memorylane -locations=filesystem:/flyway/sql -validateOnMigrate=true migrate
+```
+
+Ortak Supabase şeması 19.11.2026 itibarıyla V4'tedir (V3 ve V4 bu yöntemle, önce provada denenerek uygulandı; mevcut kayıtlar korundu). Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
 
 ## İlk kurulum (yerel Docker seçeneği)
 
