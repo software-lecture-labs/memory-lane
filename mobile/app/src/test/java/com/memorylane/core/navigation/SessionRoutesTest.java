@@ -21,9 +21,11 @@ public class SessionRoutesTest {
     private static final String AUTH_SCREENS = "com.memorylane.feature.auth.ui.";
 
     @Test
-    public void loginIsPublic() {
-        assertTrue(SessionRoutes.isPublic(R.id.loginFragment));
-        assertFalse(SessionRoutes.requiresSession(R.id.loginFragment));
+    public void authScreensArePublic() {
+        for (int id : new int[] {R.id.loginFragment, R.id.registerFragment}) {
+            assertTrue(SessionRoutes.isPublic(id));
+            assertFalse(SessionRoutes.requiresSession(id));
+        }
     }
 
     @Test
@@ -42,7 +44,7 @@ public class SessionRoutesTest {
     }
 
     /**
-     * Ties the list to nav_graph.xml: auth screens (login, later register) must be public, every
+     * Ties the list to nav_graph.xml: auth screens (login, register) must be public, every
      * other destination protected. A new auth screen left out of SessionRoutes fails here instead of
      * silently bouncing to login on the device.
      */
@@ -65,6 +67,7 @@ public class SessionRoutesTest {
             checked.add(idName);
         }
         assertTrue("nav_graph.xml has no login destination: " + checked, checked.contains("loginFragment"));
+        assertTrue("nav_graph.xml has no register destination: " + checked, checked.contains("registerFragment"));
         assertTrue("nav_graph.xml has no protected destination: " + checked, checked.size() > 1);
     }
 }

@@ -61,7 +61,7 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
             // Same exception types as AuthErrors.database(), which cannot share this list
             // because annotation values must be literals.
             log.warn("Database unavailable while checking the session for {} {}: {}",
-                    request.getMethod(), request.getRequestURI(), e.getMessage());
+                    request.getMethod(), request.getRequestURI(), AuthErrors.rootCause(e));
             reject(response, AuthFailure.databaseUnavailable());
             return;
         }

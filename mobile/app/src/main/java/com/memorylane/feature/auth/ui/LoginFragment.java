@@ -18,6 +18,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
 import com.memorylane.core.ui.ErrorMessages;
+import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
 import androidx.navigation.fragment.NavHostFragment;
 import com.memorylane.databinding.FragmentLoginBinding;
@@ -40,6 +42,7 @@ public final class LoginFragment extends Fragment {
         ViewCompat.setAccessibilityHeading(binding.loginHeading, true);
         binding.passwordLayout.setEndIconOnClickListener(icon -> togglePassword());
         binding.loginButton.setOnClickListener(button -> submit());
+        binding.registerLink.setOnClickListener(button -> openRegister());
         onEdit(binding.emailInput, viewModel::onEmailChanged);
         onEdit(binding.passwordInput, viewModel::onPasswordChanged);
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
@@ -47,6 +50,8 @@ public final class LoginFragment extends Fragment {
             binding.loginButton.setEnabled(!busy);
             binding.emailInput.setEnabled(!busy);
             binding.passwordInput.setEnabled(!busy);
+            // A login result arriving while the register screen is open would navigate on return.
+            binding.registerLink.setEnabled(!busy);
         });
         viewModel.result().observe(getViewLifecycleOwner(), result -> {
             if (result == null) return;
@@ -67,6 +72,16 @@ public final class LoginFragment extends Fragment {
         String email = binding.emailInput.getText() == null ? "" : binding.emailInput.getText().toString();
         String password = binding.passwordInput.getText() == null ? "" : binding.passwordInput.getText().toString();
         viewModel.login(AppContainer.from(requireContext()).getAuthRepository(), email, password);
+    }
+
+    private void openRegister() {
+        NavController navController = NavHostFragment.findNavController(this);
+        NavDestination current = navController.getCurrentDestination();
+        // A fast double tap delivers a second click after the first navigation. The action is
+        // unknown on the register screen, so navigating again would throw IllegalArgumentException.
+        if (current != null && current.getId() == R.id.loginFragment) {
+            navController.navigate(R.id.action_loginFragment_to_registerFragment);
+        }
     }
 
     private void togglePassword() {

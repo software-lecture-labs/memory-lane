@@ -5,10 +5,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.net.Uri;
+
 import com.memorylane.core.network.ApiError;
 import com.memorylane.core.network.ApiResult;
 import com.memorylane.core.session.SessionStore;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.photos.data.PhotoPreparer;
+import com.memorylane.feature.photos.data.PreparedPhoto;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,6 +38,19 @@ public class SessionLogoutTest {
     private static final String TOKEN = "tok-abc";
     private static final String EMAIL = "ayse@example.com";
 
+    /** Session tests never pick photos; stands in for the Context-bound DevicePhotoPreparer. */
+    private static final PhotoPreparer NO_PHOTOS = new PhotoPreparer() {
+        @Override
+        public PreparedPhoto prepare(Uri uri) {
+            throw new UnsupportedOperationException("not used by session tests");
+        }
+
+        @Override
+        public void discard(PreparedPhoto photo) {
+            throw new UnsupportedOperationException("not used by session tests");
+        }
+    };
+
     private MockWebServer server;
     private AppContainer app;
     private final List<SessionStore.EndReason> events = new CopyOnWriteArrayList<>();
@@ -51,7 +68,7 @@ public class SessionLogoutTest {
     }
 
     private AppContainer containerFor(String baseUrl) {
-        AppContainer container = new AppContainer(baseUrl, Runnable::run);
+        AppContainer container = new AppContainer(baseUrl, Runnable::run, NO_PHOTOS);
         container.getSessionStore().addListener(events::add);
         return container;
     }

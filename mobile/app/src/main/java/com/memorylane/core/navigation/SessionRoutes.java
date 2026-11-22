@@ -10,8 +10,7 @@ import java.util.Set;
  * showing a protected screen signed out. SessionRoutesTest checks this list against nav_graph.xml.
  */
 public final class SessionRoutes {
-    // ML-28: add R.id.registerFragment here when the register screen reaches main.
-    private static final Set<Integer> PUBLIC = Set.of(R.id.loginFragment);
+    private static final Set<Integer> PUBLIC = Set.of(R.id.loginFragment, R.id.registerFragment);
 
     private SessionRoutes() {
     }

@@ -23,6 +23,11 @@ import com.memorylane.feature.auth.data.AuthRepository;
 import com.memorylane.feature.auth.data.RemoteAuthRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
 import com.memorylane.feature.memories.data.MemoryRepository;
+import com.memorylane.feature.photos.data.DevicePhotoPreparer;
+import com.memorylane.feature.photos.data.PhotoApi;
+import com.memorylane.feature.photos.data.PhotoPreparer;
+import com.memorylane.feature.photos.data.PhotoUploads;
+import com.memorylane.feature.photos.data.RemotePhotoUploads;
 
 import java.util.concurrent.Executor;
 
@@ -44,13 +49,20 @@ public final class AppContainer {
     private final AuthRepository authRepository;
     private final MemoryRepository memoryRepository;
     private final HealthRepository healthRepository;
+    private final PhotoUploads photoUploads;
+    private final PhotoPreparer photoPreparer;
 
-    public AppContainer(String baseUrl) {
-        this(baseUrl, mainThread());
+    /** {@code appContext} must be the application context; the photo preparer outlives any screen. */
+    public AppContainer(String baseUrl, Context appContext) {
+        this(baseUrl, mainThread(),
+                new DevicePhotoPreparer(appContext.getContentResolver(), appContext.getCacheDir()));
     }
 
-    /** @param sessionNotifier runs session-ended listeners; the main thread in the app */
-    AppContainer(String baseUrl, Executor sessionNotifier) {
+    /**
+     * @param sessionNotifier runs session-ended listeners; the main thread in the app
+     * @param photoPreparer passed in so JVM tests can build the container without an Android Context
+     */
+    AppContainer(String baseUrl, Executor sessionNotifier, PhotoPreparer photoPreparer) {
         Gson gson = new Gson();
         sessionStore = new SessionStore(sessionNotifier);
         Retrofit retrofit = ApiClient.create(baseUrl, gson, new AuthInterceptor(sessionStore, baseUrl));
@@ -60,6 +72,8 @@ public final class AppContainer {
         memoryRepository = new MemoryRepository(retrofit.create(MemoryApi.class), caller);
         this.baseUrl = retrofit.baseUrl().toString();
         this.healthRepository = new RemoteHealthRepository(retrofit.create(HealthApi.class), caller);
+        this.photoUploads = new RemotePhotoUploads(retrofit.create(PhotoApi.class), caller);
+        this.photoPreparer = photoPreparer;
     }
 
     private static Executor mainThread() {
@@ -83,6 +97,10 @@ public final class AppContainer {
     public AuthRepository getAuthRepository() { return authRepository; }
 
     public MemoryRepository getMemoryRepository() { return memoryRepository; }
+
+    public PhotoUploads getPhotoUploads() { return photoUploads; }
+
+    public PhotoPreparer getPhotoPreparer() { return photoPreparer; }
 
     public SessionStore getSessionStore() { return sessionStore; }
 

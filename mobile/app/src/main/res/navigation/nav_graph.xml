@@ -7,7 +7,16 @@
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.memorylane.feature.auth.ui.LoginFragment"
-        android:label="@string/login_submit" />
+        android:label="@string/login_submit">
+        <action
+            android:id="@+id/action_loginFragment_to_registerFragment"
+            app:destination="@id/registerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.memorylane.feature.auth.ui.RegisterFragment"
+        android:label="@string/register_badge" />
 
     <fragment
         android:id="@+id/memoriesFragment"
@@ -22,9 +31,5 @@
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.memorylane.feature.profile.ui.ProfileFragment"
-        android:label="@string/tab_profile">
-        <action
-            android:id="@+id/action_profileFragment_to_loginFragment"
-            app:destination="@id/loginFragment" />
-    </fragment>
+        android:label="@string/tab_profile" />
 </navigation>
