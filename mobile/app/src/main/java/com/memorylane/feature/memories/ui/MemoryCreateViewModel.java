@@ -17,12 +17,14 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * New memory form. Field rules match the server's MemoryInput (docs/api-contract.md "Anı
  * alanları"): title required, at most 100 Unicode characters after trimming; description at
- * most 3000; date required and not in the future. The client only gives early feedback; the
- * server stays the authority.
+ * most 3000; date required and not in the future. Category defaults to OTHER ("Diğer");
+ * emotion and location are optional, and a location needs both coordinates in range (ML-08).
+ * The client only gives early feedback; the server stays the authority.
  *
  * <p>Retrying the same draft reuses its idempotency key, so a save whose answer was lost (e.g.
  * a dropped connection) cannot create the memory twice. Changing the draft gets a new key.
@@ -35,6 +37,7 @@ public final class MemoryCreateViewModel extends ViewModel {
     static final int TITLE_MAX_LENGTH = 100;
     static final int DESCRIPTION_MAX_LENGTH = 3000;
     private static final int UNAUTHORIZED = 401;
+    private static final Pattern COORDINATE = Pattern.compile("[+-]?(\\d{1,3}(\\.\\d*)?|\\.\\d+)");
 
     /** Where the screen stands after a save, given the photo upload's progress. */
     enum AfterSave {
@@ -70,6 +73,10 @@ public final class MemoryCreateViewModel extends ViewModel {
     // text, so restoring cannot look like a user edit that clears the errors.
     private String title = "";
     private String description = "";
+    private String category = MemoryChoices.DEFAULT_CATEGORY;
+    @Nullable private String emotion;
+    private String latitude = "";
+    private String longitude = "";
 
     @Nullable private MemoryApi.Draft attempted;
     @Nullable private String idempotencyKey;
@@ -114,6 +121,14 @@ public final class MemoryCreateViewModel extends ViewModel {
     @Nullable
     public String createdMemoryId() { return createdMemoryId; }
 
+    String category() { return category; }
+
+    @Nullable String emotion() { return emotion; }
+
+    String latitude() { return latitude; }
+
+    String longitude() { return longitude; }
+
     /** Today in the device's time zone; the picker does not offer later days. */
     LocalDate today() { return LocalDate.now(clock); }
 
@@ -137,6 +152,31 @@ public final class MemoryCreateViewModel extends ViewModel {
                 MemoryCreateUiState.DateError.NONE, date, current.isSaving());
     }
 
+    /** The "Bugün" shortcut: today in the device's time zone. */
+    public void onTodaySelected() { onDateSelected(today()); }
+
+    /** An unknown code falls back to the default, so the request is never rejected for it. */
+    public void onCategorySelected(@Nullable String code) {
+        category = MemoryChoices.contains(MemoryChoices.CATEGORIES, code) ? code : MemoryChoices.DEFAULT_CATEGORY;
+        edited();
+    }
+
+    /** {@code null} (or an unknown code) clears the optional emotion. */
+    public void onEmotionSelected(@Nullable String code) {
+        emotion = MemoryChoices.contains(MemoryChoices.EMOTIONS, code) ? code : null;
+        edited();
+    }
+
+    public void onLatitudeChanged(String text) {
+        latitude = text;
+        locationEdited();
+    }
+
+    public void onLongitudeChanged(String text) {
+        longitude = text;
+        locationEdited();
+    }
+
     /**
      * Validates and sends the memory. Ignored while a save runs and after the memory was
      * created. Without a session the screen is told to sign in again instead of sending a
@@ -152,15 +192,18 @@ public final class MemoryCreateViewModel extends ViewModel {
         MemoryCreateUiState.DateError dateError = date == null ? MemoryCreateUiState.DateError.REQUIRED
                 : date.isAfter(today()) ? MemoryCreateUiState.DateError.FUTURE
                 : MemoryCreateUiState.DateError.NONE;
+        MemoryCreateUiState.LocationError locationError = locationError(latitude, longitude);
         MemoryCreateUiState.Focus focus = titleError != MemoryCreateUiState.TitleError.NONE
                 ? MemoryCreateUiState.Focus.TITLE
                 : dateError != MemoryCreateUiState.DateError.NONE
                         ? MemoryCreateUiState.Focus.DATE
                         : descriptionError != MemoryCreateUiState.DescriptionError.NONE
-                                ? MemoryCreateUiState.Focus.DESCRIPTION : MemoryCreateUiState.Focus.NONE;
+                                ? MemoryCreateUiState.Focus.DESCRIPTION
+                                : locationError != MemoryCreateUiState.LocationError.NONE
+                                        ? MemoryCreateUiState.Focus.LOCATION : MemoryCreateUiState.Focus.NONE;
         if (focus != MemoryCreateUiState.Focus.NONE) {
-            state.setValue(new MemoryCreateUiState(titleError, descriptionError, dateError, focus,
-                    date, false, null));
+            state.setValue(new MemoryCreateUiState(titleError, descriptionError, dateError,
+                    locationError, focus, date, false, null));
             return;
         }
         if (authorization == null) {
@@ -168,7 +211,8 @@ public final class MemoryCreateViewModel extends ViewModel {
             return;
         }
 
-        MemoryApi.Draft draft = new MemoryApi.Draft(strip(title), description, date.toString());
+        MemoryApi.Draft draft = new MemoryApi.Draft(strip(title), description, date.toString(),
+                category, emotion, location(latitude, longitude));
         if (!draft.equals(attempted)) {
             attempted = draft;
             idempotencyKey = UUID.randomUUID().toString();
@@ -199,7 +243,8 @@ public final class MemoryCreateViewModel extends ViewModel {
             return;
         }
         state.setValue(new MemoryCreateUiState(current.getTitleError(), current.getDescriptionError(),
-                current.getDateError(), MemoryCreateUiState.Focus.NONE, current.getDate(), false, error));
+                current.getDateError(), current.getLocationError(), MemoryCreateUiState.Focus.NONE,
+                current.getDate(), false, error));
     }
 
     /** Any edit drops focus requests and the last server error; it is about the old draft. */
@@ -207,7 +252,21 @@ public final class MemoryCreateViewModel extends ViewModel {
                         MemoryCreateUiState.DescriptionError descriptionError,
                         MemoryCreateUiState.DateError dateError, @Nullable LocalDate date, boolean saving) {
         state.setValue(new MemoryCreateUiState(titleError, descriptionError, dateError,
-                MemoryCreateUiState.Focus.NONE, date, saving, null));
+                current().getLocationError(), MemoryCreateUiState.Focus.NONE, date, saving, null));
+    }
+
+    /** A choice changed: keep the field errors, drop focus and the old server error. */
+    private void edited() {
+        MemoryCreateUiState current = current();
+        update(current.getTitleError(), current.getDescriptionError(), current.getDateError(),
+                current.getDate(), current.isSaving());
+    }
+
+    private void locationEdited() {
+        MemoryCreateUiState current = current();
+        state.setValue(new MemoryCreateUiState(current.getTitleError(), current.getDescriptionError(),
+                current.getDateError(), MemoryCreateUiState.LocationError.NONE,
+                MemoryCreateUiState.Focus.NONE, current.getDate(), current.isSaving(), null));
     }
 
     private MemoryCreateUiState current() { return state.getValue(); }
@@ -233,6 +292,35 @@ public final class MemoryCreateViewModel extends ViewModel {
         if (trimmed.isEmpty()) return MemoryCreateUiState.TitleError.REQUIRED;
         return trimmed.codePointCount(0, trimmed.length()) > TITLE_MAX_LENGTH
                 ? MemoryCreateUiState.TitleError.TOO_LONG : MemoryCreateUiState.TitleError.NONE;
+    }
+
+    private static MemoryCreateUiState.LocationError locationError(String latitude, String longitude) {
+        String lat = strip(latitude);
+        String lng = strip(longitude);
+        if (lat.isEmpty() && lng.isEmpty()) return MemoryCreateUiState.LocationError.NONE;
+        if (lat.isEmpty() || lng.isEmpty()) return MemoryCreateUiState.LocationError.INCOMPLETE;
+        return coordinate(lat, 90) == null || coordinate(lng, 180) == null
+                ? MemoryCreateUiState.LocationError.INVALID : MemoryCreateUiState.LocationError.NONE;
+    }
+
+    /** The location to send; only called once {@link #locationError} found none. */
+    @Nullable
+    private static MemoryApi.Location location(String latitude, String longitude) {
+        Double lat = coordinate(strip(latitude), 90);
+        Double lng = coordinate(strip(longitude), 180);
+        return lat == null || lng == null ? null : new MemoryApi.Location(lat, lng);
+    }
+
+    /**
+     * A finite number within the limit either way, else null. A decimal comma is accepted as
+     * well, since Turkish keyboards may offer one; hex, "NaN" and "Infinity" are not coordinates.
+     */
+    @Nullable
+    static Double coordinate(String text, int limit) {
+        String value = text.replace(',', '.');
+        if (!COORDINATE.matcher(value).matches()) return null;
+        double parsed = Double.parseDouble(value);
+        return Math.abs(parsed) <= limit ? parsed : null;
     }
 
     private static MemoryCreateUiState.DescriptionError descriptionError(String description) {
