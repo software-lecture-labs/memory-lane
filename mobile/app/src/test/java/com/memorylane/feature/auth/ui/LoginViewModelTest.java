@@ -2,9 +2,11 @@ package com.memorylane.feature.auth.ui;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
+import androidx.lifecycle.ViewModel;
 
 import com.memorylane.core.network.ApiError;
 import com.memorylane.core.network.ApiResult;
@@ -28,6 +30,27 @@ public class LoginViewModelTest {
         public Cancellable login(AuthRequest request, ResultCallback<LoginResponse> callback) { throw new AssertionError(); }
         public Cancellable register(AuthRequest request, ResultCallback<UserResponse> callback) { throw new AssertionError(); }
     });
+
+    @Test
+    public void factoryCreatesLoginViewModel() {
+        assertTrue(LoginViewModel.factory(repository()).create(LoginViewModel.class) instanceof LoginViewModel);
+    }
+
+    @Test
+    public void factoryRejectsOtherViewModelWithClearMessage() {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> LoginViewModel.factory(repository()).create(OtherViewModel.class));
+        assertTrue(error.getMessage().contains(OtherViewModel.class.getName()));
+    }
+
+    public static final class OtherViewModel extends ViewModel { }
+
+    private static AuthRepository repository() {
+        return new AuthRepository() {
+            public Cancellable login(AuthRequest request, ResultCallback<LoginResponse> callback) { throw new AssertionError(); }
+            public Cancellable register(AuthRequest request, ResultCallback<UserResponse> callback) { throw new AssertionError(); }
+        };
+    }
 
     @Test
     public void pendingLoginRejectsDuplicateAndKeepsResultForNewObserver() {
