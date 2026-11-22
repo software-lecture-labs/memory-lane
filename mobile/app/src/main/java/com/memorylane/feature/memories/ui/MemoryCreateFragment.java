@@ -6,6 +6,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.EditText;
 
 import androidx.activity.OnBackPressedCallback;
@@ -22,6 +23,8 @@ import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.datepicker.CalendarConstraints;
 import com.google.android.material.datepicker.DateValidatorPointBackward;
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -37,6 +40,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
@@ -104,13 +108,23 @@ public final class MemoryCreateFragment extends Fragment {
             else returnToList();
         });
         binding.createDateCard.setOnClickListener(card -> openDatePicker());
+        binding.createToday.setOnClickListener(button -> viewModel.onTodaySelected());
         binding.createSave.setOnClickListener(button -> viewModel.save(app.authorization()));
 
         // Restored before the watchers are attached, so restoring is not taken for a user edit.
         restore(binding.createTitleInput, viewModel.title());
         restore(binding.createDescriptionInput, viewModel.description());
+        restore(binding.createLatitudeInput, viewModel.latitude());
+        restore(binding.createLongitudeInput, viewModel.longitude());
         onEdit(binding.createTitleInput, viewModel::onTitleChanged);
         onEdit(binding.createDescriptionInput, viewModel::onDescriptionChanged);
+        onEdit(binding.createLatitudeInput, viewModel::onLatitudeChanged);
+        onEdit(binding.createLongitudeInput, viewModel::onLongitudeChanged);
+        // Chips are rebuilt from the ViewModel's choice on every new view, rotation included.
+        addChips(binding.createCategoryGroup, MemoryChoices.CATEGORIES, viewModel.category(),
+                viewModel::onCategorySelected);
+        addChips(binding.createEmotionGroup, MemoryChoices.EMOTIONS, viewModel.emotion(),
+                viewModel::onEmotionSelected);
         // A picker left open across rotation lost its listener with the old view.
         Fragment openPicker = getChildFragmentManager().findFragmentByTag(DATE_PICKER);
         if (openPicker instanceof MaterialDatePicker) {
@@ -191,6 +205,9 @@ public final class MemoryCreateFragment extends Fragment {
         String dateError = message(dateMessage(state.getDateError()));
         binding.createDateError.setText(dateError);
         binding.createDateError.setVisibility(dateError == null ? View.GONE : View.VISIBLE);
+        String locationError = message(locationMessage(state.getLocationError()));
+        binding.createLocationError.setText(locationError);
+        binding.createLocationError.setVisibility(locationError == null ? View.GONE : View.VISIBLE);
         binding.createDateValue.setText(state.getDate() == null
                 ? getString(R.string.memory_create_date_empty) : dateFormat.format(state.getDate()));
 
@@ -204,6 +221,11 @@ public final class MemoryCreateFragment extends Fragment {
         binding.createTitleInput.setEnabled(!locked);
         binding.createDescriptionInput.setEnabled(!locked);
         binding.createDateCard.setEnabled(!locked);
+        binding.createToday.setEnabled(!locked);
+        binding.createLatitudeInput.setEnabled(!locked);
+        binding.createLongitudeInput.setEnabled(!locked);
+        setChipsEnabled(binding.createCategoryGroup, !locked);
+        setChipsEnabled(binding.createEmotionGroup, !locked);
         binding.createClose.setEnabled(!state.isSaving() && !uploading);
         // A photo picked during the save would miss the upload, and PhotoSection frees the
         // picker for "the next memory" once an upload ends; on this screen there is no next
@@ -223,6 +245,12 @@ public final class MemoryCreateFragment extends Fragment {
                 break;
             case DESCRIPTION:
                 binding.createDescriptionInput.requestFocus();
+                break;
+            case LOCATION:
+                (viewModel.latitude().trim().isEmpty() && !viewModel.longitude().trim().isEmpty()
+                        ? binding.createLatitudeInput
+                        : viewModel.longitude().trim().isEmpty() && !viewModel.latitude().trim().isEmpty()
+                                ? binding.createLongitudeInput : binding.createLatitudeInput).requestFocus();
                 break;
             default:
                 break;
@@ -247,6 +275,34 @@ public final class MemoryCreateFragment extends Fragment {
                 .build();
         listenTo(picker);
         picker.show(getChildFragmentManager(), DATE_PICKER);
+    }
+
+    /**
+     * One chip per choice, tagged with its code. Selection is reported as the chosen code, or
+     * null when nothing is chosen (only possible for the optional emotion).
+     */
+    private void addChips(ChipGroup group, List<MemoryChoices.Choice> choices, @Nullable String selected,
+                          Consumer<String> onSelected) {
+        group.removeAllViews();
+        LayoutInflater inflater = LayoutInflater.from(group.getContext());
+        for (MemoryChoices.Choice choice : choices) {
+            Chip chip = (Chip) inflater.inflate(R.layout.item_choice_chip, group, false);
+            chip.setId(View.generateViewId());
+            chip.setTag(choice.code());
+            chip.setText(choice.label());
+            chip.setChecked(choice.code().equals(selected));
+            group.addView(chip, new ChipGroup.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        }
+        group.setOnCheckedStateChangeListener((chips, checkedIds) -> {
+            Chip checked = checkedIds.isEmpty() ? null : chips.findViewById(checkedIds.get(0));
+            onSelected.accept(checked == null ? null : (String) checked.getTag());
+        });
+    }
+
+    private static void setChipsEnabled(ChipGroup group, boolean enabled) {
+        for (int i = 0; i < group.getChildCount(); i++) {
+            group.getChildAt(i).setEnabled(enabled);
+        }
     }
 
     private void listenTo(MaterialDatePicker<Long> picker) {
@@ -298,6 +354,15 @@ public final class MemoryCreateFragment extends Fragment {
         switch (error) {
             case REQUIRED: return R.string.memory_create_date_required;
             case FUTURE: return R.string.memory_create_date_future;
+            default: return 0;
+        }
+    }
+
+    @StringRes
+    private static int locationMessage(MemoryCreateUiState.LocationError error) {
+        switch (error) {
+            case INCOMPLETE: return R.string.memory_location_incomplete;
+            case INVALID: return R.string.memory_location_invalid;
             default: return 0;
         }
     }
