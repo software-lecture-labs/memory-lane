@@ -14,6 +14,8 @@ import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
+import com.memorylane.core.di.AppContainer;
+import com.memorylane.core.navigation.SessionNavigator;
 import com.memorylane.databinding.ActivityMainBinding;
 
 /** Single activity; every tab is a fragment destination in res/navigation/nav_graph.xml. */
@@ -47,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
             binding.bottomNav.setVisibility(hidesBottomNav(destination) ? View.GONE : View.VISIBLE);
             ViewCompat.requestApplyInsets(binding.navHost);
         });
+        // Without a session only public screens are shown; signing out clears the whole history.
+        SessionNavigator.bind(this, navController, AppContainer.from(this).getSessionStore());
     }
 
     /**

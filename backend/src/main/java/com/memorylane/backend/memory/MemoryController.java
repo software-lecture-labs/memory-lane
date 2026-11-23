@@ -1,7 +1,7 @@
 package com.memorylane.backend.memory;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.memorylane.backend.auth.AuthService;
+import com.memorylane.backend.auth.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,12 +14,11 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/memories")
 public class MemoryController {
-    private final AuthService auth;
     private final MemoryService memories;
     private final Clock clock;
 
-    public MemoryController(AuthService auth, MemoryService memories, Clock clock) {
-        this.auth = auth;
+    /** The owner comes only from the session (SessionAuthenticationFilter + @CurrentUser, ADR-0003). */
+    public MemoryController(MemoryService memories, Clock clock) {
         this.memories = memories;
         this.clock = clock;
     }
@@ -28,10 +27,9 @@ public class MemoryController {
 
     @PostMapping
     ResponseEntity<Detail> create(
-            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @CurrentUser UUID owner,
             @RequestHeader(name = "Idempotency-Key", defaultValue = "") String key,
             @RequestBody Map<String, Object> body) {
-        UUID owner = auth.me(authorization).id();
         UUID requestId = requestId(key);
         var created = memories.create(owner, requestId, MemoryInput.from(body, clock));
         URI location = URI.create("/api/v1/memories/" + created.summary().id());
@@ -43,12 +41,11 @@ public class MemoryController {
 
     @GetMapping
     ResponseEntity<MemoryService.Page> list(
-            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @CurrentUser UUID owner,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
             @RequestParam(name = "q", defaultValue = "") String query,
             @RequestParam(name = "category", defaultValue = "") String category) {
-        UUID owner = auth.me(authorization).id();
         if (page < 0 || size < 1 || size > 100) {
             throw new IllegalArgumentException("Sayfa veya sayfa boyutu geçersiz.");
         }

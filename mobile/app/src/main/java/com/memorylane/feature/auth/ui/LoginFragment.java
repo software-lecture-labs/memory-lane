@@ -38,7 +38,8 @@ public final class LoginFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
+        viewModel = new ViewModelProvider(this, LoginViewModel.factory(
+                AppContainer.from(requireContext()).getAuthRepository())).get(LoginViewModel.class);
         ViewCompat.setAccessibilityHeading(binding.loginHeading, true);
         binding.passwordLayout.setEndIconOnClickListener(icon -> togglePassword());
         binding.loginButton.setOnClickListener(button -> submit());
@@ -60,17 +61,18 @@ public final class LoginFragment extends Fragment {
                 binding.passwordLayout.setError(ErrorMessages.describe(requireContext(), result.getError()));
                 return;
             }
-            AppContainer.from(requireContext()).startSession(result.getData().getAccessToken());
+            AppContainer.from(requireContext()).startSession(result.getData().getAccessToken(),
+                    result.getData().getUser().getEmail());
             binding.passwordInput.setText("");
             NavHostFragment.findNavController(this).navigate(R.id.memoriesFragment, null,
-                    new NavOptions.Builder().setPopUpTo(R.id.memoriesFragment, true).build());
+                    new NavOptions.Builder().setPopUpTo(R.id.nav_graph, true).build());
         });
     }
 
     private void submit() {
         String email = binding.emailInput.getText() == null ? "" : binding.emailInput.getText().toString();
         String password = binding.passwordInput.getText() == null ? "" : binding.passwordInput.getText().toString();
-        viewModel.login(AppContainer.from(requireContext()).getAuthRepository(), email, password);
+        viewModel.login(email, password);
     }
 
     private void openRegister() {

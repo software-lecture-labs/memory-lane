@@ -2,7 +2,9 @@ package com.memorylane.feature.auth.ui;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.memorylane.core.network.ApiResult;
 import com.memorylane.core.network.Cancellable;
@@ -17,6 +19,21 @@ public final class LoginViewModel extends ViewModel {
     private final MutableLiveData<Boolean> busy = new MutableLiveData<>(false);
     private final MutableLiveData<ApiResult<LoginResponse>> result = new MutableLiveData<>();
     private Cancellable request;
+    private final AuthRepository repository;
+
+    LoginViewModel(AuthRepository repository) {
+        this.repository = repository;
+    }
+
+    static ViewModelProvider.Factory factory(AuthRepository repository) {
+        return new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                return modelClass.cast(new LoginViewModel(repository));
+            }
+        };
+    }
 
     LiveData<Boolean> busy() { return busy; }
 
@@ -24,7 +41,7 @@ public final class LoginViewModel extends ViewModel {
 
     void consumeResult() { result.setValue(null); }
 
-    void login(AuthRepository repository, String email, String password) {
+    void login(String email, String password) {
         if (Boolean.TRUE.equals(busy.getValue())) return;
         consumeResult();
         onLoginClicked(email, password);
