@@ -26,11 +26,37 @@ import java.util.UUID;
  *
  * <p>Retrying the same draft reuses its idempotency key, so a save whose answer was lost (e.g.
  * a dropped connection) cannot create the memory twice. Changing the draft gets a new key.
+ *
+ * <p>Once the memory exists its id is kept ({@link #createdMemoryId()}) and further saves are
+ * ignored: the screen stays open while the picked photos are uploaded to that memory (ML-03:
+ * memory first, then each photo), and a second tap must not create another memory.
  */
 public final class MemoryCreateViewModel extends ViewModel {
     static final int TITLE_MAX_LENGTH = 100;
     static final int DESCRIPTION_MAX_LENGTH = 3000;
     private static final int UNAUTHORIZED = 401;
+
+    /** Where the screen stands after a save, given the photo upload's progress. */
+    enum AfterSave {
+        /** The memory does not exist yet; the form is editable. */
+        NOT_SAVED,
+        /** Photos are uploading or wait for "Tekrar dene" / "Vazgeç"; the screen must stay. */
+        UPLOADING,
+        /** Upload finished but some photos were refused; stay so the reason can be read. */
+        REVIEW,
+        /** Nothing left to show; return to the list. */
+        DONE
+    }
+
+    /**
+     * @param photosBusy     photos are still uploading or wait for the user's choice
+     * @param rejectedPhotos photos the server refused in the finished upload (0 when none ran)
+     */
+    static AfterSave afterSave(@Nullable String createdMemoryId, boolean photosBusy, int rejectedPhotos) {
+        if (createdMemoryId == null) return AfterSave.NOT_SAVED;
+        if (photosBusy) return AfterSave.UPLOADING;
+        return rejectedPhotos > 0 ? AfterSave.REVIEW : AfterSave.DONE;
+    }
 
     private final MemoryCreateRepository repository;
     private final Clock clock;
@@ -48,6 +74,7 @@ public final class MemoryCreateViewModel extends ViewModel {
     @Nullable private MemoryApi.Draft attempted;
     @Nullable private String idempotencyKey;
     @Nullable private Cancellable request;
+    @Nullable private String createdMemoryId;
 
     public MemoryCreateViewModel(@NonNull MemoryCreateRepository repository, @NonNull Clock clock) {
         this.repository = Objects.requireNonNull(repository, "repository");
@@ -83,6 +110,10 @@ public final class MemoryCreateViewModel extends ViewModel {
 
     String description() { return description; }
 
+    /** Id of the memory this screen created; null until the save succeeds. */
+    @Nullable
+    public String createdMemoryId() { return createdMemoryId; }
+
     /** Today in the device's time zone; the picker does not offer later days. */
     LocalDate today() { return LocalDate.now(clock); }
 
@@ -107,12 +138,13 @@ public final class MemoryCreateViewModel extends ViewModel {
     }
 
     /**
-     * Validates and sends the memory. Ignored while a save runs. Without a session the screen is
-     * told to sign in again instead of sending a request that can only fail.
+     * Validates and sends the memory. Ignored while a save runs and after the memory was
+     * created. Without a session the screen is told to sign in again instead of sending a
+     * request that can only fail.
      */
     public void save(@Nullable String authorization) {
         MemoryCreateUiState current = current();
-        if (current.isSaving()) return;
+        if (current.isSaving() || createdMemoryId != null) return;
 
         LocalDate date = current.getDate();
         MemoryCreateUiState.TitleError titleError = titleError(title);
@@ -148,7 +180,9 @@ public final class MemoryCreateViewModel extends ViewModel {
     private void onResult(ApiResult<MemoryApi.Memory> result) {
         request = null;
         MemoryCreateUiState current = current();
-        if (result.isSuccess() && result.getData() != null) {
+        if (result.isSuccess() && result.getData() != null && result.getData().id() != null) {
+            // Set before the state is published, so the screen draws the locked form at once.
+            createdMemoryId = result.getData().id();
             attempted = null;
             idempotencyKey = null;
             update(current.getTitleError(), current.getDescriptionError(), current.getDateError(),

@@ -49,9 +49,13 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /** Full-screen form screens: login and the new memory form (a stack screen, not a tab). */
+    /**
+     * Full-screen form screens: login, register and the new memory form (stack screens, not
+     * tabs). They hide the bottom bar and pad for the keyboard so the form stays reachable.
+     */
     private static boolean hidesBottomNav(@Nullable NavDestination destination) {
-        return destination != null && (destination.getId() == R.id.loginFragment
-                || destination.getId() == R.id.memoryCreateFragment);
+        if (destination == null) return false;
+        int id = destination.getId();
+        return id == R.id.loginFragment || id == R.id.registerFragment || id == R.id.memoryCreateFragment;
     }
 }

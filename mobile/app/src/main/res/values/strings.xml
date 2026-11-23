@@ -51,4 +51,6 @@
     <string name="login_password_required">Şifreni gir.</string>
     <string name="login_show_password">Şifreyi göster</string>
     <string name="login_hide_password">Şifreyi gizle</string>
+    <string name="login_no_account">Hesabın yok mu?</string>
+    <string name="login_go_register">Kayıt ol</string>
 </resources>

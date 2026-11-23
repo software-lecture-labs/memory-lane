@@ -19,6 +19,8 @@
     <string name="memory_create_description_label">Hislerin &amp; Anlatın</string>
     <string name="memory_create_description_note">sevgili günlük…</string>
     <string name="memory_create_description_hint">O güne dair hissettiklerini, kokuları, duyduklarını yaz…</string>
+    <string name="memory_create_photos_label">Fotoğraflar</string>
+    <string name="memory_create_photos_note">en fazla 5</string>
 
     <!-- Validation and result messages -->
     <string name="memory_create_title_required">Anına bir başlık ver.</string>
@@ -27,4 +29,5 @@
     <string name="memory_create_date_required">Anının tarihini seç.</string>
     <string name="memory_create_date_future">Anı tarihi gelecekte olamaz.</string>
     <string name="memory_create_saved">Anın kaydedildi.</string>
+    <string name="memory_create_photos_wait">Fotoğraflar yükleniyor; bitince anılarına dönülecek.</string>
 </resources>

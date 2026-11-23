@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- New memory as a scrapbook page (Stitch "Anı oluşturma"): close button, "YENİ SAYFA" badge,
-     italic heading and the pink "Kaydet" pill on top; then title, date and story cards.
-     Location, photos, mood and category belong to later cards and are left out. The bottom
+     italic heading and the pink "Kaydet" pill on top; then title, date, story and photo cards.
+     Location, mood and category belong to later cards and are left out. The bottom
      inset (gesture bar or keyboard) is applied by MainActivity, so the form scrolls above it. -->
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -304,6 +304,54 @@
                         android:saveEnabled="false"
                         android:textAppearance="@style/TextAppearance.MemoryLane.Body" />
                 </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Photos (ML-10): picked here, uploaded after the memory is saved. -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MemoryLane.Card.Scrapbook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_md">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="@dimen/memory_icon_label"
+                        android:layout_height="@dimen/memory_icon_label"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_photo"
+                        app:tint="@color/ml_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/ml_space_xs"
+                        android:layout_weight="1"
+                        android:text="@string/memory_create_photos_label"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                        android:textColor="@color/ml_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:importantForAccessibility="no"
+                        android:text="@string/memory_create_photos_note"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Note.Accent" />
+                </LinearLayout>
+
+                <include
+                    android:id="@+id/create_photos"
+                    layout="@layout/view_photo_section" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

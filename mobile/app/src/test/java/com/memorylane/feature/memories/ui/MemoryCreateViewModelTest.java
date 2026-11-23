@@ -192,6 +192,71 @@ public class MemoryCreateViewModelTest {
     }
 
     @Test
+    public void successKeepsTheCreatedIdAndLocksFurtherSaves() {
+        assertNull(viewModel.createdMemoryId());
+        fillValid();
+        viewModel.save(SESSION);
+        repository.last().succeed();
+
+        // The photos are uploaded to this id while the screen stays open.
+        assertEquals("m1", viewModel.createdMemoryId());
+        viewModel.consumeSaved();
+        viewModel.onTitleChanged("Başka bir anı");
+        viewModel.save(SESSION);
+
+        assertEquals("A second memory must not be created", 1, repository.requests.size());
+        assertFalse(state().isSaving());
+        assertEquals(Boolean.FALSE, viewModel.saved().getValue());
+    }
+
+    @Test
+    public void failedSaveLeavesNoCreatedId() {
+        fillValid();
+        viewModel.save(SESSION);
+        repository.last().fail(ApiError.network());
+
+        assertNull(viewModel.createdMemoryId());
+    }
+
+    @Test
+    public void successWithoutIdIsAParseError() {
+        fillValid();
+        viewModel.save(SESSION);
+        repository.last().answer(ApiResult.success(new MemoryApi.Memory(null, "Bursa", "", "2024-10-20")));
+
+        // Photos could not be attached to a memory without an id.
+        assertEquals(ApiError.Kind.PARSE, state().getServerError().getKind());
+        assertNull(viewModel.createdMemoryId());
+        assertEquals(Boolean.FALSE, viewModel.saved().getValue());
+    }
+
+    // --- After the save (photo upload) ---
+
+    @Test
+    public void beforeTheSaveTheFormIsEditableWhateverThePhotosDo() {
+        assertEquals(MemoryCreateViewModel.AfterSave.NOT_SAVED, MemoryCreateViewModel.afterSave(null, false, 0));
+        assertEquals(MemoryCreateViewModel.AfterSave.NOT_SAVED, MemoryCreateViewModel.afterSave(null, true, 2));
+    }
+
+    @Test
+    public void runningOrStoppedUploadKeepsTheScreenOpen() {
+        // Busy covers uploading, waiting for Retry-After and waiting for "Tekrar dene"/"Vazgeç".
+        assertEquals(MemoryCreateViewModel.AfterSave.UPLOADING, MemoryCreateViewModel.afterSave("m1", true, 0));
+        assertEquals(MemoryCreateViewModel.AfterSave.UPLOADING, MemoryCreateViewModel.afterSave("m1", true, 1));
+    }
+
+    @Test
+    public void refusedPhotosAreShownBeforeLeaving() {
+        assertEquals(MemoryCreateViewModel.AfterSave.REVIEW, MemoryCreateViewModel.afterSave("m1", false, 1));
+    }
+
+    @Test
+    public void finishedUploadOrNoPhotosReturnsToTheList() {
+        // Also the state after "Vazgeç": the queue is cleared and no summary is kept.
+        assertEquals(MemoryCreateViewModel.AfterSave.DONE, MemoryCreateViewModel.afterSave("m1", false, 0));
+    }
+
+    @Test
     public void successWithoutBodyIsAParseError() {
         fillValid();
         viewModel.save(SESSION);

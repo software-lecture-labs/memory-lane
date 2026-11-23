@@ -120,7 +120,7 @@ public class PhotoService {
 
     // The file is written before the row is inserted. If the transaction then fails (insert error,
     // lost connection), remove the file so a rolled-back upload leaves nothing on disk. A crash
-    // between the two steps can still leave an orphan file; cleaning those up is ML-14.
+    // between the two steps can still leave an orphan file; PhotoFileCleanup.sweepOrphans removes it.
     private void deleteIfRolledBack(String storageKey) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override

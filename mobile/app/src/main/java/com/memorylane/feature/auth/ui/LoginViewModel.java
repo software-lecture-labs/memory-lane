@@ -4,8 +4,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import java.util.regex.Pattern;
-
 import com.memorylane.core.network.ApiResult;
 import com.memorylane.core.network.Cancellable;
 import com.memorylane.feature.auth.data.AuthRepository;
@@ -13,11 +11,6 @@ import com.memorylane.feature.auth.data.AuthRequest;
 import com.memorylane.feature.auth.data.LoginResponse;
 
 public final class LoginViewModel extends ViewModel {
-    // Basic address syntax only; account verification belongs to the server.
-    private static final Pattern EMAIL = Pattern.compile(
-            "[a-zA-Z0-9+._%\\-]{1,256}@[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}"
-                    + "(?:\\.[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25})+");
-
     private final MutableLiveData<LoginUiState> state = new MutableLiveData<>(
             new LoginUiState(LoginUiState.EmailError.NONE, false, LoginUiState.Focus.NONE));
 
@@ -51,10 +44,9 @@ public final class LoginViewModel extends ViewModel {
     public LiveData<LoginUiState> getState() { return state; }
 
     public void onLoginClicked(String email, String password) {
-        String address = email.trim();
-        LoginUiState.EmailError emailError = address.isEmpty()
+        LoginUiState.EmailError emailError = AuthInputRules.strip(email).isEmpty()
                 ? LoginUiState.EmailError.REQUIRED
-                : EMAIL.matcher(address).matches()
+                : AuthInputRules.isValidEmail(email)
                         ? LoginUiState.EmailError.NONE : LoginUiState.EmailError.INVALID;
         boolean passwordRequired = password.isEmpty();
         LoginUiState.Focus focus = emailError != LoginUiState.EmailError.NONE
