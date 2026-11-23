@@ -178,6 +178,17 @@ Android arka plandaki süreci sonlandırırsa token kaybolur ve kullanıcı yeni
 
 Keystore ile şifreli kalıcı token, daha az tekrar giriş sağlayan alternatif olarak değerlendirildi; bu sürüme eklenmedi. Gerçek kullanımda bu tercih değişirse oturum saklama, yedek/cihaz aktarımı, iptal ve anahtar yönetimi birlikte ele alınacak ve mobil oturum geliştirilmeden önce yeni karar kaydedilecek. Bellek ve kalıcı saklama aynı sürümün çelişen iki yolu olarak uygulanmayacak.
 
+### Oturum katmanı (ML-30)
+
+Bu karar `core/session`, `core/network` ve `core/navigation` paketlerindeki üç parçayla uygulanır; ekranlar token'ı kendileri taşımaz.
+
+- `SessionStore` oturumu (token ve e-posta) yalnız süreç belleğinde tutar ve `AppContainer` içinde tek örnektir. OkHttp iş parçacıkları ile ana iş parçacığı aynı anda eriştiği için senkronizedir. Oturum yalnız iki yolla biter: çıkış (`logout`, LOGGED_OUT) veya 401 (`expire`, EXPIRED). `expire` yalnız reddedilen token hâlâ geçerli token ise oturumu kapatır; eski hesabın geç gelen 401'i sonradan giriş yapan hesabı düşürmez. Dinleyiciler yalnız oturum gerçekten bittiğinde ve ana iş parçacığında çağrılır.
+- `AuthInterceptor` korumalı her isteğe `Authorization: Bearer` başlığını ekler. Korumalı istek, yapılandırılan sunucudaki `api/v1/**` yoludur; `auth/login` ve `auth/register` bunun dışındadır, `api/health` zaten `api/v1` altında değildir. Token başka şema, sunucu veya porta hiçbir zaman gönderilmez. İstekte zaten bir `Authorization` başlığı varsa ona dokunulmaz. Korumalı istekte 401 gelirse gönderilen token ile `SessionStore.expire` çağrılır; giriş isteğindeki 401 yanlış şifre demektir ve oturuma dokunmaz.
+- `SessionRoutes` oturumsuz açılabilecek hedefleri listeler: yalnız giriş ve kayıt. Listede olmayan her hedef, sonradan eklenenler de dahil, korumalıdır; unutulan bir hedef korumalı ekranı oturumsuz göstermez, giriş ekranına düşer. `SessionRoutesTest` bu listeyi `nav_graph.xml` ile karşılaştırır.
+- `SessionNavigator`, `MainActivity` içinde NavController'a bağlanır. Oturum bittiğinde bütün geri yığını giriş ekranıyla değiştirir ve alt menünün sakladığı sekme yığınlarını da temizler; böylece korumalı ekranların ViewModel'leri silinir ve sonraki hesap öncekinden hiçbir şey görmez. Oturumsuz bir korumalı hedefe gidildiğinde de aynı yönlendirmeyi yapar: ilk açılış, süreç sonrası geri yükleme ya da sonraki her gezinme. Activity durumunu kaydettikten sonra fragment işlemi yapılamadığı için bekleyen yönlendirme `onStart`'ta uygulanır.
+
+Ekranlardaki oturum düşmesi aynı yolu izler: anı listesi, anı kaydı ve fotoğraf yüklemesindeki 401 `SessionStore` üzerinden oturumu kapatır, giriş ekranına dönüşü `SessionNavigator` yapar. Testleri `SessionStoreTest`, `AuthInterceptorTest` (MockWebServer), `SessionRoutesTest` ve `SessionLogoutTest`'tir.
+
 Arama SQL'de ve sayfalamadan önce yapılır; deterministic Türkçe ICU collation tasarımı ve COUNT eşleşmesi [API sözleşmesindedir](api-contract.md#türkçe-karşılaştırma-sqlde-yapılır). Fotoğraf işlemlerinin form taslağını kaybetmeden güncel ETag'i alması ve başka cihazın metnini ezmemesi de [aynı sözleşmede](api-contract.md#fotoğraf-işleminden-sonra-düzenleme-etiketini-yenileme) tanımlıdır. ML-07 liste aramasında bu SQL filtresi ve V4 collation kullanılır. Fotoğraf ve düzenleme akışı ilgili kartların kabul kuralıdır.
 
 ## ML-01 ders kriterleri ve alternatifler
