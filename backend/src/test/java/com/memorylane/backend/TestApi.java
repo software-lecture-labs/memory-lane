@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,8 +42,15 @@ public final class TestApi {
     }
 
     public HttpResponse<String> send(String method, String path, String body, String token) throws Exception {
+        return send(method, path, body, token, Map.of());
+    }
+
+    /** Same as above with extra request headers, e.g. {@code If-Match} or {@code Idempotency-Key}. */
+    public HttpResponse<String> send(String method, String path, String body, String token,
+                                     Map<String, String> headers) throws Exception {
         var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
         if (token != null) request.header("Authorization", "Bearer " + token);
+        headers.forEach(request::header);
         if (body != null) request.header("Content-Type", "application/json");
         var publisher = body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body);
         return http.send(request.method(method, publisher).build(), HttpResponse.BodyHandlers.ofString());

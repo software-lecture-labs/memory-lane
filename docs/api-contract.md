@@ -1,6 +1,6 @@
 # Veri modeli ve API sözleşmesi
 
-Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me; ML-07 ile anı oluşturma ve sayfalı listeleme, ML-11 ile ETag'li anı detayı uygulanmıştır. Diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
+Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me; ML-07 ile anı oluşturma ve sayfalı listeleme, ML-11 ile ETag'li anı detayı, ML-12 ile If-Match koşullu anı güncellemesi (PUT) uygulanmıştır. Diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
 
 ## Genel kurallar
 
@@ -88,7 +88,7 @@ Token 32 güvenli rastgele bayttan URL-safe Base64 olarak üretilir; 43 karakter
 | POST | `/memories` | 201 MemoryDetail; `Location: /api/v1/memories/{id}`; `Idempotency-Key` zorunlu |
 | GET | `/memories` | 200 sayfalı MemorySummary listesi; arama ve filtre aynı endpointte |
 | GET | `/memories/{id}` | 200 MemoryDetail ve güçlü `ETag` başlığı |
-| PUT | `/memories/{id}` | `If-Match` zorunlu; 200 güncel MemoryDetail; eski sürüm 412, eksik başlık 428 |
+| PUT | `/memories/{id}` | `If-Match` zorunlu; 200 güncel MemoryDetail (ETag'siz); oturumsuz 401, bulunamayan/yabancı anı 404, eksik başlık 428, `*`/liste/bozuk ya da başka anının etiketi 400 `INVALID_PRECONDITION`, eski veya zayıf etiket 412, geçersiz alan 400 `INVALID_INPUT` |
 | DELETE | `/memories/{id}` | 204; bulunamayan/yabancı anı 404 |
 | GET | `/memories/map` | 200, konumlu anıların sayfalamadan bağımsız noktaları |
 
@@ -141,7 +141,7 @@ If-Match: "memory-22222222-2222-4222-8222-222222222222-r7"
 
 - Oturum ve kaynak sahipliği önce doğrulanır. Oturumsuz istek 401, bulunamayan/yabancı anı 404 alır; bu yanıtlar kaynak sürümünü açığa çıkarmaz.
 - `If-Match` yoksa 428 `PRECONDITION_REQUIRED` döner ve hiçbir alan değiştirilmez. İstemci önce detay GET yapıp etiketi alır.
-- Bu API düzenleme için tek, tırnaklı ETag ister. Bozuk başlık, birden çok etiket veya sürümü kontrol etmeden her kaydı eşleştiren `*` kullanımı 400 `INVALID_PRECONDITION` döner. Zayıf `W/"..."` etiketi güçlü karşılaştırmada eşleşmez ve 412 döner.
+- Bu API düzenleme için tek, tırnaklı ETag ister. Bozuk başlık, birden çok etiket, başka bir anıya ait etiket veya sürümü kontrol etmeden her kaydı eşleştiren `*` kullanımı 400 `INVALID_PRECONDITION` döner. Zayıf `W/"..."` etiketi güçlü karşılaştırmada eşleşmez ve 412 döner.
 - Etiket güncel temsil ile eşleşmiyorsa 412 `MEMORY_MODIFIED` döner; hiçbir alan veya fotoğraf değiştirilmez. Mobil yerel formu korur, güncel detayı yeniden alır ve iki sürümü kullanıcıya gösterir. Güncel ETag'i alıp eski formu otomatik göndermek yasaktır; yeni kayıt kullanıcının açık incelemesinden sonra yapılır.
 - Etiket eşleşiyorsa, sürüm kontrolü ve alanların yazılması aynı transaction'da atomik yapılır. Aynı sürümü kullanan iki eşzamanlı PUT'tan yalnız biri yazabilir; diğeri 412 alır. Önce okuyup sonra koşulsuz UPDATE yapmak yeterli değildir.
 - Başarılı PUT 200 ve güncel MemoryDetail döner. Yazma DTO'su normalleştirildiği ve detaydan farklı olduğu için başarılı PUT yanıtında ETag gönderilmez; bir sonraki düzenlemenin etiketi detay GET ile alınır. Bu seçim, dönüştürülen PUT gövdelerinde validator gönderilmesine ilişkin RFC 9110 kuralına uyar.
@@ -150,7 +150,7 @@ Yanıtı kaybolan PUT aynı eski etiketle tekrarlandığında 412 alabilir; 200 
 
 MemoryDetail fotoğraf bilgilerini de içerdiği için başarılı fotoğraf ekleme/silme, `photoCount`, `coverPhotoId`, `photos` veya başka görünür alanı değiştiren her işlem anının sürümünü de aynı transaction'da artırır. Başarılı bir isteğin idempotent tekrarı veri/sıra/sürümü yeniden değiştirmez. GET gövdesi değişirken aynı güçlü etiket tekrar kullanılamaz.
 
-Sunucu uygulaması: `V5` migration `memories.version BIGINT NOT NULL DEFAULT 1` kolonunu ekler. Anı servisi JPA entity'si değil `JdbcClient` kullandığı için sürüm `@Version` alanıyla değil SQL ile yönetilir; değer hiçbir DTO'da yer almaz. `GET /memories/{id}` (ML-11) gövdeyi ve sürümü aynı `REPEATABLE_READ` okumasından alır ve etiketi `"memory-{id}-r{version}"` biçiminde üretir. Başarılı fotoğraf yüklemesi anı satırının kilidi altında sürümü aynı transaction'da artırır; idempotent tekrar ve reddedilen yükleme artırmaz. Fotoğraf silme eklendiğinde de aynı kural uygulanacaktır. PUT'taki sürüm karşılaştırması ve 412'ye çevirme ML-12 ile eklenir.
+Sunucu uygulaması: `V5` migration `memories.version BIGINT NOT NULL DEFAULT 1` kolonunu ekler. Anı servisi JPA entity'si değil `JdbcClient` kullandığı için sürüm `@Version` alanıyla değil SQL ile yönetilir; değer hiçbir DTO'da yer almaz. `GET /memories/{id}` (ML-11) gövdeyi ve sürümü aynı `REPEATABLE_READ` okumasından alır ve etiketi `"memory-{id}-r{version}"` biçiminde üretir. Başarılı fotoğraf yüklemesi anı satırının kilidi altında sürümü aynı transaction'da artırır; idempotent tekrar ve reddedilen yükleme artırmaz. Fotoğraf silme eklendiğinde de aynı kural uygulanacaktır. PUT (ML-12) tek transaction'da önce `OwnershipGuard.lockMemory` ile anı satırını kilitler (yabancı/olmayan anı 404, etiket kurallarından önce), sonra güncel sürümden beklenen etiketi `If-Match` ile karşılaştırır ve yazmayı `WHERE version = :beklenen` koşuluyla, `version = version + 1` ve `updated_at = now()` olarak yapar. Gövde, POST ile aynı `MemoryInput` kurallarından geçer; bu doğrulama etiket denetiminden önce yapılır ve geçersiz gövde hiçbir şey yazmadan 400 `INVALID_INPUT` alır.
 
 412 gövde örneği:
 
@@ -158,7 +158,7 @@ Sunucu uygulaması: `V5` migration `memories.version BIGINT NOT NULL DEFAULT 1` 
 {"code":"MEMORY_MODIFIED","message":"Anı başka bir işlemle değişti. Güncel halini alıp değişikliklerinizi kontrol edin."}
 ```
 
-Uygulama kabul senaryoları: iki cihaz aynı r7'yi okur; ilk PUT 200, ikinci PUT 412 ve ilk cihazın kaydı korunur. Eksik If-Match 428, zayıf/eski etiket 412, bozuk/* etiket 400 olmalıdır. Kaybolan başarılı PUT'un tekrarı ve arada fotoğraf değişmesi de eski formla sessiz yazma yapmamalıdır. Bunlar henüz çalıştırılmış backend testleri değildir; endpoint yazılırken gerçek kalıcılık testlerine eklenecektir.
+Uygulama kabul senaryoları: iki cihaz aynı r7'yi okur; ilk PUT 200, ikinci PUT 412 ve ilk cihazın kaydı korunur. Eksik If-Match 428, zayıf/eski etiket 412, bozuk/* etiket 400 olmalıdır. Kaybolan başarılı PUT'un tekrarı ve arada fotoğraf değişmesi de eski formla sessiz yazma yapmamalıdır. Bu senaryolar gerçek PostgreSQL üzerinde `MemoryIntegrationTest` (eşzamanlı iki PUT dahil) ve `OwnershipIntegrationTest` ile, etiket biçim kuralları `MemoryPreconditionTest` ile doğrulanır.
 
 ### Fotoğraf işleminden sonra düzenleme etiketini yenileme
 

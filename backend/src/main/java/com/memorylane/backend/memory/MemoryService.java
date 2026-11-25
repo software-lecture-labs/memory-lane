@@ -108,6 +108,40 @@ public class MemoryService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Found detail(UUID owner, UUID id) {
         guard.requireMemory(owner, id);
+        return load(owner, id);
+    }
+
+    /**
+     * Replaces the writable fields of {@code owner}'s memory if {@code ifMatch} is its current tag
+     * (contract, PUT). One transaction: the row is locked first, so a foreign or missing memory is
+     * 404 before the tag is looked at and the version cannot change between the check and the
+     * write; of two writers with the same tag only the first succeeds, the second gets 412.
+     * Photos are not touched. Any refusal writes nothing.
+     */
+    @Transactional
+    public Found update(UUID owner, UUID id, String ifMatch, MemoryInput input) {
+        guard.lockMemory(owner, id);
+        long version = jdbc.sql("SELECT version FROM memories WHERE id = :id")
+                .param("id", id).query(Long.class).single();
+        MemoryPrecondition.check(ifMatch, id, version);
+        // The version condition repeats the check in the statement itself, so the write can never
+        // be unconditional even if the lock above were removed one day.
+        int updated = jdbc.sql("""
+                UPDATE memories SET title = :title, description = :description, memory_date = :day,
+                    category = :category, mood = :mood, latitude = :latitude, longitude = :longitude,
+                    version = version + 1, updated_at = now()
+                WHERE id = :id AND owner_id = :owner AND version = :version
+                """).param("title", input.title()).param("description", input.description())
+                .param("day", input.memoryDate()).param("category", input.category()).param("mood", input.emotion())
+                .param("latitude", input.location() == null ? null : input.location().latitude())
+                .param("longitude", input.location() == null ? null : input.location().longitude())
+                .param("id", id).param("owner", owner).param("version", version)
+                .update();
+        if (updated != 1) throw new MemoryPrecondition.Modified();
+        return load(owner, id);
+    }
+
+    private Found load(UUID owner, UUID id) {
         record Row(Summary summary, long version) {}
         Row memory = jdbc.sql(SUMMARY + " AND m.id = :id")
                 .param("owner", owner).param("id", id)

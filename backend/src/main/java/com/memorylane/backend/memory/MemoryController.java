@@ -59,16 +59,24 @@ public class MemoryController {
     @GetMapping("/{id}")
     ResponseEntity<Detail> detail(@CurrentUser UUID owner, @PathVariable UUID id) {
         var found = memories.detail(owner, id);
-        return ResponseEntity.ok().eTag(etag(id, found.version())).header("Cache-Control", "no-store")
+        return ResponseEntity.ok().eTag(MemoryPrecondition.tag(id, found.version()))
+                .header("Cache-Control", "no-store")
                 .body(new Detail(found.summary(), found.photos()));
     }
 
     /**
-     * Opaque strong entity tag, quotes included. Clients send it back unchanged in If-Match and
-     * never parse it; only this class builds and compares it.
+     * Contract: same body rules as POST; If-Match is required. 200 with the current MemoryDetail
+     * and no ETag (the body is normalised, so the next edit takes its tag from a detail GET).
      */
-    static String etag(UUID id, long version) {
-        return "\"memory-" + id + "-r" + version + "\"";
+    @PutMapping("/{id}")
+    ResponseEntity<Detail> update(
+            @CurrentUser UUID owner,
+            @PathVariable UUID id,
+            @RequestHeader(name = "If-Match", required = false) String ifMatch,
+            @RequestBody Map<String, Object> body) {
+        var updated = memories.update(owner, id, ifMatch, MemoryInput.from(body, clock));
+        return ResponseEntity.ok().header("Cache-Control", "no-store")
+                .body(new Detail(updated.summary(), updated.photos()));
     }
 
     private static UUID requestId(String key) {
