@@ -177,8 +177,15 @@ public class MemoriesFragment extends Fragment {
      * save; refresh once and remove it so a later view does not refresh again.
      */
     private void observeCreatedMemory() {
-        SavedStateHandle results = NavHostFragment.findNavController(this)
-                .getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle();
+        SavedStateHandle results;
+        try {
+            results = NavHostFragment.findNavController(this)
+                    .getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle();
+        } catch (IllegalArgumentException replaced) {
+            // Without a session SessionNavigator has already replaced this screen with login;
+            // the view is still created once, but there is no entry left to hear from.
+            return;
+        }
         results.<Boolean>getLiveData(MemoryCreateFragment.RESULT_CREATED, false)
                 .observe(getViewLifecycleOwner(), created -> {
                     if (!Boolean.TRUE.equals(created)) return;
