@@ -4,11 +4,13 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
@@ -35,9 +37,8 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = navHost.getNavController();
         ViewCompat.setOnApplyWindowInsetsListener(binding.navHost, (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            boolean authScreen = navController.getCurrentDestination() != null
-                    && isAuthScreen(navController.getCurrentDestination().getId());
-            int bottom = authScreen
+            // Without the bottom bar the screen pads itself above the keyboard or gesture area.
+            int bottom = hidesBottomNav(navController.getCurrentDestination())
                     ? Math.max(insets.getInsets(WindowInsetsCompat.Type.ime()).bottom, bars.bottom)
                     : 0;
             view.setPadding(bars.left, bars.top, bars.right, bottom);
@@ -45,15 +46,20 @@ public class MainActivity extends AppCompatActivity {
         });
         NavigationUI.setupWithNavController(binding.bottomNav, navController);
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            binding.bottomNav.setVisibility(isAuthScreen(destination.getId()) ? View.GONE : View.VISIBLE);
+            binding.bottomNav.setVisibility(hidesBottomNav(destination) ? View.GONE : View.VISIBLE);
             ViewCompat.requestApplyInsets(binding.navHost);
         });
         // Without a session only public screens are shown; signing out clears the whole history.
         SessionNavigator.bind(this, navController, AppContainer.from(this).getSessionStore());
     }
 
-    /** Login and register hide the bottom bar and pad for the keyboard so the form stays reachable. */
-    private static boolean isAuthScreen(int destinationId) {
-        return destinationId == R.id.loginFragment || destinationId == R.id.registerFragment;
+    /**
+     * Full-screen form screens: login, register and the new memory form (stack screens, not
+     * tabs). They hide the bottom bar and pad for the keyboard so the form stays reachable.
+     */
+    private static boolean hidesBottomNav(@Nullable NavDestination destination) {
+        if (destination == null) return false;
+        int id = destination.getId();
+        return id == R.id.loginFragment || id == R.id.registerFragment || id == R.id.memoryCreateFragment;
     }
 }

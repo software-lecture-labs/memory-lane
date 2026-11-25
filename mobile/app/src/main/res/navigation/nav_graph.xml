@@ -21,7 +21,16 @@
     <fragment
         android:id="@+id/memoriesFragment"
         android:name="com.memorylane.feature.memories.ui.MemoriesFragment"
-        android:label="@string/tab_memories" />
+        android:label="@string/tab_memories">
+        <action
+            android:id="@+id/action_memoriesFragment_to_memoryCreateFragment"
+            app:destination="@id/memoryCreateFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/memoryCreateFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryCreateFragment"
+        android:label="@string/memory_create_label" />
 
     <fragment
         android:id="@+id/mapFragment"
@@ -31,5 +40,9 @@
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.memorylane.feature.profile.ui.ProfileFragment"
-        android:label="@string/tab_profile" />
+        android:label="@string/tab_profile">
+        <action
+            android:id="@+id/action_profileFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+    </fragment>
 </navigation>

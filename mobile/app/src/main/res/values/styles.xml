@@ -44,7 +44,7 @@
         <item name="android:textSize">@dimen/ml_text_label_large</item>
     </style>
 
-    <style name="TextAppearance.MemoryLane.Caption" parent="TextAppearance.Material3.LabelSmall" tools:ignore="UnusedResources">
+    <style name="TextAppearance.MemoryLane.Caption" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
         <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
         <item name="android:textSize">@dimen/ml_text_caption</item>
@@ -111,6 +111,63 @@
         <item name="boxStrokeWidthFocused">@dimen/ml_stroke_regular</item>
         <item name="hintTextColor">@color/ml_primary</item>
         <item name="errorTextColor">@color/ml_error</item>
+    </style>
+
+    <!-- Add button: raspberry pill with white icon and text, as in the Stitch "Anılar" screen. -->
+    <style name="Widget.MemoryLane.ExtendedFab" parent="Widget.Material3.ExtendedFloatingActionButton.Icon.Primary">
+        <item name="backgroundTint">@color/ml_primary</item>
+        <item name="iconTint">@color/ml_on_primary</item>
+        <item name="android:textColor">@color/ml_on_primary</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Button</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.MemoryLane.Pill</item>
+    </style>
+
+    <style name="ShapeAppearance.MemoryLane.Pill" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Scrapbook page card for the memory screens: pure white paper, 32dp corners, pink border.
+         Material 3 tints raised surfaces with the primary color; the overlay below turns that
+         off for these cards only, so they stay #FFFFFF while keeping their shadow. -->
+    <style name="Widget.MemoryLane.Card.Scrapbook">
+        <item name="cardBackgroundColor">@color/ml_surface</item>
+        <item name="cardCornerRadius">@dimen/memory_card_radius</item>
+        <item name="strokeColor">@color/memory_card_stroke</item>
+        <item name="materialThemeOverlay">@style/ThemeOverlay.MemoryLane.FlatSurface</item>
+    </style>
+
+    <style name="ThemeOverlay.MemoryLane.FlatSurface" parent="">
+        <item name="elevationOverlayEnabled">false</item>
+    </style>
+
+    <!-- Editorial notes such as "günün adı" or "sevgili günlük…" (Stitch uses a handwriting
+         font; the bundled Plus Jakarta Sans in italic keeps the app offline-safe). -->
+    <style name="TextAppearance.MemoryLane.Note" parent="TextAppearance.MemoryLane.Body">
+        <item name="android:textSize">@dimen/memory_note_text</item>
+        <item name="android:textStyle">italic</item>
+        <item name="android:textColor">@color/ml_plum_muted</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Note.Accent">
+        <item name="android:textColor">@color/ml_primary</item>
+    </style>
+
+    <!-- Bold label: pink field labels and the chosen date. -->
+    <style name="TextAppearance.MemoryLane.Label.Bold">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Headline.Italic">
+        <item name="android:textStyle">italic</item>
+    </style>
+
+    <!-- Memory card title: one step below Title, bold like the Stitch card heading. -->
+    <style name="TextAppearance.MemoryLane.CardTitle" parent="TextAppearance.MemoryLane.Title">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
+        <item name="android:textSize">@dimen/memory_card_title</item>
     </style>
 
     <style name="Widget.MemoryLane.BottomNavigation" parent="Widget.Material3.BottomNavigationView">

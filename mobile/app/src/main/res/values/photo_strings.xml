@@ -22,5 +22,4 @@
     <string name="photo_done_with_rejected">Anı ve %1$d fotoğraf kaydedildi; %2$d fotoğraf kabul edilmedi: %3$s</string>
     <string name="photo_pick_unsupported">Bu fotoğrafın biçimi bu telefonda açılamadı, başka bir fotoğraf seç.</string>
     <string name="photo_pick_unreadable">Fotoğraf okunamadı, tekrar seçmeyi dene.</string>
-    <string name="photo_save_waits">Önceki anının fotoğrafları yüklenmeden ya da vazgeçmeden yeni anı kaydedilemez.</string>
 </resources>

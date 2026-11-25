@@ -40,12 +40,13 @@ K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğr
 
 ## İlk sprint anı demosu (ML-07)
 
-1. Backend'i boş bir yerel PostgreSQL ile başlatın. Android uygulamasında **Anılar → Anıların için giriş yap → Kayıt ol** ile iki test hesabı (A ve B) açın; şifre 15–128 karakter olmalıdır. Kayıt oturum açmaz, başarılı kayıttan sonra giriş ekranına dönülür. Hesaplar istenirse `POST /api/v1/auth/register` ile de açılabilir; istek alanları [API sözleşmesinde](docs/api-contract.md#hesap-ve-oturum) yer alır.
-2. Android uygulamasında **Anılar → Anıların için giriş yap** ile A hesabına girin. Başlık ve tarih seçip kaydedin. Yeni anı listede görünür. Başlıksız kayıt hata verir.
-3. Uygulamayı kapatıp yeniden açın. Token süreç belleğinde olduğu için A ile tekrar girince anı sunucudan yeniden yüklenir.
-4. Çıkış yapıp B hesabına girin. B'nin listesinde A'nın anısı görünmez.
+1. Backend'i boş bir yerel PostgreSQL ile başlatın. Android uygulamasında **Anılar → Giriş yap → Kayıt ol** ile iki test hesabı (A ve B) açın; şifre 15–128 karakter olmalıdır. Kayıt oturum açmaz, başarılı kayıttan sonra giriş ekranına dönülür. Hesaplar istenirse `POST /api/v1/auth/register` ile de açılabilir; istek alanları [API sözleşmesinde](docs/api-contract.md#hesap-ve-oturum) yer alır.
+2. **Anılar → Giriş yap** ile A hesabına girin. Boş hesapta "Henüz anın yok" görünür.
+3. **Anı Ekle** ile oluşturma ekranını açın. Başlıksız veya tarihsiz kayıt alan hatası verir; tarih seçicide gelecek günler seçilemez. Başlık ve tarih girin, isterseniz **Fotoğraf ekle** ile en fazla 5 fotoğraf seçip **Kaydet**'e dokunun. Fotoğraf seçildiyse ekran fotoğraflar yüklenene kadar açık kalır ve ilerlemeyi gösterir; sonra listeye döner, liste yenilenir ve anı kendi yıl başlığının altında en üstte görünür.
+4. Uygulamayı kapatıp yeniden açın. Token süreç belleğinde olduğu için tekrar giriş gerekir; A ile girince anı sunucudan yeniden yüklenir.
+5. **Profil → Çıkış yap** ile çıkıp B hesabına girin. Anılar listesi sıfırlanır; B'nin listesinde A'nın anısı görünmez.
 
-`POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Türkçe arama ve kategori filtresi liste API'sindedir. Detay/düzenleme, fotoğraf ve harita akışları kendi kartlarında uygulanır.
+`POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Liste 20'şer kayıtla sayfalanır; "Daha fazla anı göster" sonraki sayfayı ekler. Yükleme hatası boş liste gibi gösterilmez, "Tekrar dene" ile yinelenir; 401 yanıtı oturumu kapatır. Kayıt tekrar denendiğinde aynı `Idempotency-Key` kullanılır, böylece bağlantı kopsa da anı iki kez oluşmaz. Türkçe arama ve kategori filtresi liste API'sindedir; mobil arayüzü ve detay/düzenleme, fotoğraf, konum ve harita akışları kendi kartlarında uygulanır.
 
 ## Fotoğraf yükleme (ML-09)
 
@@ -105,7 +106,7 @@ macOS/Linux üzerinde `gradlew.bat` yerine `./gradlew` kullanın. Backend wrappe
 
 Hedef mimaride anıların asıl kaydı backend'de tutulacak; mobil oturum anahtarları yedeklere dahil edilmeyecek. Bu veri saklama ve senkronizasyon akışı henüz uygulanmadı; ayrıntılar mimari belgesindedir.
 
-Mobil uygulama Anılar sekmesiyle açılır. Sekme giriş ve anı akışının yanında `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Giriş ekranındaki **Kayıt ol** bağlantısı kayıt ekranını açar; giriş ve kayıt ekranlarında alt menü gizlenir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
+Mobil uygulama Anılar sekmesiyle açılır; sekme oturum açıksa anıları yıllara göre gruplanmış kartlarla listeler, yeni anı oluşturma ekranına geçirir. Fotoğraflar oluşturma ekranında seçilir ve anı kaydedildikten sonra yüklenir. Profil sekmesi oturumu (giriş/çıkış) ve `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Giriş ekranındaki **Kayıt ol** bağlantısı kayıt ekranını açar; giriş, kayıt ve anı oluşturma ekranlarında alt menü gizlenir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
 
 SDK yolları, parolalar, `.env`, imzalama anahtarları ve yerel ayarlar commitlenmez. Yanlışlıkla classpath altına konan application-local.properties/yml/yaml dosyaları da paketlemeden dışlanır.
 

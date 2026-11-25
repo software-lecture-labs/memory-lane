@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notebook margin on the left of a memory card: raspberry to peach to lavender. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:centerColor="@color/ml_peach"
+        android:endColor="@color/ml_lavender"
+        android:startColor="@color/ml_primary" />
+    <corners android:radius="@dimen/ml_radius_pill" />
+</shape>
