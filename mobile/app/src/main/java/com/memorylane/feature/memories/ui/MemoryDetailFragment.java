@@ -14,6 +14,7 @@ import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
@@ -90,6 +91,7 @@ public class MemoryDetailFragment extends Fragment {
         });
 
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
+        observeUpdatedMemory();
         viewModel.start(app.authorization());
     }
 
@@ -234,9 +236,35 @@ public class MemoryDetailFragment extends Fragment {
                         memory.title(), memory.memoryDate()));
     }
 
-    /** The edit screen (ML-12) is added in a later step. */
+    /** Opens the edit form; it reads the memory and its ETag itself (the contract's only tag source). */
     private void openEditor() {
-        Snackbar.make(binding.getRoot(), R.string.memory_detail_coming_soon, Snackbar.LENGTH_SHORT).show();
+        NavController navController = NavHostFragment.findNavController(this);
+        NavDestination current = navController.getCurrentDestination();
+        // A fast double tap delivers a second click after the first navigation; it is ignored.
+        if (current == null || current.getId() != R.id.memoryDetailFragment) return;
+        navController.navigate(R.id.action_memoryDetailFragment_to_memoryEditFragment,
+                MemoryEditFragment.arguments(viewModel.memoryId()));
+    }
+
+    /**
+     * The edit form leaves {@link MemoryEditFragment#RESULT_UPDATED} on this entry after a save;
+     * read the memory again once and remove the flag so a later view does not reload again.
+     */
+    private void observeUpdatedMemory() {
+        SavedStateHandle results;
+        try {
+            results = NavHostFragment.findNavController(this)
+                    .getBackStackEntry(R.id.memoryDetailFragment).getSavedStateHandle();
+        } catch (IllegalArgumentException replacedByLogin) {
+            return; // the session ended and the stack was replaced before this view was created
+        }
+        results.<Boolean>getLiveData(MemoryEditFragment.RESULT_UPDATED, false)
+                .observe(getViewLifecycleOwner(), updated -> {
+                    if (!Boolean.TRUE.equals(updated)) return;
+                    results.set(MemoryEditFragment.RESULT_UPDATED, false);
+                    viewModel.refresh();
+                    Snackbar.make(binding.getRoot(), R.string.memory_edit_saved, Snackbar.LENGTH_SHORT).show();
+                });
     }
 
     private void close() {

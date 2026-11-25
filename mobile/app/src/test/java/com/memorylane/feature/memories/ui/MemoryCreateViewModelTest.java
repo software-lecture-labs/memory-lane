@@ -381,8 +381,8 @@ public class MemoryCreateViewModelTest {
 
     @Test
     public void stripRemovesUnicodeWhitespaceOnBothEnds() {
-        assertEquals("Bursa gezisi", MemoryCreateViewModel.strip("  Bursa gezisi　\n"));
-        assertEquals("", MemoryCreateViewModel.strip(" \t "));
+        assertEquals("Bursa gezisi", MemoryFormRules.strip("  Bursa gezisi　\n"));
+        assertEquals("", MemoryFormRules.strip(" \t "));
     }
 
     private void fillValid() {

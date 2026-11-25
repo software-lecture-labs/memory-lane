@@ -175,6 +175,33 @@ public class MemoryDetailViewModelTest {
     }
 
     @Test
+    public void refreshAfterAnEditKeepsTheMemoryOnScreenUntilTheNewVersionArrives() {
+        viewModel.start(SESSION);
+        repository.last().succeed(FakeMemoryDetailRepository.fullMemory(MEMORY));
+
+        viewModel.refresh();
+
+        assertEquals(2, repository.requests.size());
+        assertEquals(MemoryDetailUiState.Status.CONTENT, state().getStatus());
+        repository.last().succeed(FakeMemoryDetailRepository.plainMemory(MEMORY));
+        assertEquals("Sade bir gün", state().getMemory().title());
+    }
+
+    @Test
+    public void refreshWithoutContentShowsLoadingAndWithoutSessionDoesNothing() {
+        viewModel.start(SESSION);
+        repository.last().fail(ApiError.network());
+
+        viewModel.refresh();
+        assertEquals(MemoryDetailUiState.Status.LOADING, state().getStatus());
+
+        MemoryDetailViewModel signedOut = new MemoryDetailViewModel(repository, MEMORY);
+        signedOut.start(null);
+        signedOut.refresh();
+        assertEquals(2, repository.requests.size());
+    }
+
+    @Test
     public void clearingTheScreenCancelsItsRequest() {
         viewModel.start(SESSION);
 

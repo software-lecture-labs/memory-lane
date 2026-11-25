@@ -21,8 +21,6 @@
     <string name="memory_detail_location_heading">Konum</string>
 
     <string name="memory_detail_edit">Anıyı Düzenle</string>
-    <!-- Shown by "Anıyı Düzenle" until the edit screen is added (ML-12). -->
-    <string name="memory_detail_coming_soon">Bu bölüm çok yakında burada olacak.</string>
 
     <!-- States -->
     <string name="memory_detail_loading">Anı yükleniyor…</string>

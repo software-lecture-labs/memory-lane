@@ -40,6 +40,18 @@
         <action
             android:id="@+id/action_memoryDetailFragment_to_memoryPhotoViewerFragment"
             app:destination="@id/memoryPhotoViewerFragment" />
+        <action
+            android:id="@+id/action_memoryDetailFragment_to_memoryEditFragment"
+            app:destination="@id/memoryEditFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/memoryEditFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryEditFragment"
+        android:label="@string/memory_edit_title">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
     </fragment>
 
     <fragment

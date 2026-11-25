@@ -19,10 +19,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * New memory form. Field rules match the server's MemoryInput (docs/api-contract.md "Anı
- * alanları"): title required, at most 100 Unicode characters after trimming; description at
- * most 3000; date required and not in the future. The client only gives early feedback; the
- * server stays the authority.
+ * New memory form. Field rules are {@link MemoryFormRules}, shared with the edit form.
  *
  * <p>Retrying the same draft reuses its idempotency key, so a save whose answer was lost (e.g.
  * a dropped connection) cannot create the memory twice. Changing the draft gets a new key.
@@ -32,8 +29,6 @@ import java.util.UUID;
  * memory first, then each photo), and a second tap must not create another memory.
  */
 public final class MemoryCreateViewModel extends ViewModel {
-    static final int TITLE_MAX_LENGTH = 100;
-    static final int DESCRIPTION_MAX_LENGTH = 3000;
     private static final int UNAUTHORIZED = 401;
 
     /** Where the screen stands after a save, given the photo upload's progress. */
@@ -147,11 +142,9 @@ public final class MemoryCreateViewModel extends ViewModel {
         if (current.isSaving() || createdMemoryId != null) return;
 
         LocalDate date = current.getDate();
-        MemoryCreateUiState.TitleError titleError = titleError(title);
-        MemoryCreateUiState.DescriptionError descriptionError = descriptionError(description);
-        MemoryCreateUiState.DateError dateError = date == null ? MemoryCreateUiState.DateError.REQUIRED
-                : date.isAfter(today()) ? MemoryCreateUiState.DateError.FUTURE
-                : MemoryCreateUiState.DateError.NONE;
+        MemoryCreateUiState.TitleError titleError = MemoryFormRules.titleError(title);
+        MemoryCreateUiState.DescriptionError descriptionError = MemoryFormRules.descriptionError(description);
+        MemoryCreateUiState.DateError dateError = MemoryFormRules.dateError(date, today());
         MemoryCreateUiState.Focus focus = titleError != MemoryCreateUiState.TitleError.NONE
                 ? MemoryCreateUiState.Focus.TITLE
                 : dateError != MemoryCreateUiState.DateError.NONE
@@ -170,7 +163,7 @@ public final class MemoryCreateViewModel extends ViewModel {
 
         // The create form has no category, emotion or location yet; null lets the server apply
         // its defaults (OTHER, none, none) and keeps them out of the JSON body.
-        MemoryApi.Draft draft = new MemoryApi.Draft(strip(title), description, date.toString(), null, null, null);
+        MemoryApi.Draft draft = new MemoryApi.Draft(MemoryFormRules.strip(title), description, date.toString(), null, null, null);
         if (!draft.equals(attempted)) {
             attempted = draft;
             idempotencyKey = UUID.randomUUID().toString();
@@ -213,34 +206,6 @@ public final class MemoryCreateViewModel extends ViewModel {
     }
 
     private MemoryCreateUiState current() { return state.getValue(); }
-
-    /**
-     * Removes leading and trailing whitespace as the server's {@code String.strip()} does,
-     * Unicode spaces included; {@code strip()} itself needs API 33.
-     */
-    static String strip(String value) {
-        int start = 0;
-        int end = value.length();
-        while (start < end && Character.isWhitespace(value.codePointAt(start))) {
-            start += Character.charCount(value.codePointAt(start));
-        }
-        while (end > start && Character.isWhitespace(value.codePointBefore(end))) {
-            end -= Character.charCount(value.codePointBefore(end));
-        }
-        return value.substring(start, end);
-    }
-
-    private static MemoryCreateUiState.TitleError titleError(String title) {
-        String trimmed = strip(title);
-        if (trimmed.isEmpty()) return MemoryCreateUiState.TitleError.REQUIRED;
-        return trimmed.codePointCount(0, trimmed.length()) > TITLE_MAX_LENGTH
-                ? MemoryCreateUiState.TitleError.TOO_LONG : MemoryCreateUiState.TitleError.NONE;
-    }
-
-    private static MemoryCreateUiState.DescriptionError descriptionError(String description) {
-        return description.codePointCount(0, description.length()) > DESCRIPTION_MAX_LENGTH
-                ? MemoryCreateUiState.DescriptionError.TOO_LONG : MemoryCreateUiState.DescriptionError.NONE;
-    }
 
     @Override
     protected void onCleared() {

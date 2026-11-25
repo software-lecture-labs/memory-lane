@@ -88,10 +88,27 @@ public final class MemoryDetailViewModel extends ViewModel {
         if (session != null) load();
     }
 
+    /**
+     * Reads the memory again after it was edited. The shown memory stays on screen until the new
+     * version arrives; a failure then replaces it with the matching state.
+     */
+    public void refresh() {
+        if (session == null) return;
+        if (state.getValue() != null && state.getValue().getStatus() == MemoryDetailUiState.Status.CONTENT) {
+            request(false);
+        } else {
+            load();
+        }
+    }
+
     private void load() {
+        request(true);
+    }
+
+    private void request(boolean showLoading) {
         cancel();
         int id = ++generation;
-        state.setValue(MemoryDetailUiState.loading());
+        if (showLoading) state.setValue(MemoryDetailUiState.loading());
         request = repository.getMemoryDetail(session, memoryId, result -> {
             if (id != generation) return;
             request = null;
@@ -119,9 +136,9 @@ public final class MemoryDetailViewModel extends ViewModel {
                 : MemoryDetailUiState.content(memory, date));
     }
 
-    /** The memory's day if the detail keeps the contract; null if it does not. */
+    /** The memory's day if the detail keeps the contract; null if it does not. Shared with the edit form. */
     @Nullable
-    private static LocalDate validDate(MemoryApi.Detail memory) {
+    static LocalDate validDate(MemoryApi.Detail memory) {
         if (isBlank(memory.id()) || isBlank(memory.title()) || memory.memoryDate() == null
                 || memory.photos() == null) {
             return null;

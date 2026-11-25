@@ -67,7 +67,12 @@ public final class FakeMemoryDetailRepository implements MemoryDetailRepository 
         public boolean isCancelled() { return cancelled; }
 
         public void succeed(MemoryApi.Detail memory) {
-            answer(ApiResult.success(new Tagged<>(memory, ETAG)));
+            succeed(memory, ETAG);
+        }
+
+        /** Answers with another version's tag, e.g. after the memory changed elsewhere. */
+        public void succeed(MemoryApi.Detail memory, String etag) {
+            answer(ApiResult.success(new Tagged<>(memory, etag)));
         }
 
         public void fail(ApiError error) {

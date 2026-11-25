@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory edit screen (ML-12), following the Stitch "Anıyı Düzenle" screen. Field error texts
+     are shared with the create screen (memory_create_strings.xml). -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="memory_edit_title">Anıyı Düzenle</string>
+    <string name="memory_edit_mode">Düzenleme Modu</string>
+    <string name="memory_edit_back">Düzenlemeden çık</string>
+
+    <string name="memory_edit_basics">Temel Bilgiler</string>
+    <string name="memory_edit_title_label">Başlık *</string>
+    <string name="memory_edit_date_label">Tarih *</string>
+    <string name="memory_edit_category_label">Kategori</string>
+    <string name="memory_edit_note_label">Açıklama / Günlük Notu</string>
+
+    <string name="memory_edit_save">Değişiklikleri Kaydet</string>
+    <string name="memory_edit_cancel">İptal</string>
+    <string name="memory_edit_saved">Anı güncellendi.</string>
+
+    <!-- 412: the memory changed elsewhere; the draft is kept until the user decides. -->
+    <string name="memory_edit_conflict_message">Bu anı başka bir yerde güncellendi. Kaydetmeden önce son halini yükleyin.</string>
+    <string name="memory_edit_conflict_reload">Son Halini Yükle</string>
+    <string name="memory_edit_conflict_review">Son hali yüklendi. Yazdıkların korunuyor; istersen son hali forma alabilir ya da kendi taslağını kaydedebilirsin.</string>
+    <string name="memory_edit_latest_heading">Anının son hali</string>
+    <!-- Date and category of the latest version, e.g. "28 Ekim 2026 · Gezi". -->
+    <string name="memory_edit_latest_meta">%1$s · %2$s</string>
+    <string name="memory_edit_use_latest">Son Hali Kullan</string>
+    <string name="memory_edit_keep_draft">Benimkini Koru</string>
+
+    <!-- Leaving with unsaved changes -->
+    <string name="memory_edit_discard_title">Kaydedilmemiş değişiklikler</string>
+    <string name="memory_edit_discard_message">Kaydedilmemiş değişiklikler var. Çıkmak istediğinize emin misiniz?</string>
+    <string name="memory_edit_discard_leave">Çık</string>
+    <string name="memory_edit_discard_stay">Düzenlemeye Devam Et</string>
+
+    <string name="memory_edit_load_error_title">Anı düzenlemeye açılamadı</string>
+</resources>

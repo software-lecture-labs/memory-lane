@@ -75,4 +75,8 @@
     <dimen name="memory_viewer_page_padding">12dp</dimen>
     <dimen name="memory_viewer_arrow_margin">10dp</dimen>
     <dimen name="memory_viewer_dot_active_width">20dp</dimen>
+
+    <!-- Edit form: category pills (px-4 py-2) and the description box. -->
+    <dimen name="memory_category_chip_height">40dp</dimen>
+    <dimen name="memory_edit_note_min_height">160dp</dimen>
 </resources>

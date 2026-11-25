@@ -229,6 +229,18 @@
         <item name="chipIcon">@drawable/ic_location</item>
     </style>
 
+    <!-- Category choice on the edit form (Stitch: rounded-full pills; the chosen one raspberry). -->
+    <style name="Widget.MemoryLane.CategoryChip" parent="Widget.Material3.Chip.Filter">
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Label.Bold</item>
+        <item name="android:textColor">@color/memory_category_chip_text</item>
+        <item name="chipBackgroundColor">@color/memory_category_chip_bg</item>
+        <item name="chipMinHeight">@dimen/memory_category_chip_height</item>
+        <item name="chipCornerRadius">@dimen/ml_radius_pill</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="materialThemeOverlay">@style/ThemeOverlay.MemoryLane.FlatSurface</item>
+    </style>
+
     <!-- Rounded photos: list card covers and the detail gallery. -->
     <style name="ShapeAppearance.MemoryLane.Cover" parent="">
         <item name="cornerFamily">rounded</item>

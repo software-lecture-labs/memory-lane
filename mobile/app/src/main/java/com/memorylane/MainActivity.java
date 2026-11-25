@@ -54,14 +54,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Full-screen stack screens (not tabs): login, register, the new memory form, the memory
-     * detail and the photo viewer. They hide the bottom bar and pad for the keyboard or gesture
-     * area themselves.
+     * Full-screen stack screens (not tabs): login, register, the new memory and edit forms, the
+     * memory detail and the photo viewer. They hide the bottom bar and pad for the keyboard or
+     * gesture area themselves.
      */
     private static boolean hidesBottomNav(@Nullable NavDestination destination) {
         if (destination == null) return false;
         int id = destination.getId();
         return id == R.id.loginFragment || id == R.id.registerFragment || id == R.id.memoryCreateFragment
-                || id == R.id.memoryDetailFragment || id == R.id.memoryPhotoViewerFragment;
+                || id == R.id.memoryDetailFragment || id == R.id.memoryPhotoViewerFragment
+                || id == R.id.memoryEditFragment;
     }
 }
