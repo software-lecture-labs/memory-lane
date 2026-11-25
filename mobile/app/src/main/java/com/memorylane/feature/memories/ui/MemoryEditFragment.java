@@ -44,8 +44,8 @@ import java.util.function.Consumer;
 /**
  * Memory edit form: draws {@link MemoryEditUiState} in {@link #render} and forwards edits to
  * {@link MemoryEditViewModel}. Leaving with unsaved changes (back button, system back, "İptal")
- * asks first. After a save it leaves {@link #RESULT_UPDATED} on the detail entry and closes; the
- * detail then reads the new version.
+ * asks first. After a save it leaves {@link #RESULT_UPDATED} on the detail and timeline entries
+ * and closes; the detail reads the new version, the timeline reloads when it is shown again.
  */
 public class MemoryEditFragment extends Fragment {
     /** Navigation argument: id of the memory to edit (nav_graph.xml, memoryEditFragment). */
@@ -263,10 +263,16 @@ public class MemoryEditFragment extends Fragment {
                 .show();
     }
 
+    /** The detail behind reads the new version; the timeline further back reloads its rows. */
     private void closeAfterSave() {
         NavController navController = NavHostFragment.findNavController(this);
         NavBackStackEntry previous = navController.getPreviousBackStackEntry();
         if (previous != null) previous.getSavedStateHandle().set(RESULT_UPDATED, true);
+        try {
+            navController.getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle().set(RESULT_UPDATED, true);
+        } catch (IllegalArgumentException noTimeline) {
+            // Not opened from the timeline; nothing else shows this memory.
+        }
         close();
     }
 

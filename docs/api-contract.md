@@ -160,6 +160,8 @@ Sunucu uygulaması: `V5` migration `memories.version BIGINT NOT NULL DEFAULT 1` 
 
 Uygulama kabul senaryoları: iki cihaz aynı r7'yi okur; ilk PUT 200, ikinci PUT 412 ve ilk cihazın kaydı korunur. Eksik If-Match 428, zayıf/eski etiket 412, bozuk/* etiket 400 olmalıdır. Kaybolan başarılı PUT'un tekrarı ve arada fotoğraf değişmesi de eski formla sessiz yazma yapmamalıdır. Bu senaryolar gerçek PostgreSQL üzerinde `MemoryIntegrationTest` (eşzamanlı iki PUT dahil) ve `OwnershipIntegrationTest` ile, etiket biçim kuralları `MemoryPreconditionTest` ile doğrulanır.
 
+Mobil düzenleme ekranı (ML-12) bu akışı uygular: form açılırken detay GET yapılır ve ETag saklanır; PUT bütün yazılabilir alanları gönderir, ekranda kontrolü olmayan duygu ve konum değiştirilmeden geri gönderilir. 412'de yerel taslak korunur ve kaydetme kilitlenir; "Son Halini Yükle" güncel detayı ve etiketini alır, son hali taslağın yanında gösterir. Kullanıcı son hali forma alabilir ya da taslağını koruyabilir; yeni PUT yalnız kullanıcının açık kaydet eylemiyle, yeni etiketle gönderilir. Davranış `MemoryEditViewModelTest` ile doğrulanır.
+
 ### Fotoğraf işleminden sonra düzenleme etiketini yenileme
 
 PhotoResponse anının ETag'ini taşımaz; fotoğraf ekleme/silme yanıtına anı etiketini temsil eden ikinci bir başlık eklenmez. Tek kaynak, detay GET yanıtındaki ETag ve aynı yanıttaki MemoryDetail'dır.

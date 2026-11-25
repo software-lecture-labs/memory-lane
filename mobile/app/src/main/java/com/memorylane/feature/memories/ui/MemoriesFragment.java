@@ -85,7 +85,7 @@ public class MemoriesFragment extends Fragment {
         binding.memoryAdd.setOnClickListener(button -> openCreate());
 
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
-        observeCreatedMemory();
+        observeSavedMemories();
         viewModel.sessionExpired().observe(getViewLifecycleOwner(), expired -> {
             if (!Boolean.TRUE.equals(expired)) return;
             viewModel.consumeSessionExpired();
@@ -183,14 +183,16 @@ public class MemoriesFragment extends Fragment {
     }
 
     /**
-     * The create screen leaves {@link MemoryCreateFragment#RESULT_CREATED} on this entry after a
-     * save; refresh once and remove it so a later view does not refresh again.
+     * The create screen leaves {@link MemoryCreateFragment#RESULT_CREATED} and the edit screen
+     * {@link MemoryEditFragment#RESULT_UPDATED} on this entry after a save; refresh once and
+     * remove the flag so a later view does not refresh again. A created memory is announced here;
+     * an edit was already announced on the detail screen, so the rows just follow it.
      *
      * <p>On a cold start without a session, SessionNavigator replaces this destination with the
      * login screen before this view is created; the entry is then already gone and there is no
      * result to wait for.
      */
-    private void observeCreatedMemory() {
+    private void observeSavedMemories() {
         SavedStateHandle results;
         try {
             results = NavHostFragment.findNavController(this)
@@ -206,6 +208,12 @@ public class MemoriesFragment extends Fragment {
                     Snackbar.make(binding.getRoot(), R.string.memory_create_saved, Snackbar.LENGTH_SHORT)
                             .setAnchorView(binding.memoryAdd)
                             .show();
+                });
+        results.<Boolean>getLiveData(MemoryEditFragment.RESULT_UPDATED, false)
+                .observe(getViewLifecycleOwner(), updated -> {
+                    if (!Boolean.TRUE.equals(updated)) return;
+                    results.set(MemoryEditFragment.RESULT_UPDATED, false);
+                    viewModel.refresh();
                 });
     }
 
