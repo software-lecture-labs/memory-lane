@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One page of the full-screen viewer: the whole photo, fitted to the page and kept in its own
+     shape (adjustViewBounds), with rounded corners and a faint glass edge. While it loads a
+     progress ring is shown; if it fails, a short message and "Tekrar dene". -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/memory_viewer_page_padding">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/viewer_photo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:adjustViewBounds="true"
+        android:padding="@dimen/ml_stroke_thin"
+        android:scaleType="fitCenter"
+        app:shapeAppearance="@style/ShapeAppearance.MemoryLane.ViewerPhoto"
+        app:strokeColor="@color/memory_viewer_glass_stroke"
+        app:strokeWidth="@dimen/ml_stroke_thin" />
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/viewer_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:contentDescription="@string/memory_viewer_loading"
+        android:indeterminate="true"
+        app:indicatorColor="@color/memory_viewer_accent" />
+
+    <LinearLayout
+        android:id="@+id/viewer_error"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/memory_viewer_error"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Body"
+            android:textColor="@color/ml_on_primary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/viewer_retry"
+            style="@style/Widget.MemoryLane.Button.OnDark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_md"
+            android:text="@string/state_retry" />
+    </LinearLayout>
+</FrameLayout>

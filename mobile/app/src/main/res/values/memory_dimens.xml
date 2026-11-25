@@ -68,4 +68,11 @@
     <dimen name="memory_detail_icon_box">36dp</dimen>
     <dimen name="memory_detail_icon">20dp</dimen>
     <dimen name="memory_detail_button_height">52dp</dimen>
+
+    <!-- Full-screen viewer: w-10 glass buttons, rounded-3xl photo, the wide active page dot. -->
+    <dimen name="memory_viewer_button">40dp</dimen>
+    <dimen name="memory_viewer_photo_radius">24dp</dimen>
+    <dimen name="memory_viewer_page_padding">12dp</dimen>
+    <dimen name="memory_viewer_arrow_margin">10dp</dimen>
+    <dimen name="memory_viewer_dot_active_width">20dp</dimen>
 </resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Viewer page dot of the photo on screen: a short pink pill. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/ml_primary" />
+    <corners android:radius="@dimen/ml_radius_pill" />
+    <size android:width="@dimen/memory_viewer_dot_active_width" android:height="@dimen/memory_dot_active" />
+</shape>

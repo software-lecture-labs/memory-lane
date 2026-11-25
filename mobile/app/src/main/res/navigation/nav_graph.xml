@@ -37,6 +37,35 @@
         <argument
             android:name="memoryId"
             app:argType="string" />
+        <action
+            android:id="@+id/action_memoryDetailFragment_to_memoryPhotoViewerFragment"
+            app:destination="@id/memoryPhotoViewerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/memoryPhotoViewerFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryPhotoViewerFragment"
+        android:label="@string/memory_viewer_label">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
+        <argument
+            android:name="photoIds"
+            app:argType="string[]" />
+        <argument
+            android:name="initialPosition"
+            android:defaultValue="0"
+            app:argType="integer" />
+        <argument
+            android:name="title"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
+        <argument
+            android:name="memoryDate"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
     </fragment>
 
     <fragment

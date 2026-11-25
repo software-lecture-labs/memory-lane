@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Round frosted-glass button of the photo viewer (close, previous, next). -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/memory_viewer_glass_stroke">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/memory_viewer_glass" />
+            <stroke android:width="@dimen/ml_stroke_thin" android:color="@color/memory_viewer_glass_stroke" />
+        </shape>
+    </item>
+</ripple>

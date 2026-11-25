@@ -32,6 +32,8 @@ import com.memorylane.databinding.FragmentMemoryDetailBinding;
 import com.memorylane.feature.memories.data.MemoryApi;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -217,10 +219,19 @@ public class MemoryDetailFragment extends Fragment {
         return shown;
     }
 
-    /** Full-screen viewer at {@code position}; the viewer itself is the next ML-11 step. */
+    /** Opens the full-screen viewer at {@code position} with the gallery's photos, in order. */
     private void openPhotoViewer(int position) {
-        if (position < 0 || position >= photoCount) return;
-        Snackbar.make(binding.getRoot(), R.string.memory_detail_coming_soon, Snackbar.LENGTH_SHORT).show();
+        MemoryApi.Detail memory = shownMemory;
+        if (memory == null || position < 0 || position >= photoCount) return;
+        List<String> photoIds = new ArrayList<>();
+        for (MemoryApi.Photo photo : memory.photos()) photoIds.add(photo.id());
+        NavController navController = NavHostFragment.findNavController(this);
+        NavDestination current = navController.getCurrentDestination();
+        // A fast double tap delivers a second click after the first navigation; it is ignored.
+        if (current == null || current.getId() != R.id.memoryDetailFragment) return;
+        navController.navigate(R.id.action_memoryDetailFragment_to_memoryPhotoViewerFragment,
+                MemoryPhotoViewerFragment.arguments(viewModel.memoryId(), photoIds, position,
+                        memory.title(), memory.memoryDate()));
     }
 
     /** The edit screen (ML-12) is added in a later step. */

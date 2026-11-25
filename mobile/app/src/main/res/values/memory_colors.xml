@@ -25,4 +25,12 @@
     <color name="memory_photo_shade">#9935263F</color>
     <color name="memory_photo_shade_clear">#0035263F</color>
     <color name="memory_dot_inactive">#66FFFFFF</color>
+
+    <!-- Full-screen photo viewer (Stitch "Fotoğraf Görüntüleyici"): cinematic near-black, frosted
+         glass controls (white at 10% with a 15% white edge), pink accent and the pink-200 counter. -->
+    <color name="memory_viewer_backdrop">#120E10</color>
+    <color name="memory_viewer_glass">#1AFFFFFF</color>
+    <color name="memory_viewer_glass_stroke">#26FFFFFF</color>
+    <color name="memory_viewer_accent">#FF9BBF</color>
+    <color name="memory_viewer_counter">#FBCFE8</color>
 </resources>

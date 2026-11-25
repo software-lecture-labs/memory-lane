@@ -248,6 +248,31 @@
         <item name="android:textStyle">bold</item>
     </style>
 
+    <!-- Full-screen viewer: the photo's rounded frame, the caption and the counter on dark glass. -->
+    <style name="ShapeAppearance.MemoryLane.ViewerPhoto" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/memory_viewer_photo_radius</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Viewer.Title" parent="TextAppearance.MemoryLane.CardTitle">
+        <item name="android:textColor">@color/ml_on_primary</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Viewer.Meta" parent="TextAppearance.MemoryLane.Label">
+        <item name="android:textColor">@color/memory_viewer_counter</item>
+    </style>
+
+    <style name="TextAppearance.MemoryLane.Viewer.Counter" parent="TextAppearance.MemoryLane.Label.Bold">
+        <item name="android:textColor">@color/memory_viewer_counter</item>
+    </style>
+
+    <!-- Ghost button on the dark viewer: white text and a white glass edge. -->
+    <style name="Widget.MemoryLane.Button.OnDark" parent="Widget.MemoryLane.Button.Ghost">
+        <item name="android:textColor">@color/ml_on_primary</item>
+        <item name="strokeColor">@color/memory_viewer_glass_stroke</item>
+        <item name="backgroundTint">@color/memory_viewer_glass</item>
+    </style>
+
     <!-- Small white text on photo overlays. -->
     <style name="TextAppearance.MemoryLane.Label.OnPhoto">
         <item name="android:textColor">@color/ml_on_primary</item>
