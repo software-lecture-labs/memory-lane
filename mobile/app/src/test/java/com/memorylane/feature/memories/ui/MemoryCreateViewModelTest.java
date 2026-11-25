@@ -18,6 +18,7 @@ import com.memorylane.core.network.Cancellable;
 import com.memorylane.core.network.ResultCallback;
 import com.memorylane.feature.health.ui.HealthViewModel;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.memories.data.MemoryFixtures;
 import com.memorylane.feature.memories.data.MemoryCreateRepository;
 
 import org.junit.Rule;
@@ -170,7 +171,7 @@ public class MemoryCreateViewModelTest {
         assertEquals("A second tap while saving is ignored", 1, repository.requests.size());
         FakeCreateRepository.Request sent = repository.last();
         assertEquals(SESSION, sent.authorization);
-        assertEquals(new MemoryApi.Draft("Bursa'da bir gün", "  Kestane  ", "2024-10-20"), sent.draft);
+        assertEquals(MemoryFixtures.draft("Bursa'da bir gün", "  Kestane  ", "2024-10-20"), sent.draft);
         // The server accepts only a lowercase UUID as the key.
         assertEquals(sent.key, UUID.fromString(sent.key).toString());
         assertTrue(state().isSaving());
@@ -222,7 +223,7 @@ public class MemoryCreateViewModelTest {
     public void successWithoutIdIsAParseError() {
         fillValid();
         viewModel.save(SESSION);
-        repository.last().answer(ApiResult.success(new MemoryApi.Memory(null, "Bursa", "", "2024-10-20")));
+        repository.last().answer(ApiResult.success(MemoryFixtures.memory(null, "Bursa", "", "2024-10-20")));
 
         // Photos could not be attached to a memory without an id.
         assertEquals(ApiError.Kind.PARSE, state().getServerError().getKind());
@@ -422,7 +423,7 @@ public class MemoryCreateViewModelTest {
             }
 
             void succeed() {
-                answer(ApiResult.success(new MemoryApi.Memory("m1", draft.title(), draft.description(),
+                answer(ApiResult.success(MemoryFixtures.memory("m1", draft.title(), draft.description(),
                         draft.memoryDate())));
             }
 

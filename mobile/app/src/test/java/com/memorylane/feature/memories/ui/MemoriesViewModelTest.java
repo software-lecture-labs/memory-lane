@@ -15,6 +15,7 @@ import com.memorylane.core.network.ApiError;
 import com.memorylane.feature.health.ui.HealthViewModel;
 import com.memorylane.feature.memories.data.FakeMemoryListRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.memories.data.MemoryFixtures;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -138,7 +139,7 @@ public class MemoriesViewModelTest {
     @Test
     public void memoryOutsideTheContractIsAParseError() {
         signIn();
-        repository.last().succeed(List.of(new MemoryApi.Memory("m1", "Başlık", "", "28.10.2024")), false);
+        repository.last().succeed(List.of(MemoryFixtures.memory("m1", "Başlık", "", "28.10.2024")), false);
 
         assertEquals(MemoryListUiState.Status.ERROR, status());
         assertEquals(ApiError.Kind.PARSE, state().getError().getKind());
@@ -409,7 +410,7 @@ public class MemoriesViewModelTest {
     }
 
     private static MemoryApi.Memory memory(String id, String date) {
-        return new MemoryApi.Memory(id, "Anı " + id, "", date);
+        return MemoryFixtures.memory(id, "Anı " + id, "", date);
     }
 
     private static List<String> keys(List<MemoryListItem> rows) {

@@ -168,7 +168,9 @@ public final class MemoryCreateViewModel extends ViewModel {
             return;
         }
 
-        MemoryApi.Draft draft = new MemoryApi.Draft(strip(title), description, date.toString());
+        // The create form has no category, emotion or location yet; null lets the server apply
+        // its defaults (OTHER, none, none) and keeps them out of the JSON body.
+        MemoryApi.Draft draft = new MemoryApi.Draft(strip(title), description, date.toString(), null, null, null);
         if (!draft.equals(attempted)) {
             attempted = draft;
             idempotencyKey = UUID.randomUUID().toString();

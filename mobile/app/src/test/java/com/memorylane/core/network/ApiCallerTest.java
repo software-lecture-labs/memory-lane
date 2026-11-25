@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.SocketPolicy;
+import retrofit2.Call;
+import retrofit2.http.GET;
 
 /** Real HTTP round trips against a local MockWebServer; no Android device needed. */
 public class ApiCallerTest {
@@ -187,6 +189,77 @@ public class ApiCallerTest {
         call.cancel();
 
         assertFalse(called.await(1, TimeUnit.SECONDS));
+    }
+
+    /** Any JSON endpoint will do for the ETag rules; the memory detail is the real user. */
+    interface TaggedApi {
+        @GET("api/v1/thing")
+        Call<HealthResponse> get();
+    }
+
+    @Test
+    public void taggedSuccessKeepsTheBodyAndTheEtagExactlyAsSent() throws Exception {
+        server.enqueue(new MockResponse().setHeader("ETag", "\"memory-x-r7\"")
+                .setBody("{\"status\":\"UP\",\"database\":\"UP\"}"));
+
+        ApiResult<Tagged<HealthResponse>> result = callTagged();
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getData());
+        assertEquals("\"memory-x-r7\"", result.getData().etag());
+        assertEquals("UP", result.getData().value().getDatabase());
+    }
+
+    @Test
+    public void taggedSuccessWithoutEtagIsAParseError() throws Exception {
+        server.enqueue(new MockResponse().setBody("{\"status\":\"UP\",\"database\":\"UP\"}"));
+        server.enqueue(new MockResponse().setHeader("ETag", "  ").setBody("{\"status\":\"UP\",\"database\":\"UP\"}"));
+
+        for (int i = 0; i < 2; i++) {
+            ApiError error = callTagged().getError();
+            assertNotNull(error);
+            assertEquals(ApiError.Kind.PARSE, error.getKind());
+        }
+    }
+
+    @Test
+    public void taggedSuccessWithoutBodyIsAParseError() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(204).setHeader("ETag", "\"memory-x-r7\""));
+
+        ApiError error = callTagged().getError();
+
+        assertNotNull(error);
+        assertEquals(ApiError.Kind.PARSE, error.getKind());
+    }
+
+    @Test
+    public void taggedErrorsAreClassifiedLikeAnyOtherCall() throws Exception {
+        int[] statuses = {400, 401, 404, 412, 428};
+        String[] codes = {"INVALID_INPUT", "INVALID_SESSION", "MEMORY_NOT_FOUND", "MEMORY_MODIFIED", "PRECONDITION_REQUIRED"};
+        for (int i = 0; i < statuses.length; i++) {
+            // An ETag on an error answer must not turn it into a success.
+            server.enqueue(new MockResponse().setResponseCode(statuses[i]).setHeader("ETag", "\"memory-x-r7\"")
+                    .setBody("{\"code\":\"" + codes[i] + "\",\"message\":\"m\"}"));
+        }
+        for (int i = 0; i < statuses.length; i++) {
+            ApiError error = callTagged().getError();
+            assertNotNull(error);
+            assertEquals(ApiError.Kind.HTTP, error.getKind());
+            assertEquals(statuses[i], error.getHttpStatus());
+            assertEquals(codes[i], error.getCode());
+        }
+    }
+
+    private ApiResult<Tagged<HealthResponse>> callTagged() throws InterruptedException {
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<ApiResult<Tagged<HealthResponse>>> holder = new AtomicReference<>();
+        TaggedApi api = ApiClient.create(server.url("/").toString(), gson).create(TaggedApi.class);
+        new ApiCaller(gson).enqueueTagged(api.get(), result -> {
+            holder.set(result);
+            done.countDown();
+        });
+        assertTrue("request did not finish", done.await(20, TimeUnit.SECONDS));
+        return holder.get();
     }
 
     private ApiResult<HealthResponse> callHealth(String baseUrl) throws InterruptedException {

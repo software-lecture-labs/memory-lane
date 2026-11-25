@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.memorylane.feature.memories.data.FakeMemoryListRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.memories.data.MemoryFixtures;
 
 import org.junit.Test;
 
@@ -77,7 +78,7 @@ public class MemoryListMapperTest {
     @Test
     public void missingDescriptionIsEmptyText() {
         MemoryListItem card = MemoryListMapper.toItems(
-                List.of(new MemoryApi.Memory("a", "Başlık", null, "2024-06-01"))).get(1);
+                List.of(MemoryFixtures.memory("a", "Başlık", null, "2024-06-01"))).get(1);
 
         assertEquals("", card.getDescription());
     }
@@ -86,13 +87,13 @@ public class MemoryListMapperTest {
     public void contractViolationsFailInsteadOfHidingMemories() {
         List<MemoryApi.Memory> invalid = new ArrayList<>();
         invalid.add(null);
-        invalid.add(new MemoryApi.Memory(null, "Başlık", "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory(" ", "Başlık", "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory("a", null, "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory("a", "   ", "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory("a", "Başlık", "", null));
+        invalid.add(MemoryFixtures.memory(null, "Başlık", "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory(" ", "Başlık", "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory("a", null, "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory("a", "   ", "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory("a", "Başlık", "", null));
         for (String date : new String[] {"", "2024-6-1", "01.06.2024", "2024-02-30", "2024-06-01T10:00"}) {
-            invalid.add(new MemoryApi.Memory("a", "Başlık", "", date));
+            invalid.add(MemoryFixtures.memory("a", "Başlık", "", date));
         }
 
         for (MemoryApi.Memory memory : invalid) {
@@ -105,7 +106,7 @@ public class MemoryListMapperTest {
     }
 
     private static MemoryApi.Memory memory(String id, String date) {
-        return new MemoryApi.Memory(id, "Anı " + id, "", date);
+        return MemoryFixtures.memory(id, "Anı " + id, "", date);
     }
 
     private static List<String> keys(List<MemoryListItem> rows) {
