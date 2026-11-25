@@ -17,8 +17,9 @@ class MemoryErrors {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    ResponseEntity<Map<String, String>> parameter() {
-        return response(400, "INVALID_INPUT", "Sayfa veya sayfa boyutu geçersiz.");
+    ResponseEntity<Map<String, String>> parameter(MethodArgumentTypeMismatchException error) {
+        return response(400, "INVALID_INPUT", "id".equals(error.getName())
+                ? "Anı kimliği geçersiz." : "Sayfa veya sayfa boyutu geçersiz.");
     }
 
     @ExceptionHandler(MemoryService.IdempotencyConflict.class)

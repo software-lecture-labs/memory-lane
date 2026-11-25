@@ -1,5 +1,7 @@
 package com.memorylane.backend.memory;
 
+import com.memorylane.backend.ownership.OwnershipGuard;
+import com.memorylane.backend.ownership.ResourceNotFoundException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -36,10 +38,12 @@ public class MemoryService {
             """;
 
     private final JdbcClient jdbc;
+    private final OwnershipGuard guard;
     private static final JsonMapper HASH_JSON = JsonMapper.builder().build();
 
-    public MemoryService(JdbcClient jdbc) {
+    public MemoryService(JdbcClient jdbc, OwnershipGuard guard) {
         this.jdbc = jdbc;
+        this.guard = guard;
     }
 
     record Summary(UUID id, String title, String description, LocalDate memoryDate, String category,
@@ -53,6 +57,9 @@ public class MemoryService {
                  String contentUrl, Instant createdAt) {}
 
     record Created(Summary summary, List<Photo> photos, boolean replayed) {}
+
+    /** A memory with its photos and the server-only version the detail ETag is made from. */
+    record Found(Summary summary, List<Photo> photos, long version) {}
 
     @Transactional
     public Created create(UUID owner, UUID key, MemoryInput input) {
@@ -91,6 +98,22 @@ public class MemoryService {
                 .param("size", size).param("offset", (long) page * size)
                 .query((row, number) -> summary(row)).list();
         return new Page(content, page, size, count, pages, page + 1L < pages);
+    }
+
+    /**
+     * One memory of {@code owner} with its photos in {@code order ASC}. Missing and foreign memories
+     * both throw {@link ResourceNotFoundException#memory()} (ADR-0003). The body and the version are
+     * read from one snapshot, so the ETag always describes exactly the body it is sent with.
+     */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public Found detail(UUID owner, UUID id) {
+        guard.requireMemory(owner, id);
+        record Row(Summary summary, long version) {}
+        Row memory = jdbc.sql(SUMMARY + " AND m.id = :id")
+                .param("owner", owner).param("id", id)
+                .query((row, number) -> new Row(summary(row), row.getLong("version")))
+                .single();
+        return new Found(memory.summary(), photos(id), memory.version());
     }
 
     private JdbcClient.StatementSpec filtered(String sql, String order, UUID owner, String query, String category) {

@@ -86,6 +86,40 @@ class PhotoIntegrationTest {
         JsonNode summary = json.readTree(send("GET", "/memories", owner.token()).body()).path("content").get(0);
         assertEquals(2, summary.path("photoCount").asInt());
         assertEquals(photo.path("id"), summary.path("coverPhotoId"));
+
+        // The memory detail lists the same photos, in order, with their protected content address.
+        JsonNode detail = json.readTree(send("GET", "/memories/" + memory, owner.token()).body());
+        assertEquals(2, detail.path("photoCount").asInt());
+        assertEquals(photo.path("id"), detail.path("coverPhotoId"));
+        assertEquals(list, detail.path("photos"));
+    }
+
+    @Test
+    void everyStoredPhotoChangesTheMemoryEtagButReplaysAndRefusalsDoNot() throws Exception {
+        Session owner = session();
+        String memory = memory(owner);
+        String key = UUID.randomUUID().toString();
+        String initial = etag(owner, memory);
+
+        assertEquals(201, upload(owner.token(), memory, key, PhotoFileTest.JPEG, "image/jpeg").statusCode());
+        String afterUpload = etag(owner, memory);
+        assertNotEquals(initial, afterUpload);
+
+        assertEquals(200, upload(owner.token(), memory, key, PhotoFileTest.JPEG, "image/jpeg").statusCode());
+        assertEquals(409, upload(owner.token(), memory, key, PhotoFileTest.PNG, "image/png").statusCode());
+        byte[] text = "this is not a photo".getBytes(StandardCharsets.UTF_8);
+        assertEquals(415, upload(owner.token(), memory, UUID.randomUUID().toString(), text, "image/jpeg").statusCode());
+        assertEquals(afterUpload, etag(owner, memory), "nothing stored, so the detail and its tag are unchanged");
+
+        assertEquals(201, upload(owner.token(), memory, UUID.randomUUID().toString(),
+                PhotoFileTest.PNG, "image/png").statusCode());
+        assertNotEquals(afterUpload, etag(owner, memory));
+    }
+
+    private String etag(Session owner, String memory) throws Exception {
+        var detail = send("GET", "/memories/" + memory, owner.token());
+        assertEquals(200, detail.statusCode(), detail.body());
+        return detail.headers().firstValue("ETag").orElseThrow();
     }
 
     @Test

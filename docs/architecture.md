@@ -49,7 +49,7 @@ Saklama `PhotoStorage` arayüzünün arkasındadır; servis yalnız bu arayüzü
 
 Güvenlik: yükleme OWASP dosya yükleme önerilerine göre ele alındı. İstemcinin dosya adı ve yolu kullanılmaz, tür içerikten belirlenir, sunucu görüntüyü açıp işlemediği için görüntü bombası riski yoktur. Disk yolu ve `storage_key` hiçbir yanıtta yer almaz. İçerik yanıtı `nosniff` ve `Content-Security-Policy: default-src 'none'; sandbox` ile gönderilir; özel hazırlanmış bir dosya tarayıcıda açılsa bile betik çalıştıramaz. Bilinen sınırlar: kullanıcı başına disk kotası ve yükleme hız sınırı yoktur (anı başına 5 fotoğraf sınırı dışında); fotoğraflar gelen EXIF bilgisiyle saklanır ve yalnız sahibine sunulur. Mobil uygulama GPS konumunu yüklemeden önce siler (ML-10); başka bir istemci konumlu dosya gönderirse sunucu onu değiştirmez.
 
-Henüz yapılmayanlar: fotoğraf silme uç noktası ve silinen kaynağın anahtarının emekliye ayrılması (409 `IDEMPOTENCY_KEY_RETIRED`) ayrı bir iş olarak eklenecektir. Emekli anahtarlar için yeni bir tablo (V5 migration) gerekir. Silme işlemi dosyasını ML-14'teki temizlik mekanizmasıyla kaldırır. Anı sürümünün fotoğraf işleminde artırılması ise ETag/`memories.version` geldiğinde eklenecektir.
+Henüz yapılmayanlar: fotoğraf silme uç noktası ve silinen kaynağın anahtarının emekliye ayrılması (409 `IDEMPOTENCY_KEY_RETIRED`) ayrı bir iş olarak eklenecektir. Emekli anahtarlar için yeni bir sürümlü migration ve tablo gerekir. Silme işlemi dosyasını ML-14'teki temizlik mekanizmasıyla kaldırır. Başarılı yükleme anının `memories.version` değerini (V5) aynı transaction'da artırır; böylece anı detayının ETag'i değişir, tekrar ve reddedilen yükleme sürümü değiştirmez.
 
 ## Dosya temizliği (ML-14)
 

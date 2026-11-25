@@ -141,6 +141,50 @@ class MemoryIntegrationTest {
                 .path("totalElements").asInt());
     }
 
+    @Test
+    void detailReturnsTheMemoryWithAStrongEtagOnlyToItsOwner() throws Exception {
+        String owner = session(UUID.randomUUID() + "@example.test", true);
+        String other = session(UUID.randomUUID() + "@example.test", true);
+        var body = new java.util.HashMap<String, Object>(java.util.Map.of(
+                "title", "Sahil yürüyüşü", "description", "Akşam yürüdük.", "memoryDate", "2026-01-02",
+                "category", "TRAVEL", "emotion", "HAPPY",
+                "location", java.util.Map.of("latitude", 41.0082, "longitude", 28.9784)));
+        var created = json.readTree(send("POST", "/memories", owner, UUID.randomUUID().toString(),
+                json.writeValueAsString(body)).body());
+        String id = created.path("id").asString();
+
+        var response = send("GET", "/memories/" + id, owner, null, null);
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+        String etag = response.headers().firstValue("ETag").orElseThrow();
+        assertTrue(etag.matches("\"memory-" + id + "-r\\d+\""), etag);
+        var detail = json.readTree(response.body());
+        // Same body as the create answer: summary fields unwrapped plus an empty photos array.
+        assertEquals(created, detail);
+        assertTrue(detail.path("photos").isArray());
+        assertEquals(0, detail.path("photos").size());
+        assertTrue(detail.path("coverPhotoId").isNull());
+        assertFalse(detail.has("version"), "the version is server-only");
+        assertFalse(detail.has("ownerId"));
+        assertEquals(etag, send("GET", "/memories/" + id, owner, null, null)
+                .headers().firstValue("ETag").orElseThrow(), "unchanged memory keeps its tag");
+
+        // No session, foreign, missing and malformed ids: nothing about the memory is revealed.
+        assertEquals(401, send("GET", "/memories/" + id, null, null, null).statusCode());
+        var foreign = send("GET", "/memories/" + id, other, null, null);
+        var missing = send("GET", "/memories/" + UUID.randomUUID(), owner, null, null);
+        for (var notFound : java.util.List.of(foreign, missing)) {
+            assertEquals(404, notFound.statusCode());
+            assertEquals("MEMORY_NOT_FOUND", json.readTree(notFound.body()).path("code").asString());
+            assertTrue(notFound.headers().firstValue("ETag").isEmpty());
+        }
+        assertEquals(foreign.body(), missing.body());
+        var malformed = send("GET", "/memories/not-a-uuid", owner, null, null);
+        assertEquals(400, malformed.statusCode());
+        assertEquals("INVALID_INPUT", json.readTree(malformed.body()).path("code").asString());
+        assertEquals("Anı kimliği geçersiz.", json.readTree(malformed.body()).path("message").asString());
+    }
+
     private HttpResponse<String> create(String token, String key, String title) throws Exception {
         return send("POST", "/memories", token, key,
                 json.writeValueAsString(java.util.Map.of("title", title, "memoryDate", "2026-01-01")));

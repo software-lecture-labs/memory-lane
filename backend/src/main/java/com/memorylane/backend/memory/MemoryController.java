@@ -55,6 +55,22 @@ public class MemoryController {
                 .body(memories.list(owner, page, size, term, category));
     }
 
+    /** Contract: 200 MemoryDetail with a strong ETag; missing and foreign memories are both 404. */
+    @GetMapping("/{id}")
+    ResponseEntity<Detail> detail(@CurrentUser UUID owner, @PathVariable UUID id) {
+        var found = memories.detail(owner, id);
+        return ResponseEntity.ok().eTag(etag(id, found.version())).header("Cache-Control", "no-store")
+                .body(new Detail(found.summary(), found.photos()));
+    }
+
+    /**
+     * Opaque strong entity tag, quotes included. Clients send it back unchanged in If-Match and
+     * never parse it; only this class builds and compares it.
+     */
+    static String etag(UUID id, long version) {
+        return "\"memory-" + id + "-r" + version + "\"";
+    }
+
     private static UUID requestId(String key) {
         try {
             UUID id = UUID.fromString(key);

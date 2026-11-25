@@ -1,6 +1,6 @@
 # Veri modeli ve API sözleşmesi
 
-Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me; ML-07 ile anı oluşturma ve sayfalı listeleme uygulanmıştır. Diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
+Bu belge ML-03 için ortak sözleşmedir. İlk hesaplı Trello planı esas alınır; backend Spring Boot'tur. ML-27 ile kayıt, giriş, çıkış ve auth/me; ML-07 ile anı oluşturma ve sayfalı listeleme, ML-11 ile ETag'li anı detayı uygulanmıştır. Diğer iş endpointleri geliştirme sözleşmesidir. Çalıştırılmış test sonuçlarının kaynağı ilgili PR/CI kaydıdır. Ekip rol kodları README'de açıklanır.
 
 ## Genel kurallar
 
@@ -150,7 +150,7 @@ Yanıtı kaybolan PUT aynı eski etiketle tekrarlandığında 412 alabilir; 200 
 
 MemoryDetail fotoğraf bilgilerini de içerdiği için başarılı fotoğraf ekleme/silme, `photoCount`, `coverPhotoId`, `photos` veya başka görünür alanı değiştiren her işlem anının sürümünü de aynı transaction'da artırır. Başarılı bir isteğin idempotent tekrarı veri/sıra/sürümü yeniden değiştirmez. GET gövdesi değişirken aynı güçlü etiket tekrar kullanılamaz.
 
-Sunucu uygulaması için karar: Memory entity'sinde `@Version` long alanı ve `memories.version BIGINT NOT NULL DEFAULT 0` gerekir. Bu kolon mevcut V1/V2'de yoktur; ilgili API özelliği uygulanırken yeni bir sürümlü migration ile eklenecek, uygulanmış dosyalar değiştirilmeyecektir. Fotoğraf işlemleri de anının sürümünü artırmalı ve optimistic-lock hatası sahiplik denetiminden sonra 412'ye çevrilmelidir. Bu PR yalnız sözleşmeyi belirler; var olan şemaya kolon eklemez veya korumanın çalıştığını iddia etmez.
+Sunucu uygulaması: `V5` migration `memories.version BIGINT NOT NULL DEFAULT 1` kolonunu ekler. Anı servisi JPA entity'si değil `JdbcClient` kullandığı için sürüm `@Version` alanıyla değil SQL ile yönetilir; değer hiçbir DTO'da yer almaz. `GET /memories/{id}` (ML-11) gövdeyi ve sürümü aynı `REPEATABLE_READ` okumasından alır ve etiketi `"memory-{id}-r{version}"` biçiminde üretir. Başarılı fotoğraf yüklemesi anı satırının kilidi altında sürümü aynı transaction'da artırır; idempotent tekrar ve reddedilen yükleme artırmaz. Fotoğraf silme eklendiğinde de aynı kural uygulanacaktır. PUT'taki sürüm karşılaştırması ve 412'ye çevirme ML-12 ile eklenir.
 
 412 gövde örneği:
 
@@ -311,7 +311,7 @@ Güncel main'deki V1 ve V2 migration'ları birlikte esas alınır; uygulanmış 
 | --- | --- |
 | User, Memory, Photo UUID | V2 `users.id`, `memories.id`, `photos.id` ve ilgili UUID foreign key'ler |
 | Session | Dışarı açılmayan BIGINT `sessions.id`; UUID `user_id`, hash ve UTC zaman alanları |
-| ETag/If-Match sürümü | Yeni `memories.version` kolonu ve entity @Version alanı gerektirir; mevcut V1/V2'de bulunmaz, sonraki sürümlü migration ile eklenir |
+| ETag/If-Match sürümü | `V5` ile eklenen `memories.version` kolonu; servis SQL ile artırır, DTO'ya yazılmaz |
 | `emotion`, `order`, `contentType`, `contentUrl` | SQL `mood`, `position`, `media_type` eşlemesi; URL controller tarafından üretilir, storage_key veya dosya yolu açılmaz |
 | Anı `Idempotency-Key` | `memories.client_request_id`, `(owner_id, client_request_id)` tekilliği ve `client_request_sha256` |
 | Fotoğraf `Idempotency-Key` | `photos.client_photo_id`, `(memory_id, client_photo_id)` tekilliği ve `content_sha256` |
