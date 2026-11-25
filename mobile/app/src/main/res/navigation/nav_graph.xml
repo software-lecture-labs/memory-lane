@@ -25,6 +25,18 @@
         <action
             android:id="@+id/action_memoriesFragment_to_memoryCreateFragment"
             app:destination="@id/memoryCreateFragment" />
+        <action
+            android:id="@+id/action_memoriesFragment_to_memoryDetailFragment"
+            app:destination="@id/memoryDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/memoryDetailFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryDetailFragment"
+        android:label="@string/memory_detail_title">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
     </fragment>
 
     <fragment

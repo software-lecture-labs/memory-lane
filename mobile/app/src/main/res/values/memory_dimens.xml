@@ -22,8 +22,50 @@
     <dimen name="memory_tape_overlap">7dp</dimen>
     <dimen name="memory_tape_elevation">6dp</dimen>
 
-    <dimen name="memory_year_badge">32dp</dimen>
-    <dimen name="memory_year_rule">4dp</dimen>
     <!-- Create screen: round close button and the lavender circle behind the calendar icon. -->
     <dimen name="memory_create_icon_box">44dp</dimen>
+
+    <!-- Timeline (Stitch "Anılar": pl-6 gutter, 2px line at left-2, 16px year node). -->
+    <dimen name="memory_timeline_gutter">24dp</dimen>
+    <dimen name="memory_timeline_line">2dp</dimen>
+    <dimen name="memory_timeline_line_x">8dp</dimen>
+    <dimen name="memory_timeline_node">16dp</dimen>
+    <dimen name="memory_timeline_node_core">6dp</dimen>
+    <dimen name="memory_timeline_node_ring">2dp</dimen>
+    <dimen name="memory_year_pill_padding_h">12dp</dimen>
+
+    <!-- List card cover (h-44, rounded-xl = 3rem in the Stitch theme) and its photo count pill. -->
+    <dimen name="memory_cover_height">176dp</dimen>
+    <dimen name="memory_cover_radius">40dp</dimen>
+    <dimen name="memory_cover_gap">12dp</dimen>
+    <dimen name="memory_cover_badge_margin">10dp</dimen>
+    <dimen name="memory_badge_padding_h">10dp</dimen>
+    <dimen name="memory_icon_small">14dp</dimen>
+
+    <!-- Pastel badges (category, emotion, location): small pills that wrap onto more lines. -->
+    <dimen name="memory_badge_height">28dp</dimen>
+    <dimen name="memory_badge_spacing">6dp</dimen>
+    <dimen name="memory_badge_icon_padding">6dp</dimen>
+    <dimen name="memory_badge_text_padding">2dp</dimen>
+
+    <!-- Detail screen (Stitch "Anı Detayı"): polaroid frame (rounded 1.75rem, p-3), photo h-72,
+         page dots, headline-lg-mobile title, note strip w-2.5 and the w-9 location circle. -->
+    <dimen name="memory_detail_frame_radius">28dp</dimen>
+    <dimen name="memory_detail_frame_padding">12dp</dimen>
+    <dimen name="memory_detail_photo_height">288dp</dimen>
+    <dimen name="memory_detail_photo_radius">24dp</dimen>
+    <dimen name="memory_detail_photo_shade">96dp</dimen>
+    <dimen name="memory_detail_overlay_margin">12dp</dimen>
+    <dimen name="memory_detail_tape_start">32dp</dimen>
+    <dimen name="memory_dot">6dp</dimen>
+    <dimen name="memory_dot_active">8dp</dimen>
+    <dimen name="memory_dot_gap">3dp</dimen>
+    <dimen name="memory_detail_title">26sp</dimen>
+    <dimen name="memory_detail_note_text">16sp</dimen>
+    <dimen name="memory_detail_note_line_extra">6dp</dimen>
+    <dimen name="memory_detail_note_stripe">10dp</dimen>
+    <dimen name="memory_detail_note_padding">20dp</dimen>
+    <dimen name="memory_detail_icon_box">36dp</dimen>
+    <dimen name="memory_detail_icon">20dp</dimen>
+    <dimen name="memory_detail_button_height">52dp</dimen>
 </resources>

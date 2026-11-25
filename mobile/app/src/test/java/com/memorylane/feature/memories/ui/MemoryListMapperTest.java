@@ -1,6 +1,7 @@
 package com.memorylane.feature.memories.ui;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -28,7 +29,31 @@ public class MemoryListMapperTest {
 
         assertEquals(List.of("year:2024", "memory:m3", "memory:m2", "year:2023", "memory:m1"), keys(rows));
         assertEquals(MemoryListItem.memory("m3", "Bursa'da bir sonbahar günü",
-                "Tophane yamaçlarında kestane şekeri molası.", LocalDate.of(2024, 10, 28)), rows.get(1));
+                "Tophane yamaçlarında kestane şekeri molası.", LocalDate.of(2024, 10, 28))
+                .withDetails("OTHER", null, null, 0, null), rows.get(1));
+    }
+
+    @Test
+    public void cardsCarryBadgesAndCoverOfTheirMemory() {
+        MemoryApi.Location bursa = new MemoryApi.Location(40.1885, 29.0610);
+        List<MemoryListItem> rows = MemoryListMapper.toItems(List.of(
+                new MemoryApi.Memory("p", "Fotoğraflı", "", "2024-10-28", "TRAVEL", "PEACEFUL", bursa,
+                        "2026-01-01T09:00:00Z", "2026-01-01T09:00:00Z", 4, "cover"),
+                new MemoryApi.Memory("t", "Yazılı", "", "2024-10-27", "OTHER", null, null,
+                        "2026-01-01T09:00:00Z", "2026-01-01T09:00:00Z", 0, null)));
+
+        MemoryListItem withPhotos = rows.get(1);
+        assertEquals("cover", withPhotos.getCoverPhotoId());
+        assertEquals(4, withPhotos.getPhotoCount());
+        assertEquals("TRAVEL", withPhotos.getCategory());
+        assertEquals("PEACEFUL", withPhotos.getEmotion());
+        assertEquals(bursa, withPhotos.getLocation());
+
+        MemoryListItem textOnly = rows.get(2);
+        assertNull(textOnly.getCoverPhotoId());
+        assertEquals(0, textOnly.getPhotoCount());
+        assertNull(textOnly.getEmotion());
+        assertNull(textOnly.getLocation());
     }
 
     @Test

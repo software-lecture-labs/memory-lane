@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Memory screens' colors from the Stitch "Anılar" and "Anı oluşturma" screens, on top of the
-     shared palette in colors.xml. -->
+<!-- Memory screens' colors from the Stitch "Anılar", "Anı oluşturma" and "Anı Detayı" screens, on
+     top of the shared palette in colors.xml. -->
 <resources>
     <!-- Soft pink card border; ml_outline is a grey plum tint that reads as grey on white cards. -->
     <color name="memory_card_stroke">#F0D7E8</color>
@@ -8,4 +8,21 @@
     <color name="memory_pink_soft">#FFF0F6</color>
     <!-- Butter washi tape at 85% opacity, so the card edge shows through as on paper. -->
     <color name="memory_tape">#D9FFE69A</color>
+
+    <!-- Timeline: soft pink guide line (primary-fixed-dim at 60%) and the odd-year node. -->
+    <color name="memory_timeline_line">#99FFB1C6</color>
+    <color name="memory_timeline_node_alt">#635882</color>
+
+    <!-- Badge inks on pastel fills (Stitch on-tertiary / mint icon colors). -->
+    <color name="memory_peach_ink">#77543F</color>
+    <color name="memory_mint_ink">#2E6B54</color>
+    <!-- Emotion badge on the list card (surface-container-high). -->
+    <color name="memory_lilac_soft">#F6E1FF</color>
+
+    <!-- Photo overlays: the count pill (plum at 75%), the shade under the gallery badges
+         (plum at 60% fading out) and the inactive page dots (white at 40%). -->
+    <color name="memory_photo_scrim">#BF35263F</color>
+    <color name="memory_photo_shade">#9935263F</color>
+    <color name="memory_photo_shade_clear">#0035263F</color>
+    <color name="memory_dot_inactive">#66FFFFFF</color>
 </resources>

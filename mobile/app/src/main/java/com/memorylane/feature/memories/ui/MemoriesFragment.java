@@ -52,10 +52,15 @@ public class MemoriesFragment extends Fragment {
         viewModel = new ViewModelProvider(this, MemoriesViewModel.factory(app.getMemoryRepository()))
                 .get(MemoriesViewModel.class);
 
+        // Covers are decoded for the card's width on this screen and the cover's fixed height.
+        int coverWidth = getResources().getDisplayMetrics().widthPixels;
+        int coverHeight = getResources().getDimensionPixelSize(R.dimen.memory_cover_height);
         listAdapter = new MemoryListAdapter(DateTimeFormatter.ofPattern(
-                getString(R.string.memory_list_date_pattern), TURKISH));
+                getString(R.string.memory_list_date_pattern), TURKISH), app.getPhotoImageLoader(),
+                coverWidth, coverHeight, this::openDetail);
         footerAdapter = new MemoryListFooterAdapter(viewModel::loadMore, viewModel::retry);
         binding.memoryList.setAdapter(new ConcatAdapter(listAdapter, footerAdapter));
+        binding.memoryList.addItemDecoration(new MemoryTimelineDecoration(requireContext(), listAdapter));
         listAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
@@ -155,30 +160,44 @@ public class MemoriesFragment extends Fragment {
         return ErrorMessages.describe(requireContext(), error != null ? error : ApiError.unexpected());
     }
 
-    private void openLogin() {
-        navigateFromList(R.id.loginFragment);
+    private void openCreate() {
+        navigateFromList(R.id.action_memoriesFragment_to_memoryCreateFragment, null);
     }
 
-    private void openCreate() {
-        navigateFromList(R.id.action_memoriesFragment_to_memoryCreateFragment);
+    private void openDetail(@NonNull String memoryId) {
+        navigateFromList(R.id.action_memoriesFragment_to_memoryDetailFragment,
+                MemoryDetailFragment.arguments(memoryId));
+    }
+
+    private void openLogin() {
+        navigateFromList(R.id.loginFragment, null);
     }
 
     /** A fast double tap delivers a second click after the first navigation; it is ignored. */
-    private void navigateFromList(int destinationOrAction) {
+    private void navigateFromList(int destinationOrAction, @Nullable Bundle arguments) {
         NavController navController = NavHostFragment.findNavController(this);
         NavDestination current = navController.getCurrentDestination();
         if (current != null && current.getId() == R.id.memoriesFragment) {
-            navController.navigate(destinationOrAction);
+            navController.navigate(destinationOrAction, arguments);
         }
     }
 
     /**
      * The create screen leaves {@link MemoryCreateFragment#RESULT_CREATED} on this entry after a
      * save; refresh once and remove it so a later view does not refresh again.
+     *
+     * <p>On a cold start without a session, SessionNavigator replaces this destination with the
+     * login screen before this view is created; the entry is then already gone and there is no
+     * result to wait for.
      */
     private void observeCreatedMemory() {
-        SavedStateHandle results = NavHostFragment.findNavController(this)
-                .getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle();
+        SavedStateHandle results;
+        try {
+            results = NavHostFragment.findNavController(this)
+                    .getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle();
+        } catch (IllegalArgumentException replacedByLogin) {
+            return;
+        }
         results.<Boolean>getLiveData(MemoryCreateFragment.RESULT_CREATED, false)
                 .observe(getViewLifecycleOwner(), created -> {
                     if (!Boolean.TRUE.equals(created)) return;

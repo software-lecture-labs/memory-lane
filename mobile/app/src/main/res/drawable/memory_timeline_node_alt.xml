@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Odd-year node on the timeline (Stitch "Anılar"): plum dot with a white centre and a canvas
+     ring that cuts the guide line. Even years use memory_timeline_node. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/memory_timeline_node_alt" />
+            <stroke android:width="@dimen/memory_timeline_node_ring" android:color="@color/ml_canvas" />
+        </shape>
+    </item>
+    <item
+        android:width="@dimen/memory_timeline_node_core"
+        android:height="@dimen/memory_timeline_node_core"
+        android:gravity="center">
+        <shape android:shape="oval">
+            <solid android:color="@color/ml_on_primary" />
+        </shape>
+    </item>
+</layer-list>

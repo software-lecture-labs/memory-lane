@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Turkish labels of the fixed API codes (docs/api-contract.md, "Anı alanları"). -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="memory_category_travel">Gezi</string>
+    <string name="memory_category_family">Aile</string>
+    <string name="memory_category_friends">Arkadaşlar</string>
+    <string name="memory_category_school">Okul</string>
+    <string name="memory_category_daily_life">Günlük Yaşam</string>
+    <string name="memory_category_other">Diğer</string>
+
+    <string name="memory_emotion_happy">Mutlu</string>
+    <string name="memory_emotion_peaceful">Huzurlu</string>
+    <string name="memory_emotion_excited">Heyecanlı</string>
+    <string name="memory_emotion_nostalgic">Nostaljik</string>
+    <string name="memory_emotion_sad">Hüzünlü</string>
+
+    <!-- Compass letters after the coordinates: Kuzey, Güney, Doğu, Batı. -->
+    <string name="memory_direction_north">K</string>
+    <string name="memory_direction_south">G</string>
+    <string name="memory_direction_east">D</string>
+    <string name="memory_direction_west">B</string>
+
+    <!-- Photo count badge on a list card, e.g. "4 fotoğraf". -->
+    <plurals name="memory_photo_count">
+        <item quantity="one">%d fotoğraf</item>
+        <item quantity="other">%d fotoğraf</item>
+    </plurals>
+</resources>

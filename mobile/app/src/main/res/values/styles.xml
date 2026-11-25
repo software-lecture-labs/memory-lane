@@ -137,6 +137,11 @@
         <item name="materialThemeOverlay">@style/ThemeOverlay.MemoryLane.FlatSurface</item>
     </style>
 
+    <!-- Scrapbook card whose content reaches its edges, e.g. a washi strip down one side. -->
+    <style name="Widget.MemoryLane.Card.Scrapbook.Flush">
+        <item name="contentPadding">0dp</item>
+    </style>
+
     <style name="ThemeOverlay.MemoryLane.FlatSurface" parent="">
         <item name="elevationOverlayEnabled">false</item>
     </style>
@@ -163,11 +168,89 @@
         <item name="android:textStyle">italic</item>
     </style>
 
-    <!-- Memory card title: one step below Title, bold like the Stitch card heading. -->
+    <!-- Memory card title: one step below Title, bold like the Stitch card heading. The theme's
+         font family is applied to every TextView and wins over a text appearance's font, so the
+         weight is also requested with textStyle; the family then picks its 700 face. -->
     <style name="TextAppearance.MemoryLane.CardTitle" parent="TextAppearance.MemoryLane.Title">
         <item name="android:fontFamily">@font/plus_jakarta_sans_bold</item>
         <item name="fontFamily">@font/plus_jakarta_sans_bold</item>
         <item name="android:textSize">@dimen/memory_card_title</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Memory badges (Stitch: rounded-full pills with a small icon, label-sm). Display only:
+         not clickable, no touch-target padding, no stroke; they wrap inside a ChipGroup. -->
+    <style name="Widget.MemoryLane.Badge" parent="Widget.Material3.Chip.Assist">
+        <item name="android:clickable">false</item>
+        <item name="android:focusable">false</item>
+        <item name="android:checkable">false</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Label.Bold</item>
+        <item name="android:textColor">@color/ml_plum</item>
+        <item name="chipMinHeight">@dimen/memory_badge_height</item>
+        <item name="chipCornerRadius">@dimen/ml_radius_pill</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipIconVisible">true</item>
+        <item name="chipIconSize">@dimen/memory_icon_small</item>
+        <item name="chipStartPadding">@dimen/memory_badge_icon_padding</item>
+        <item name="iconStartPadding">@dimen/memory_badge_text_padding</item>
+        <item name="textStartPadding">@dimen/memory_badge_text_padding</item>
+        <item name="textEndPadding">@dimen/memory_badge_text_padding</item>
+        <item name="chipEndPadding">@dimen/memory_badge_icon_padding</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+        <item name="materialThemeOverlay">@style/ThemeOverlay.MemoryLane.FlatSurface</item>
+    </style>
+
+    <!-- Category: peach with a brown ink icon. -->
+    <style name="Widget.MemoryLane.Badge.Category">
+        <item name="chipBackgroundColor">@color/ml_peach</item>
+        <item name="chipIconTint">@color/memory_peach_ink</item>
+        <item name="chipIcon">@drawable/ic_bookmark</item>
+    </style>
+
+    <!-- Emotion on a list card: soft lilac with raspberry text, as in the timeline. -->
+    <style name="Widget.MemoryLane.Badge.Emotion">
+        <item name="chipBackgroundColor">@color/memory_lilac_soft</item>
+        <item name="chipIconTint">@color/ml_primary</item>
+        <item name="android:textColor">@color/ml_primary</item>
+        <item name="chipIcon">@drawable/ic_favorite</item>
+    </style>
+
+    <!-- Emotion on the detail screen: mint with a green ink icon, as in "Anı Detayı". -->
+    <style name="Widget.MemoryLane.Badge.Mood">
+        <item name="chipBackgroundColor">@color/ml_mint</item>
+        <item name="chipIconTint">@color/memory_mint_ink</item>
+        <item name="chipIcon">@drawable/ic_favorite</item>
+    </style>
+
+    <!-- Location on a list card: lavender. -->
+    <style name="Widget.MemoryLane.Badge.Location">
+        <item name="chipBackgroundColor">@color/ml_lavender</item>
+        <item name="chipIconTint">@color/ml_plum</item>
+        <item name="chipIcon">@drawable/ic_location</item>
+    </style>
+
+    <!-- Rounded photos: list card covers and the detail gallery. -->
+    <style name="ShapeAppearance.MemoryLane.Cover" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/memory_cover_radius</item>
+    </style>
+
+    <style name="ShapeAppearance.MemoryLane.DetailPhoto" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/memory_detail_photo_radius</item>
+    </style>
+
+    <!-- Detail title: headline-lg-mobile, extra bold. -->
+    <style name="TextAppearance.MemoryLane.DetailTitle" parent="TextAppearance.MemoryLane.Headline">
+        <item name="android:fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="fontFamily">@font/plus_jakarta_sans_extrabold</item>
+        <item name="android:textSize">@dimen/memory_detail_title</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Small white text on photo overlays. -->
+    <style name="TextAppearance.MemoryLane.Label.OnPhoto">
+        <item name="android:textColor">@color/ml_on_primary</item>
     </style>
 
     <style name="Widget.MemoryLane.BottomNavigation" parent="Widget.Material3.BottomNavigationView">

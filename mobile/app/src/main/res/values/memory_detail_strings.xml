@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory detail screen (ML-11). -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="memory_detail_title">Anı Detayı</string>
+    <string name="memory_detail_back">Anılara geri dön</string>
+
+    <!-- Gallery -->
+    <string name="memory_detail_photo_counter">%1$d / %2$d</string>
+    <string name="memory_detail_photo_description">Fotoğraf %1$d / %2$d. Büyütmek için dokun.</string>
+    <string name="memory_detail_zoom_hint">Büyütmek için dokun</string>
+
+    <!-- Date pill, e.g. "28 Ekim 2024, Pazartesi"; formatted with the Turkish locale. -->
+    <string name="memory_detail_date_pattern" translatable="false">d MMMM yyyy, EEEE</string>
+
+    <!-- Journal note card -->
+    <string name="memory_detail_note_heading">GÜNLÜK NOTU</string>
+    <string name="memory_detail_note_flourish" translatable="false">✿ ✿ ✿</string>
+    <string name="memory_detail_note_empty">Bu anı için henüz bir not yazılmamış.</string>
+
+    <!-- Location card -->
+    <string name="memory_detail_location_heading">Konum</string>
+
+    <string name="memory_detail_edit">Anıyı Düzenle</string>
+    <!-- Shown until the edit screen and the full-screen viewer are added (ML-12, ML-11 viewer). -->
+    <string name="memory_detail_coming_soon">Bu bölüm çok yakında burada olacak.</string>
+
+    <!-- States -->
+    <string name="memory_detail_loading">Anı yükleniyor…</string>
+    <string name="memory_detail_error_title">Anı yüklenemedi</string>
+    <string name="memory_detail_not_found_title">Anı bulunamadı</string>
+    <string name="memory_detail_not_found_message">Bu anı silinmiş ya da artık senin hesabında görünmüyor olabilir.</string>
+    <string name="memory_detail_back_to_list">Anılara dön</string>
+</resources>
