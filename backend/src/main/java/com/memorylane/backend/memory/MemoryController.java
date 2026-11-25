@@ -11,6 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * HTTP side of the memory endpoints (docs/api-contract.md, "Anı endpointleri"): create, paged
+ * list, detail with a strong ETag and PUT with If-Match. It reads headers and the body, leaves
+ * the rules to {@link MemoryInput} and {@link MemoryPrecondition}, the data work to
+ * {@link MemoryService}, and answers with {@code Cache-Control: no-store}.
+ */
 @RestController
 @RequestMapping("/api/v1/memories")
 public class MemoryController {

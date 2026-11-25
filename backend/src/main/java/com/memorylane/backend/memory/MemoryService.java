@@ -22,6 +22,13 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Memory reads and writes of the session user, each in its own transaction (ADR-0003: the owner
+ * always comes from the session, never from the request). Create is idempotent per key; the list
+ * filters and pages in SQL; detail and update share one summary query and also return the
+ * server-only version the ETag is made from. Updates lock the row first, so ownership (404) is
+ * decided before the If-Match tag, and the version cannot change between the check and the write.
+ */
 @Service
 public class MemoryService {
     private static final String SUMMARY = """

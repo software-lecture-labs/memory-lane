@@ -66,16 +66,19 @@ public final class MemoryEditUiState {
         latest = builder.latest;
     }
 
+    /** A state with no form yet: LOADING, NOT_FOUND or SIGNED_OUT. */
     static MemoryEditUiState of(Status status) {
         return new Builder(status).build();
     }
 
+    /** LOAD_ERROR with the reason, shown next to "Tekrar dene". */
     static MemoryEditUiState loadError(@NonNull ApiError error) {
         Builder builder = new Builder(Status.LOAD_ERROR);
         builder.loadError = Objects.requireNonNull(error, "error");
         return builder.build();
     }
 
+    /** A copy to change a few fields; the state itself never changes once published. */
     Builder toBuilder() {
         Builder builder = new Builder(status);
         builder.loadError = loadError;
@@ -122,6 +125,7 @@ public final class MemoryEditUiState {
     /** The server's latest version during REVIEW; null otherwise. */
     @Nullable public MemoryApi.Detail getLatest() { return latest; }
 
+    /** Mutable draft of the next state; defaults are a fresh form without errors or conflict. */
     static final class Builder {
         Status status;
         @Nullable ApiError loadError;

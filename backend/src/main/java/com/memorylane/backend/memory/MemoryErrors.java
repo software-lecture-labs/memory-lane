@@ -8,6 +8,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.Map;
 
+/**
+ * Turns the memory endpoints' refusals into the contract's {@code {code,message}} body: field
+ * and parameter errors (400 INVALID_INPUT), a reused create key (409), and the PUT preconditions
+ * (428 PRECONDITION_REQUIRED, 400 INVALID_PRECONDITION, 412 MEMORY_MODIFIED). Missing and foreign
+ * memories (404) are answered by OwnershipErrors, outages and unexpected errors by AuthErrors.
+ */
 @Order(-1)
 @RestControllerAdvice(assignableTypes = MemoryController.class)
 class MemoryErrors {

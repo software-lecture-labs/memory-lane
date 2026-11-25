@@ -23,6 +23,7 @@ final class MemoryLabels {
     private MemoryLabels() {
     }
 
+    /** Label of a category code; {@link #NONE} for a missing or unknown code. */
     @StringRes
     static int category(@Nullable String code) {
         if (code == null) return NONE;
@@ -37,6 +38,7 @@ final class MemoryLabels {
         }
     }
 
+    /** Label of an emotion code; {@link #NONE} for a missing or unknown code. */
     @StringRes
     static int emotion(@Nullable String code) {
         if (code == null) return NONE;
