@@ -14,36 +14,15 @@
         android:padding="@dimen/ml_space_lg"
         android:gravity="center_horizontal"
         android:focusableInTouchMode="true">
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <!-- The logo is the screen's one entrance moment: it lands like a polaroid dropped on
+             the page (LoginIntro). Decorative; the heading below names the screen. -->
+        <ImageView
+            android:id="@+id/login_logo"
+            android:layout_width="@dimen/login_logo_size"
+            android:layout_height="@dimen/login_logo_size"
             android:layout_marginTop="@dimen/ml_space_sm"
-            android:background="@drawable/login_badge"
-            android:elevation="@dimen/ml_card_elevation"
-            android:gravity="center"
-            android:paddingHorizontal="@dimen/ml_space_md"
-            android:paddingVertical="@dimen/ml_space_sm">
-            <ImageView
-                android:layout_width="@dimen/login_badge_icon_size"
-                android:layout_height="@dimen/login_badge_icon_size"
-                android:background="@drawable/login_icon_circle"
-                android:padding="@dimen/login_icon_padding"
-                android:src="@drawable/login_book"
-                android:importantForAccessibility="no" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/ml_space_sm"
-                android:text="@string/app_name"
-                android:textAppearance="@style/TextAppearance.MemoryLane.Button"
-                android:textColor="@color/ml_primary" />
-            <ImageView
-                android:layout_width="@dimen/ml_space_md"
-                android:layout_height="@dimen/login_decoration_height"
-                android:layout_marginStart="@dimen/ml_space_xs"
-                android:src="@drawable/login_sparkle"
-                android:importantForAccessibility="no" />
-        </LinearLayout>
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_logo_mark" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -53,6 +32,7 @@
             android:text="@string/login_welcome"
             android:textAppearance="@style/TextAppearance.MemoryLane.Headline" />
         <TextView
+            android:id="@+id/login_subtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ml_space_sm"
@@ -60,6 +40,7 @@
             android:text="@string/login_subtitle"
             android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted" />
         <FrameLayout
+            android:id="@+id/login_form"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/login_header_gap"
@@ -167,6 +148,7 @@
                 android:importantForAccessibility="no" />
         </FrameLayout>
         <LinearLayout
+            android:id="@+id/login_footer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/ml_space_sm"
