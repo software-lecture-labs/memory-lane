@@ -76,6 +76,9 @@ class ApiErrorIntegrationTest {
 
         var xml = request("GET", "/api/v1/memories", null, null).header("Accept", "application/xml");
         assertError(406, "HTTP_ERROR", http.send(xml.build(), HttpResponse.BodyHandlers.ofString()));
+
+        // Tomcat rejects this path before Spring sees it; without JsonErrorReportValve it is an HTML page.
+        assertError(400, "INVALID_INPUT", send("GET", "/api/v1/memories/%00", null, null));
     }
 
     @Test
