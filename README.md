@@ -70,7 +70,7 @@ Uygulamayı ortak veritabanında başlatmadan yalnız migration çalıştırmak 
 docker run --rm -e FLYWAY_USER -e FLYWAY_PASSWORD -v "${PWD}\src\main\resources\db\migration:/flyway/sql:ro" -v "${PWD}\config:/ca:ro" flyway/flyway:12.4.0 "-url=jdbc:postgresql://<host>:5432/postgres?sslmode=verify-full&sslrootcert=/ca/supabase-ca.crt" -schemas=memorylane -defaultSchema=memorylane -locations=filesystem:/flyway/sql -validateOnMigrate=true migrate
 ```
 
-Ortak Supabase şeması 19.11.2026 itibarıyla V4'tedir (V3 ve V4 bu yöntemle, önce provada denenerek uygulandı; mevcut kayıtlar korundu). Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
+Ortak Supabase şeması 27.11.2026 itibarıyla V5'tedir (V3, V4 ve V5 bu yöntemle, önce provada denenerek uygulandı; mevcut kayıtlar korundu, V5 mevcut anılara 1 sürümünü verdi). Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
 
 ## İlk kurulum (yerel Docker seçeneği)
 
