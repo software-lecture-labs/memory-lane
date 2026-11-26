@@ -106,6 +106,13 @@ public class MemoryController {
                 .body(new Detail(updated.summary(), updated.photos()));
     }
 
+    /** Contract: 204; missing and foreign memories are both 404. Photo files are removed after commit. */
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> delete(@CurrentUser UUID owner, @PathVariable UUID id) {
+        memories.delete(owner, id);
+        return ResponseEntity.noContent().header("Cache-Control", "no-store").build();
+    }
+
     private static UUID requestId(String key) {
         try {
             UUID id = UUID.fromString(key);
