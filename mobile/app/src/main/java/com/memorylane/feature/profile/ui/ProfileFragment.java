@@ -23,14 +23,20 @@ import com.memorylane.core.ui.ErrorMessages;
 import com.memorylane.core.ui.Motion;
 import com.memorylane.core.ui.UiState;
 import com.memorylane.databinding.FragmentProfileBinding;
+import com.memorylane.feature.calendar.ui.MemoryCalendarUiState;
+import com.memorylane.feature.calendar.ui.MemoryCalendarView;
+import com.memorylane.feature.calendar.ui.MemoryCalendarViewModel;
 import com.memorylane.feature.health.data.HealthResponse;
 import com.memorylane.feature.health.ui.HealthViewModel;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
- * Profile tab, laid out like a settings screen: the notebook owner, the account rows, the app
- * rows (server status and version) and signing out.
+ * Profile tab, laid out like a settings screen: the notebook owner, the memory calendar, the
+ * account rows, the app rows (server status and version) and signing out. The calendar follows
+ * the session like the memory list does.
  *
  * <p>Signing out revokes the token on the server and forgets it in {@link AppContainer}. The
  * memory list follows the session when its view comes back and drops the loaded memories, so
@@ -42,6 +48,7 @@ public class ProfileFragment extends Fragment {
     private FragmentProfileBinding binding;
     private AppContainer app;
     private HealthViewModel healthViewModel;
+    private MemoryCalendarViewModel calendarViewModel;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -59,10 +66,28 @@ public class ProfileFragment extends Fragment {
         binding.profileSignOut.setOnClickListener(button -> {
             app.endSession();
             renderSession();
+            calendarViewModel.setSession(null);
             Snackbar.make(binding.getRoot(), R.string.profile_signed_out_done, Snackbar.LENGTH_SHORT).show();
         });
         binding.profileVersion.setText(BuildConfig.VERSION_NAME);
+
+        calendarViewModel = new ViewModelProvider(this,
+                MemoryCalendarViewModel.factory(app.getMemoryRepository())).get(MemoryCalendarViewModel.class);
+        binding.profileCalendar.setListener(new MemoryCalendarView.Listener() {
+            @Override
+            public void onPreviousMonth() { calendarViewModel.previousMonth(); }
+
+            @Override
+            public void onNextMonth() { calendarViewModel.nextMonth(); }
+
+            @Override
+            public void onDayPicked(@NonNull LocalDate day) { calendarViewModel.select(day); }
+        });
+        calendarViewModel.getState().observe(getViewLifecycleOwner(), this::renderCalendar);
+
         renderSession();
+        // Each time the view comes back (e.g. after a new memory) the calendar follows the session.
+        calendarViewModel.setSession(app.authorization());
 
         healthViewModel = new ViewModelProvider(this, HealthViewModel.factory(app.getHealthRepository()))
                 .get(HealthViewModel.class);
@@ -72,9 +97,10 @@ public class ProfileFragment extends Fragment {
         if (savedInstanceState == null) {
             Motion.riseIn(binding.profileHeader, 0);
             Motion.riseIn(binding.profileOwner, 70);
-            Motion.riseIn(binding.profileAccountSection, 140);
-            Motion.riseIn(binding.profileAppTitle, 210);
-            Motion.riseIn(binding.profileAppCard, 210);
+            Motion.riseIn(binding.profileCalendarSection, 140);
+            Motion.riseIn(binding.profileAccountSection, 210);
+            Motion.riseIn(binding.profileAppTitle, 280);
+            Motion.riseIn(binding.profileAppCard, 280);
         }
     }
 
@@ -88,8 +114,44 @@ public class ProfileFragment extends Fragment {
         binding.profileSessionMessage.setVisibility(signedIn ? View.GONE : View.VISIBLE);
         binding.profileSignIn.setVisibility(signedIn ? View.GONE : View.VISIBLE);
         binding.profileAccountSection.setVisibility(signedIn ? View.VISIBLE : View.GONE);
+        binding.profileCalendarSection.setVisibility(signedIn ? View.VISIBLE : View.GONE);
         binding.profileEmailValue.setText(signedIn ? email : null);
         binding.profileSignOut.setVisibility(signedIn ? View.VISIBLE : View.GONE);
+    }
+
+    private void renderCalendar(MemoryCalendarUiState state) {
+        boolean ready = state.getStatus() == MemoryCalendarUiState.Status.READY;
+        switch (state.getStatus()) {
+            case LOADING:
+                binding.profileCalendarState.setVisibility(View.VISIBLE);
+                binding.profileCalendarState.showLoading(getString(R.string.calendar_loading));
+                break;
+            case ERROR:
+                ApiError error = state.getError() != null ? state.getError() : ApiError.unexpected();
+                binding.profileCalendarState.setVisibility(View.VISIBLE);
+                binding.profileCalendarState.showError(getString(R.string.calendar_error_title),
+                        ErrorMessages.describe(requireContext(), error), calendarViewModel::reload);
+                break;
+            case READY:
+            case SIGNED_OUT:
+            default:
+                binding.profileCalendarState.hide();
+                binding.profileCalendarState.setVisibility(View.GONE);
+                break;
+        }
+        // The empty grid is never shown under a loading or error message.
+        binding.profileCalendar.setVisibility(ready ? View.VISIBLE : View.GONE);
+        binding.profileCalendar.render(state, LocalDate.now());
+        // Once the memories are in, the owner card says how many and since when.
+        binding.profileOwnerNote.setText(ready ? summary(state) : getString(R.string.profile_owner_note));
+    }
+
+    private String summary(MemoryCalendarUiState state) {
+        LocalDate first = state.getFirstMemory();
+        if (first == null) return getString(R.string.profile_summary_empty);
+        String date = DateTimeFormatter.ofPattern(getString(R.string.profile_summary_date_pattern), TURKISH)
+                .format(first);
+        return getResources().getQuantityString(R.plurals.profile_summary, state.getTotal(), state.getTotal(), date);
     }
 
     /** First letter, upper-cased the Turkish way ("i" becomes "İ"). */

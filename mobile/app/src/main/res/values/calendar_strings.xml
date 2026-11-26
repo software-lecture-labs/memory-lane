@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory calendar on the profile tab. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <!-- Calendar -->
+    <string name="calendar_section_title">Anı takvimin</string>
+    <string name="calendar_previous_month">Önceki ay</string>
+    <string name="calendar_next_month">Sonraki ay</string>
+    <string name="calendar_month_empty">bu ay henüz anı yok</string>
+    <plurals name="calendar_month_count">
+        <item quantity="one">bu ay %1$d anı</item>
+        <item quantity="other">bu ay %1$d anı</item>
+    </plurals>
+    <string name="calendar_pick_day">Bir güne dokun, o günün anıları burada açılsın.</string>
+    <string name="calendar_day_empty">Bu günde anı yok.</string>
+    <string name="calendar_loading">Anı takvimin hazırlanıyor…</string>
+    <string name="calendar_error_title">Takvim yüklenemedi</string>
+    <!-- What TalkBack reads for a day with memories: "17 Ağustos Pazar, 1 anı: Bozcaada'da gün batımı". -->
+    <plurals name="calendar_day_description">
+        <item quantity="one">%1$s, %2$d anı: %3$s</item>
+        <item quantity="other">%1$s, %2$d anı, ilki: %3$s</item>
+    </plurals>
+    <!-- "Haziran 2025" and "17 Ağustos 2025, Pazar", formatted with the Turkish locale. -->
+    <string name="calendar_month_pattern" translatable="false">LLLL yyyy</string>
+    <string name="calendar_day_pattern" translatable="false">d MMMM yyyy, EEEE</string>
+
+    <!-- Profile summary above the calendar: how many memories and since when. -->
+    <plurals name="profile_summary">
+        <item quantity="one">%1$d anı · ilk sayfa %2$s</item>
+        <item quantity="other">%1$d anı · ilk sayfa %2$s</item>
+    </plurals>
+    <string name="profile_summary_empty">Defterin henüz boş; ilk anını Anılar sekmesinden ekle.</string>
+    <string name="profile_summary_date_pattern" translatable="false">d MMMM yyyy</string>
+</resources>

@@ -130,6 +130,47 @@
                 android:rotation="3" />
         </FrameLayout>
 
+        <!-- Memory calendar: only while signed in. -->
+        <LinearLayout
+            android:id="@+id/profile_calendar_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_lg"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/calendar_section_title"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MemoryLane.Card.Scrapbook"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true">
+
+                    <com.memorylane.feature.calendar.ui.MemoryCalendarView
+                        android:id="@+id/profile_calendar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <com.memorylane.core.ui.widget.StateView
+                        android:id="@+id/profile_calendar_state"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingVertical="@dimen/ml_space_lg" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
         <!-- Account: only while signed in. -->
         <LinearLayout
             android:id="@+id/profile_account_section"

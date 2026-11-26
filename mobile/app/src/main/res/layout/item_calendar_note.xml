@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A memory of the picked day, written like a line in the notebook: a small colored note
+     square matching the day's sticky note, the title and the beginning of the story. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/ml_space_sm"
+    android:focusable="true"
+    android:orientation="horizontal">
+
+    <View
+        android:id="@+id/calendar_note_swatch"
+        android:layout_width="@dimen/ml_space_md"
+        android:layout_height="@dimen/ml_space_md"
+        android:layout_marginTop="2dp"
+        android:background="@drawable/calendar_note"
+        android:importantForAccessibility="no"
+        android:rotation="-6"
+        tools:backgroundTint="@color/calendar_note_butter" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ml_space_sm"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/calendar_note_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle"
+            tools:text="Bozcaada'da gün batımı" />
+
+        <TextView
+            android:id="@+id/calendar_note_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+            tools:text="Ada'daki son akşamımızda Ayazma'nın kayalıklarına oturup güneşin denize gömülüşünü izledik." />
+    </LinearLayout>
+</LinearLayout>

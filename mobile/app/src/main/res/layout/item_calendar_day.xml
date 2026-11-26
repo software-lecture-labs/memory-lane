@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One calendar day: the date in the corner and, when memories exist, a tiny sticky note with
+     the first memory's title and "+N" for the rest. The whole cell is the touch target. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/calendar_cell"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/calendar_cell_height"
+    android:layout_margin="@dimen/calendar_cell_inset"
+    android:paddingHorizontal="@dimen/ml_space_xs"
+    android:paddingVertical="@dimen/ml_space_xs">
+
+    <TextView
+        android:id="@+id/calendar_day_number"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:fontFamily="@font/plus_jakarta_sans_semibold"
+        android:importantForAccessibility="no"
+        android:textColor="@color/ml_plum"
+        android:textSize="@dimen/calendar_day_text"
+        tools:text="17" />
+
+    <TextView
+        android:id="@+id/calendar_day_more"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:fontFamily="@font/plus_jakarta_sans_bold"
+        android:importantForAccessibility="no"
+        android:textColor="@color/ml_primary"
+        android:textSize="@dimen/calendar_more_text"
+        android:visibility="gone"
+        tools:text="+1"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/calendar_day_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/calendar_note"
+        android:ellipsize="end"
+        android:fontFamily="@font/plus_jakarta_sans_semibold"
+        android:importantForAccessibility="no"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:paddingHorizontal="3dp"
+        android:paddingVertical="2dp"
+        android:textColor="@color/ml_plum"
+        android:textSize="@dimen/calendar_note_text"
+        android:visibility="gone"
+        tools:backgroundTint="@color/calendar_note_butter"
+        tools:text="Bozcaada'da gün batımı"
+        tools:visibility="visible" />
+</FrameLayout>

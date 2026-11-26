@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sticky-note tints for the memory calendar, from the shared pastel palette. -->
+<resources>
+    <color name="calendar_note_butter">#FFE69A</color>
+    <color name="calendar_note_peach">#FFD0B5</color>
+    <color name="calendar_note_lavender">#DCCEFF</color>
+    <color name="calendar_note_mint">#C9EBDD</color>
+    <color name="calendar_outside_month">#4D35263F</color>
+</resources>

@@ -61,8 +61,26 @@ public final class Motion {
                 .setStartDelay(delayMs).setDuration(DROP_MS).setInterpolator(SETTLE).start();
     }
 
+    /**
+     * Next or previous page of the same kind, e.g. a calendar month: the content slides in a
+     * short way from the side the user moved to while it fades in.
+     */
+    public static void slideIn(@NonNull View view, boolean forward) {
+        view.animate().cancel();
+        if (!enabled()) {
+            reset(view);
+            return;
+        }
+        float distance = 28 * view.getResources().getDisplayMetrics().density;
+        view.setAlpha(0.2f);
+        view.setTranslationX(forward ? distance : -distance);
+        view.animate().alpha(1f).translationX(0f)
+                .setStartDelay(0).setDuration(280).setInterpolator(EASE_OUT).start();
+    }
+
     private static void reset(View view) {
         view.setAlpha(1f);
+        view.setTranslationX(0f);
         view.setTranslationY(0f);
         view.setScaleX(1f);
         view.setScaleY(1f);

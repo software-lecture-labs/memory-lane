@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tiny sticky note on a calendar day; its color is set per day with backgroundTint. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners android:radius="@dimen/calendar_note_radius" />
+</shape>
