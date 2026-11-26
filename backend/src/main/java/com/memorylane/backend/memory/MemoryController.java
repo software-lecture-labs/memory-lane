@@ -21,11 +21,13 @@ import java.util.UUID;
 @RequestMapping("/api/v1/memories")
 public class MemoryController {
     private final MemoryService memories;
+    private final MemoryMapService map;
     private final Clock clock;
 
     /** The owner comes only from the session (SessionAuthenticationFilter + @CurrentUser, ADR-0003). */
-    public MemoryController(MemoryService memories, Clock clock) {
+    public MemoryController(MemoryService memories, MemoryMapService map, Clock clock) {
         this.memories = memories;
+        this.map = map;
         this.clock = clock;
     }
 
@@ -43,6 +45,25 @@ public class MemoryController {
                 .location(location).header("Cache-Control", "no-store");
         if (created.replayed()) response.header("Idempotency-Replayed", "true");
         return response.body(new Detail(created.summary(), created.photos()));
+    }
+
+    /**
+     * Contract "Harita": same q/category rules as the list, no paging. page/size are refused rather
+     * than ignored, so a client never believes it is reading one page of the map.
+     */
+    @GetMapping("/map")
+    ResponseEntity<MemoryMapService.Points> map(
+            @CurrentUser UUID owner,
+            @RequestParam(name = "q", defaultValue = "") String query,
+            @RequestParam(name = "category", defaultValue = "") String category,
+            @RequestParam(name = "page", required = false) String page,
+            @RequestParam(name = "size", required = false) String size) {
+        if (page != null || size != null) {
+            throw new IllegalArgumentException("Harita sayfalanmaz; page ve size kullanılmaz.");
+        }
+        if (!category.isEmpty()) MemoryInput.category(category);
+        String term = MemoryInput.text(query.strip(), "", 100, "Arama");
+        return ResponseEntity.ok().header("Cache-Control", "no-store").body(map.points(owner, term, category));
     }
 
     @GetMapping

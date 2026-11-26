@@ -36,7 +36,8 @@ public class MemoryService {
                 (SELECT id FROM photos WHERE memory_id = m.id ORDER BY position LIMIT 1) AS cover_photo_id
             FROM memories m WHERE m.owner_id = :owner
             """;
-    private static final String FILTER = """
+    /** Shared with MemoryMapService: the contract requires the map to use the list's search. */
+    static final String FILTER = """
             AND (:category = '' OR m.category = :category)
             AND (:q = '' OR strpos(lower(normalize(m.title) COLLATE memorylane_tr),
                                     lower(normalize(CAST(:q AS text)) COLLATE memorylane_tr)) > 0
