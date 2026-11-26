@@ -76,6 +76,40 @@ public class MemoryRepositoryTest {
     }
 
     @Test
+    public void createSendsCategoryEmotionAndLocationWhenGiven() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(201).setBody(CREATED));
+
+        create(new MemoryApi.Draft("Bursa", "", "2024-10-28", "TRAVEL", "NOSTALGIC",
+                new MemoryApi.Location(40.1885, 29.061)));
+
+        RecordedRequest sent = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(sent);
+        JsonObject body = gson.fromJson(sent.getBody().readUtf8(), JsonObject.class);
+        assertEquals(6, body.size());
+        assertEquals("TRAVEL", body.get("category").getAsString());
+        assertEquals("NOSTALGIC", body.get("emotion").getAsString());
+        JsonObject location = body.getAsJsonObject("location");
+        assertEquals(2, location.size());
+        assertEquals(40.1885, location.get("latitude").getAsDouble(), 0);
+        assertEquals(29.061, location.get("longitude").getAsDouble(), 0);
+    }
+
+    @Test
+    public void createLeavesOutEmptyOptionalFields() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(201).setBody(CREATED));
+
+        create(new MemoryApi.Draft("Bursa", "", "2024-10-28", "OTHER", null, null));
+
+        RecordedRequest sent = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(sent);
+        JsonObject body = gson.fromJson(sent.getBody().readUtf8(), JsonObject.class);
+        assertEquals(4, body.size());
+        assertEquals("OTHER", body.get("category").getAsString());
+        assertFalse(body.has("emotion"));
+        assertFalse(body.has("location"));
+    }
+
+    @Test
     public void createKeepsServerValidationErrors() throws Exception {
         server.enqueue(new MockResponse().setResponseCode(400)
                 .setBody("{\"code\":\"INVALID_INPUT\",\"message\":\"Anı tarihi gelecekte olamaz.\"}"));
@@ -89,9 +123,13 @@ public class MemoryRepositoryTest {
     }
 
     private ApiResult<MemoryApi.Memory> create() throws InterruptedException {
+        return create(new MemoryApi.Draft("Bursa", "Kestane", "2024-10-28"));
+    }
+
+    private ApiResult<MemoryApi.Memory> create(MemoryApi.Draft draft) throws InterruptedException {
         CountDownLatch done = new CountDownLatch(1);
         AtomicReference<ApiResult<MemoryApi.Memory>> holder = new AtomicReference<>();
-        creator.create(AUTHORIZATION, KEY, new MemoryApi.Draft("Bursa", "Kestane", "2024-10-28"), result -> {
+        creator.create(AUTHORIZATION, KEY, draft, result -> {
             holder.set(result);
             done.countDown();
         });

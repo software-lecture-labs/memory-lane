@@ -128,7 +128,7 @@ Anılar sekmesi (`MemoriesFragment`) ve oluşturma ekranı (`MemoryCreateFragmen
 - Alan metinleri ViewModel'de tutulur ve `saveEnabled="false"` alanlara görünüm oluşturulurken izleyiciler bağlanmadan önce yazılır; ekran döndürme hataları silen bir kullanıcı düzenlemesi gibi görünmez. Gezinme düğmeleri hızlı çift dokunmaya karşı `getCurrentDestination()` ile korunur.
 - Çıkış Profil sekmesindedir. Token `AppContainer`'dan silinir ve sunucuda iptal edilir; Anılar sekmesi görünümü geri geldiğinde `setSession(null)` ile listeyi sıfırlar.
 
-Anı ekranları ortak kart stilinden türeyen `Widget.MemoryLane.Card.Scrapbook` stilini kullanır: saf beyaz zemin, 32dp köşe ve `#F0D7E8` kenarlık. Material 3'ün yüksekliğe göre birincil renk tonlaması yalnız bu kartlarda kapatılır; ortak `Widget.MemoryLane.Card` değişmez. Konum, duygu ve kategori alanları backend karşılıkları mobilde bağlanana kadar arayüze eklenmez.
+Anı ekranları ortak kart stilinden türeyen `Widget.MemoryLane.Card.Scrapbook` stilini kullanır: saf beyaz zemin, 32dp köşe ve `#F0D7E8` kenarlık. Material 3'ün yüksekliğe göre birincil renk tonlaması yalnız bu kartlarda kapatılır; ortak `Widget.MemoryLane.Card` değişmez. Kategori, duygu ve konum alanları ML-08 ile oluşturma ekranına eklendi; kuralları aşağıdaki [Anı formu kuralları (ML-08)](#anı-formu-kuralları-ml-08) bölümündedir.
 
 Değerlendirilen alternatifler:
 
@@ -141,6 +141,16 @@ Değerlendirilen alternatifler:
 | Paketler | Özellik bazlı | Katman bazlı (ui/data/model) yapıda özellik sayısı arttıkça ilgili dosyalar dağılır; ilk iskeletteki boş klasörler bu yapıyla değiştirildi. |
 
 Bilinen sınırlar: Giriş ekranı PR #9, anı kaydı ve listesi PR #12, fotoğraf seçimi ve yüklemesi ML-10, kayıt ekranı ve giriş–kayıt geçişi ML-28 kayıt PR'ı ile bu temelin üzerine eklendi; ML-07 liste ve oluşturma ekranlarını yeniden yazdı, fotoğraf seçimini oluşturma ekranına taşıdı, oturum ve sunucu durumunu Profil sekmesine taşıdı. Harita, anı detayı/düzenleme, mobil arama ve fotoğrafların gösterimi ilgili kartlarda eklenecektir. Testler JVM birim testleridir (ağ katmanı MockWebServer ile gerçek HTTP üzerinden); cihaz üzerinde otomatik UI testi henüz yoktur, ekran akışları emülatörde elle doğrulanır. Kayıttan sonra e-posta giriş formuna otomatik aktarılmaz.
+
+## Anı formu kuralları (ML-08)
+
+Anı oluşturma formu backend'deki `MemoryInput` kurallarını erken geri bildirim olarak uygular; son karar her zaman backend'dedir.
+
+- **Metin sınırları:** Başlık zorunludur ve baştaki/sondaki boşluklar atıldıktan sonra en fazla 100 karakter olabilir; açıklama en fazla 3000 karakterdir. Sayım backend gibi Unicode karakterle yapılır. Metin sessizce kesilmez, kaydet hata gösterir.
+- **Tarih:** Zorunludur, bugün veya geçmiş bir gün olmalıdır. Seçici gelecek günleri kapatır; "Bugün" kısayolu cihazın saat dilimindeki bugünü seçer.
+- **Kategori:** Tek seçimdir ve varsayılan `OTHER` (Diğer) seçilidir. Kodlar İngilizce sabitlerle gönderilir, Türkçe etiketler istemcide gösterilir (`MemoryChoices`).
+- **Duygu ve konum:** İkisi de isteğe bağlıdır; boş bırakılırsa istek gövdesine yazılmaz. Konumda enlem (±90) ve boylam (±180) birlikte girilir, ondalık virgül de kabul edilir. Harita ile konum seçimi harita kartına bırakıldı.
+- **Çift kayıt ve form kaybı:** Kaydederken bütün alanlar kilitlenir ve ikinci dokunuş yeni istek açmaz. Aynı içerik aynı `Idempotency-Key` ile yeniden denenir, içerik değişirse yeni anahtar üretilir. Alanlar ve seçimler ViewModel'de tutulduğu için ekran döndürmede ve başarısız istekte korunur. Kayıt başarılı olunca form kilitli kalır; seçilen fotoğraflar yüklendikten sonra ekran kapanır (ML-10).
 
 ## Mobil fotoğraf seçimi ve yükleme (ML-10)
 
