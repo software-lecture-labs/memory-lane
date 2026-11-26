@@ -1,5 +1,6 @@
 package com.memorylane.feature.memories.ui;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
@@ -58,11 +59,20 @@ final class MemoryPhotoAdapter extends RecyclerView.Adapter<MemoryPhotoAdapter.P
     @Override
     public void onBindViewHolder(@NonNull PhotoHolder holder, int position) {
         ItemMemoryPhotoBinding binding = holder.binding;
-        binding.memoryPhoto.setContentDescription(binding.getRoot().getContext()
-                .getString(R.string.memory_detail_photo_description, position + 1, items.size()));
+        Context context = binding.getRoot().getContext();
+        binding.memoryPhoto.setContentDescription(
+                context.getString(R.string.memory_detail_photo_description, position + 1, items.size()));
         binding.memoryPhoto.setImageResource(R.color.memory_pink_soft);
         photos.load(binding.memoryPhoto, memoryId, items.get(position).id(), width, height, bitmap -> {
-            if (bitmap != null) binding.memoryPhoto.setImageBitmap(bitmap);
+            if (bitmap != null) {
+                binding.memoryPhoto.setImageBitmap(bitmap);
+                return;
+            }
+            // Missing file, unreadable image or no connection: the other photos still show, this
+            // page says so, and tapping it opens the viewer, which tries again.
+            binding.memoryPhoto.setImageResource(R.drawable.memory_photo_missing);
+            binding.memoryPhoto.setContentDescription(
+                    context.getString(R.string.memory_detail_photo_missing, position + 1, items.size()));
         });
     }
 

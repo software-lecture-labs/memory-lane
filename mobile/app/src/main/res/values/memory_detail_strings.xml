@@ -28,4 +28,6 @@
     <string name="memory_detail_not_found_title">Anı bulunamadı</string>
     <string name="memory_detail_not_found_message">Bu anı silinmiş ya da artık senin hesabında görünmüyor olabilir.</string>
     <string name="memory_detail_back_to_list">Anılara dön</string>
+    <!-- A gallery photo that could not be loaded; tapping opens the viewer, which tries again. -->
+    <string name="memory_detail_photo_missing">Fotoğraf %1$d / %2$d açılamadı. Tekrar denemek için dokun.</string>
 </resources>

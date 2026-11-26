@@ -134,7 +134,10 @@ final class MemoryListAdapter extends ListAdapter<MemoryListItem, RecyclerView.V
             binding.memoryCover.setImageResource(R.color.memory_pink_soft);
             covers.load(binding.memoryCover, Objects.requireNonNull(item.getId()), cover, coverWidth, coverHeight,
                     bitmap -> {
+                        // A cover that cannot be loaded (e.g. its file is missing) shows the
+                        // fallback; the card stays usable and opens the detail as usual.
                         if (bitmap != null) binding.memoryCover.setImageBitmap(bitmap);
+                        else binding.memoryCover.setImageResource(R.drawable.memory_photo_missing);
                     });
         } else {
             covers.cancel(binding.memoryCover);

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fallback for a photo that could not be loaded (missing file, broken image, no connection):
+     the usual blush placeholder with a broken-photo icon in the middle. It has a card-sized
+     intrinsic size, so centerCrop views keep the icon at about its drawn size. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/memory_pink_soft" />
+            <size
+                android:width="@dimen/memory_photo_missing_width"
+                android:height="@dimen/memory_photo_missing_height" />
+        </shape>
+    </item>
+    <item
+        android:width="@dimen/memory_photo_missing_icon"
+        android:height="@dimen/memory_photo_missing_icon"
+        android:drawable="@drawable/ic_photo_missing"
+        android:gravity="center" />
+</layer-list>
