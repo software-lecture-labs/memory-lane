@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory Lane mark: a tilted polaroid held by washi tape. Inside, a raspberry lane winds over
+     pastel hills towards a small heart on the horizon: the road back to a memory. Colors are the
+     app palette (colors.xml); vector paths cannot reference color resources, so they repeat here.
+     Used by the launcher icon (inset into the adaptive icon) and the login header. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="60dp"
+    android:height="60dp"
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+
+    <group
+        android:pivotX="30"
+        android:pivotY="31"
+        android:rotation="-8"
+        android:scaleX="0.92"
+        android:scaleY="0.92">
+
+        <!-- Soft paper shadow, offset down-right. -->
+        <path
+            android:fillColor="#2635263F"
+            android:pathData="M11.5,6.5h38a3,3 0,0 1,3 3v46a3,3 0,0 1,-3 3h-38a3,3 0,0 1,-3 -3v-46a3,3 0,0 1,3 -3z" />
+
+        <!-- Polaroid paper. -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#F0D7E8"
+            android:strokeWidth="0.6"
+            android:pathData="M10,5h38a3,3 0,0 1,3 3v46a3,3 0,0 1,-3 3h-38a3,3 0,0 1,-3 -3v-46a3,3 0,0 1,3 -3z" />
+
+        <!-- Photo: lavender sky fading to peach. -->
+        <path android:pathData="M11.5,9.5h35v35h-35z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="29"
+                    android:startY="9.5"
+                    android:endX="29"
+                    android:endY="44.5"
+                    android:startColor="#DCCEFF"
+                    android:endColor="#FFD0B5" />
+            </aapt:attr>
+        </path>
+
+        <!-- Low butter sun. -->
+        <path
+            android:fillColor="#FFE69A"
+            android:pathData="M39,20.5m-4.5,0a4.5,4.5 0,1 1,9 0a4.5,4.5 0,1 1,-9 0" />
+
+        <!-- Far and near hills. -->
+        <path
+            android:fillColor="#F6B8D2"
+            android:pathData="M11.5,32C18,27 25,28.5 31,31.5C36,34 41,31 46.5,29V44.5H11.5Z" />
+        <path
+            android:fillColor="#EE8FB6"
+            android:pathData="M11.5,38C20,34.5 32,37.5 46.5,35V44.5H11.5Z" />
+
+        <!-- The lane: wide at the front, narrowing as it winds to the horizon. -->
+        <path
+            android:fillColor="#D93678"
+            android:pathData="M22,44.5C22.5,40.5 30,40 30.5,36.5C30.8,34.4 27.4,33.6 27.6,31.4L28.6,31.4C28.6,33.2 32.4,34.2 32.3,36.8C32.1,40.6 27,41.2 27.5,44.5Z" />
+
+        <!-- A small heart where the lane ends. -->
+        <path
+            android:fillColor="#D93678"
+            android:pathData="M28.1,30.2l-2.3,-2.2a1.45,1.45 0,0 1,2.3 -1.75a1.45,1.45 0,0 1,2.3 1.75z" />
+
+        <!-- Handwritten caption on the polaroid's wide bottom margin. -->
+        <path
+            android:strokeColor="#8035263F"
+            android:strokeWidth="1.1"
+            android:strokeLineCap="round"
+            android:pathData="M15,50.5q2.5,-1.6 5,0t5,0t5,0" />
+    </group>
+
+    <!-- Washi tape across the top edge, at its own angle. -->
+    <group
+        android:pivotX="30"
+        android:pivotY="6"
+        android:rotation="5">
+        <path
+            android:fillColor="#D9FFE69A"
+            android:pathData="M21,3h18v6.5h-18z" />
+    </group>
+</vector>

@@ -2,7 +2,7 @@
 <resources>
     <!-- Single app theme: Material components pick up the design tokens from here,
          so a palette change is made once instead of in every layout. -->
-    <style name="Theme.MemoryLane" parent="Theme.Material3.Light.NoActionBar">
+    <style name="Base.Theme.MemoryLane" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/ml_primary</item>
         <item name="colorOnPrimary">@color/ml_on_primary</item>
         <item name="colorPrimaryContainer">@color/ml_lavender</item>
@@ -29,4 +29,7 @@
         <item name="textInputStyle">@style/Widget.MemoryLane.TextInputLayout</item>
         <item name="bottomNavigationStyle">@style/Widget.MemoryLane.BottomNavigation</item>
     </style>
+
+    <!-- The app theme; Android 12+ adds the animated launch screen in values-v31. -->
+    <style name="Theme.MemoryLane" parent="Base.Theme.MemoryLane" />
 </resources>
