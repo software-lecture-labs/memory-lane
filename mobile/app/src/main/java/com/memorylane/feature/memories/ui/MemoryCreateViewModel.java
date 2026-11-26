@@ -19,7 +19,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * New memory form. Field rules are {@link MemoryFormRules}, shared with the edit form.
+ * New memory form. Field rules, the location included, are {@link MemoryFormRules}, shared with
+ * the edit form. Category defaults to OTHER ("Diğer"); emotion and location are optional
+ * (ML-08). Codes come from {@link MemoryLabels}.
  *
  * <p>Retrying the same draft reuses its idempotency key, so a save whose answer was lost (e.g.
  * a dropped connection) cannot create the memory twice. Changing the draft gets a new key.
@@ -65,6 +67,10 @@ public final class MemoryCreateViewModel extends ViewModel {
     // text, so restoring cannot look like a user edit that clears the errors.
     private String title = "";
     private String description = "";
+    private String category = MemoryLabels.DEFAULT_CATEGORY;
+    @Nullable private String emotion;
+    private String latitude = "";
+    private String longitude = "";
 
     @Nullable private MemoryApi.Draft attempted;
     @Nullable private String idempotencyKey;
@@ -109,6 +115,14 @@ public final class MemoryCreateViewModel extends ViewModel {
     @Nullable
     public String createdMemoryId() { return createdMemoryId; }
 
+    String category() { return category; }
+
+    @Nullable String emotion() { return emotion; }
+
+    String latitude() { return latitude; }
+
+    String longitude() { return longitude; }
+
     /** Today in the device's time zone; the picker does not offer later days. */
     LocalDate today() { return LocalDate.now(clock); }
 
@@ -132,6 +146,31 @@ public final class MemoryCreateViewModel extends ViewModel {
                 MemoryCreateUiState.DateError.NONE, date, current.isSaving());
     }
 
+    /** The "Bugün" shortcut: today in the device's time zone. */
+    public void onTodaySelected() { onDateSelected(today()); }
+
+    /** An unknown code falls back to the default, so the request is never rejected for it. */
+    public void onCategorySelected(@Nullable String code) {
+        category = MemoryLabels.contains(MemoryLabels.CATEGORIES, code) ? code : MemoryLabels.DEFAULT_CATEGORY;
+        edited();
+    }
+
+    /** {@code null} (or an unknown code) clears the optional emotion. */
+    public void onEmotionSelected(@Nullable String code) {
+        emotion = MemoryLabels.contains(MemoryLabels.EMOTIONS, code) ? code : null;
+        edited();
+    }
+
+    public void onLatitudeChanged(String text) {
+        latitude = text;
+        locationEdited();
+    }
+
+    public void onLongitudeChanged(String text) {
+        longitude = text;
+        locationEdited();
+    }
+
     /**
      * Validates and sends the memory. Ignored while a save runs and after the memory was
      * created. Without a session the screen is told to sign in again instead of sending a
@@ -145,15 +184,18 @@ public final class MemoryCreateViewModel extends ViewModel {
         MemoryCreateUiState.TitleError titleError = MemoryFormRules.titleError(title);
         MemoryCreateUiState.DescriptionError descriptionError = MemoryFormRules.descriptionError(description);
         MemoryCreateUiState.DateError dateError = MemoryFormRules.dateError(date, today());
+        MemoryCreateUiState.LocationError locationError = MemoryFormRules.locationError(latitude, longitude);
         MemoryCreateUiState.Focus focus = titleError != MemoryCreateUiState.TitleError.NONE
                 ? MemoryCreateUiState.Focus.TITLE
                 : dateError != MemoryCreateUiState.DateError.NONE
                         ? MemoryCreateUiState.Focus.DATE
                         : descriptionError != MemoryCreateUiState.DescriptionError.NONE
-                                ? MemoryCreateUiState.Focus.DESCRIPTION : MemoryCreateUiState.Focus.NONE;
+                                ? MemoryCreateUiState.Focus.DESCRIPTION
+                                : locationError != MemoryCreateUiState.LocationError.NONE
+                                        ? MemoryCreateUiState.Focus.LOCATION : MemoryCreateUiState.Focus.NONE;
         if (focus != MemoryCreateUiState.Focus.NONE) {
-            state.setValue(new MemoryCreateUiState(titleError, descriptionError, dateError, focus,
-                    date, false, null));
+            state.setValue(new MemoryCreateUiState(titleError, descriptionError, dateError,
+                    locationError, focus, date, false, null));
             return;
         }
         if (authorization == null) {
@@ -161,9 +203,8 @@ public final class MemoryCreateViewModel extends ViewModel {
             return;
         }
 
-        // The create form has no category, emotion or location yet; null lets the server apply
-        // its defaults (OTHER, none, none) and keeps them out of the JSON body.
-        MemoryApi.Draft draft = new MemoryApi.Draft(MemoryFormRules.strip(title), description, date.toString(), null, null, null);
+        MemoryApi.Draft draft = new MemoryApi.Draft(MemoryFormRules.strip(title), description, date.toString(),
+                category, emotion, MemoryFormRules.location(latitude, longitude));
         if (!draft.equals(attempted)) {
             attempted = draft;
             idempotencyKey = UUID.randomUUID().toString();
@@ -194,7 +235,8 @@ public final class MemoryCreateViewModel extends ViewModel {
             return;
         }
         state.setValue(new MemoryCreateUiState(current.getTitleError(), current.getDescriptionError(),
-                current.getDateError(), MemoryCreateUiState.Focus.NONE, current.getDate(), false, error));
+                current.getDateError(), current.getLocationError(), MemoryCreateUiState.Focus.NONE,
+                current.getDate(), false, error));
     }
 
     /** Any edit drops focus requests and the last server error; it is about the old draft. */
@@ -202,7 +244,21 @@ public final class MemoryCreateViewModel extends ViewModel {
                         MemoryCreateUiState.DescriptionError descriptionError,
                         MemoryCreateUiState.DateError dateError, @Nullable LocalDate date, boolean saving) {
         state.setValue(new MemoryCreateUiState(titleError, descriptionError, dateError,
-                MemoryCreateUiState.Focus.NONE, date, saving, null));
+                current().getLocationError(), MemoryCreateUiState.Focus.NONE, date, saving, null));
+    }
+
+    /** A choice changed: keep the field errors, drop focus and the old server error. */
+    private void edited() {
+        MemoryCreateUiState current = current();
+        update(current.getTitleError(), current.getDescriptionError(), current.getDateError(),
+                current.getDate(), current.isSaving());
+    }
+
+    private void locationEdited() {
+        MemoryCreateUiState current = current();
+        state.setValue(new MemoryCreateUiState(current.getTitleError(), current.getDescriptionError(),
+                current.getDateError(), MemoryCreateUiState.LocationError.NONE,
+                MemoryCreateUiState.Focus.NONE, current.getDate(), current.isSaving(), null));
     }
 
     private MemoryCreateUiState current() { return state.getValue(); }

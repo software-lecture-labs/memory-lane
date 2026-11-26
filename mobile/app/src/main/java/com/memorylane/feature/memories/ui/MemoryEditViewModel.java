@@ -17,7 +17,6 @@ import com.memorylane.feature.memories.data.MemoryEditRepository;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -37,11 +36,6 @@ import java.util.Objects;
  * </ul>
  */
 public final class MemoryEditViewModel extends ViewModel {
-    /** Category of a memory that has none, as the server applies it. */
-    static final String DEFAULT_CATEGORY = "OTHER";
-    /** The contract's category codes, in the order the screen offers them. */
-    static final List<String> CATEGORIES = List.of("TRAVEL", "FAMILY", "FRIENDS", "SCHOOL", "DAILY_LIFE", "OTHER");
-
     private static final int UNAUTHORIZED = 401;
     private static final int NOT_FOUND = 404;
     private static final int PRECONDITION_FAILED = 412;
@@ -151,9 +145,9 @@ public final class MemoryEditViewModel extends ViewModel {
         publish(next);
     }
 
-    /** Selects one of {@link #CATEGORIES}; anything else is ignored. */
+    /** Selects one of {@link MemoryLabels#CATEGORIES}; anything else is ignored. */
     public void onCategorySelected(String code) {
-        if (!CATEGORIES.contains(code)) return;
+        if (!MemoryLabels.contains(MemoryLabels.CATEGORIES, code)) return;
         MemoryEditUiState.Builder next = edited();
         next.category = code;
         publish(next);
@@ -374,7 +368,7 @@ public final class MemoryEditViewModel extends ViewModel {
 
     private static String categoryOf(MemoryApi.Detail memory) {
         String code = memory.category();
-        return code != null && CATEGORIES.contains(code) ? code : DEFAULT_CATEGORY;
+        return MemoryLabels.contains(MemoryLabels.CATEGORIES, code) ? code : MemoryLabels.DEFAULT_CATEGORY;
     }
 
     @Nullable

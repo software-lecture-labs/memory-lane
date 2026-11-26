@@ -319,50 +319,7 @@
                             app:chipSpacingHorizontal="@dimen/ml_space_sm"
                             app:chipSpacingVertical="@dimen/ml_space_xs"
                             app:selectionRequired="true"
-                            app:singleSelection="true">
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/edit_category_travel"
-                                style="@style/Widget.MemoryLane.CategoryChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/memory_category_travel" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/edit_category_family"
-                                style="@style/Widget.MemoryLane.CategoryChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/memory_category_family" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/edit_category_friends"
-                                style="@style/Widget.MemoryLane.CategoryChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/memory_category_friends" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/edit_category_school"
-                                style="@style/Widget.MemoryLane.CategoryChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/memory_category_school" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/edit_category_daily_life"
-                                style="@style/Widget.MemoryLane.CategoryChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/memory_category_daily_life" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/edit_category_other"
-                                style="@style/Widget.MemoryLane.CategoryChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/memory_category_other" />
-                        </com.google.android.material.chip.ChipGroup>
+                            app:singleSelection="true" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

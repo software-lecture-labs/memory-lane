@@ -171,7 +171,9 @@ public class MemoryCreateViewModelTest {
         assertEquals("A second tap while saving is ignored", 1, repository.requests.size());
         FakeCreateRepository.Request sent = repository.last();
         assertEquals(SESSION, sent.authorization);
-        assertEquals(MemoryFixtures.draft("Bursa'da bir gün", "  Kestane  ", "2024-10-20"), sent.draft);
+        // ML-08: with nothing chosen the category is "Diğer" and emotion/location are left out.
+        assertEquals(new MemoryApi.Draft("Bursa'da bir gün", "  Kestane  ", "2024-10-20", "OTHER",
+                null, null), sent.draft);
         // The server accepts only a lowercase UUID as the key.
         assertEquals(sent.key, UUID.fromString(sent.key).toString());
         assertTrue(state().isSaving());
@@ -383,6 +385,148 @@ public class MemoryCreateViewModelTest {
     public void stripRemovesUnicodeWhitespaceOnBothEnds() {
         assertEquals("Bursa gezisi", MemoryFormRules.strip("  Bursa gezisi　\n"));
         assertEquals("", MemoryFormRules.strip(" \t "));
+    }
+
+    // --- ML-08: category, emotion, location, today ---
+
+    @Test
+    public void categoryDefaultsToOtherAndEmotionAndLocationAreEmpty() {
+        assertEquals("OTHER", viewModel.category());
+        assertNull(viewModel.emotion());
+        assertEquals("", viewModel.latitude());
+        assertEquals("", viewModel.longitude());
+    }
+
+    @Test
+    public void chosenCategoryEmotionAndLocationAreSent() {
+        fillValid();
+        viewModel.onCategorySelected("TRAVEL");
+        viewModel.onEmotionSelected("NOSTALGIC");
+        viewModel.onLatitudeChanged(" 40,1885 ");
+        viewModel.onLongitudeChanged("-29.061");
+        viewModel.save(SESSION);
+
+        MemoryApi.Draft sent = repository.last().draft;
+        assertEquals("TRAVEL", sent.category());
+        assertEquals("NOSTALGIC", sent.emotion());
+        assertEquals(new MemoryApi.Location(40.1885, -29.061), sent.location());
+    }
+
+    @Test
+    public void unknownCategoryFallsBackToOtherAndUnknownEmotionClearsIt() {
+        viewModel.onCategorySelected("FAMILY");
+        viewModel.onCategorySelected("WORK");
+        assertEquals("OTHER", viewModel.category());
+        viewModel.onCategorySelected(null);
+        assertEquals("OTHER", viewModel.category());
+
+        viewModel.onEmotionSelected("HAPPY");
+        assertEquals("HAPPY", viewModel.emotion());
+        viewModel.onEmotionSelected(null);
+        assertNull(viewModel.emotion());
+        viewModel.onEmotionSelected("ANGRY");
+        assertNull(viewModel.emotion());
+    }
+
+    @Test
+    public void locationNeedsBothCoordinates() {
+        fillValid();
+        viewModel.onLatitudeChanged("40");
+        viewModel.save(SESSION);
+        assertEquals(MemoryCreateUiState.LocationError.INCOMPLETE, state().getLocationError());
+        assertEquals(MemoryCreateUiState.Focus.LOCATION, state().getFocus());
+
+        viewModel.onLatitudeChanged("  ");
+        viewModel.onLongitudeChanged("29");
+        viewModel.save(SESSION);
+        assertEquals(MemoryCreateUiState.LocationError.INCOMPLETE, state().getLocationError());
+        assertTrue(repository.requests.isEmpty());
+    }
+
+    @Test
+    public void coordinatesOutOfRangeOrNotNumbersAreRejected() {
+        fillValid();
+        String[][] invalid = {{"90.01", "0"}, {"-91", "0"}, {"0", "180.5"}, {"0", "-181"},
+                {"abc", "0"}, {"NaN", "0"}, {"Infinity", "0"}, {"0x10", "0"}, {"1e1", "0"},
+                {"4,0,1", "0"}, {"٤٠", "0"}};
+        for (String[] pair : invalid) {
+            viewModel.onLatitudeChanged(pair[0]);
+            viewModel.onLongitudeChanged(pair[1]);
+            viewModel.save(SESSION);
+            assertEquals(pair[0] + "/" + pair[1], MemoryCreateUiState.LocationError.INVALID,
+                    state().getLocationError());
+        }
+        assertTrue(repository.requests.isEmpty());
+    }
+
+    @Test
+    public void boundaryCoordinatesAreAccepted() {
+        fillValid();
+        viewModel.onLatitudeChanged("-90");
+        viewModel.onLongitudeChanged("180,0");
+        viewModel.save(SESSION);
+
+        assertEquals(MemoryCreateUiState.LocationError.NONE, state().getLocationError());
+        assertEquals(new MemoryApi.Location(-90, 180), repository.last().draft.location());
+    }
+
+    @Test
+    public void editingALocationClearsOnlyTheLocationError() {
+        viewModel.onLatitudeChanged("40");
+        viewModel.save(SESSION);
+        assertEquals(MemoryCreateUiState.TitleError.REQUIRED, state().getTitleError());
+        assertEquals(MemoryCreateUiState.LocationError.INCOMPLETE, state().getLocationError());
+
+        viewModel.onLongitudeChanged("2");
+        assertEquals(MemoryCreateUiState.LocationError.NONE, state().getLocationError());
+        assertEquals(MemoryCreateUiState.TitleError.REQUIRED, state().getTitleError());
+
+        viewModel.onLatitudeChanged("400");
+        viewModel.onTitleChanged("Bursa");
+        viewModel.onDateSelected(TODAY);
+        viewModel.save(SESSION);
+        assertEquals(MemoryCreateUiState.LocationError.INVALID, state().getLocationError());
+        viewModel.onCategorySelected("SCHOOL");
+        assertEquals("A choice keeps the location error", MemoryCreateUiState.LocationError.INVALID,
+                state().getLocationError());
+    }
+
+    @Test
+    public void todayShortcutPicksTodayInTheDeviceZone() {
+        viewModel.onTodaySelected();
+        assertEquals(TODAY, state().getDate());
+    }
+
+    @Test
+    public void failedSaveKeepsChoicesAndRetryReusesTheKey() {
+        fillValid();
+        viewModel.onCategorySelected("FRIENDS");
+        viewModel.onEmotionSelected("EXCITED");
+        viewModel.onLatitudeChanged("41");
+        viewModel.onLongitudeChanged("29");
+        viewModel.save(SESSION);
+        String key = repository.last().key;
+        repository.last().fail(ApiError.network());
+
+        assertEquals("FRIENDS", viewModel.category());
+        assertEquals("EXCITED", viewModel.emotion());
+        assertEquals("41", viewModel.latitude());
+        assertEquals("29", viewModel.longitude());
+
+        viewModel.save(SESSION);
+        assertEquals(key, repository.last().key);
+    }
+
+    @Test
+    public void changingAChoiceAfterAFailureGetsANewKey() {
+        fillValid();
+        viewModel.save(SESSION);
+        String key = repository.last().key;
+        repository.last().fail(ApiError.network());
+
+        viewModel.onEmotionSelected("SAD");
+        viewModel.save(SESSION);
+        assertNotEquals(key, repository.last().key);
     }
 
     private void fillValid() {

@@ -130,7 +130,7 @@ public final class MemoryEditUiState {
         Status status;
         @Nullable ApiError loadError;
         @Nullable LocalDate date;
-        @NonNull String category = MemoryEditViewModel.DEFAULT_CATEGORY;
+        @NonNull String category = MemoryLabels.DEFAULT_CATEGORY;
         MemoryCreateUiState.TitleError titleError = MemoryCreateUiState.TitleError.NONE;
         MemoryCreateUiState.DescriptionError descriptionError = MemoryCreateUiState.DescriptionError.NONE;
         MemoryCreateUiState.DateError dateError = MemoryCreateUiState.DateError.NONE;

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- New memory as a scrapbook page (Stitch "Anı oluşturma"): close button, "YENİ SAYFA" badge,
-     italic heading and the pink "Kaydet" pill on top; then title, date, story and photo cards.
-     Location, mood and category belong to later cards and are left out. The bottom
+     italic heading and the pink "Kaydet" pill on top; then title, date and story cards, the
+     ML-08 category (default Diğer), optional emotion and optional location cards, and photos. The bottom
      inset (gesture bar or keyboard) is applied by MainActivity, so the form scrolls above it. -->
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -239,6 +239,13 @@
             tools:text="@string/memory_create_date_required"
             tools:visibility="visible" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/create_today"
+            style="@style/Widget.MemoryLane.Button.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/memory_create_today" />
+
         <!-- Story -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.MemoryLane.Card.Scrapbook"
@@ -307,6 +314,172 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Category: exactly one, "Diğer" until another is chosen. Chips come from MemoryLabels. -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MemoryLane.Card.Scrapbook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_md">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/memory_category_label"
+                    android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                    android:textColor="@color/ml_primary" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/create_category_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    app:selectionRequired="true"
+                    app:singleSelection="true" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Emotion: optional; tapping the chosen chip again clears it. -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MemoryLane.Card.Scrapbook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_md">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/memory_emotion_label"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                        android:textColor="@color/ml_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/memory_optional_note"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Note" />
+                </LinearLayout>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/create_emotion_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    app:singleSelection="true" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Location: optional; latitude and longitude together. A map picker belongs to a later card. -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MemoryLane.Card.Scrapbook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_md">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/memory_location_label"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                        android:textColor="@color/ml_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/memory_optional_note"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Note" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/create_latitude_layout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/memory_latitude_hint">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/create_latitude_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:digits="0123456789.,-"
+                            android:imeOptions="actionNext"
+                            android:importantForAutofill="no"
+                            android:inputType="numberSigned|numberDecimal"
+                            android:maxLength="20"
+                            android:minHeight="@dimen/ml_button_height"
+                            android:saveEnabled="false" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/create_longitude_layout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/ml_space_sm"
+                        android:layout_weight="1"
+                        android:hint="@string/memory_longitude_hint">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/create_longitude_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:digits="0123456789.,-"
+                            android:imeOptions="actionDone"
+                            android:importantForAutofill="no"
+                            android:inputType="numberSigned|numberDecimal"
+                            android:maxLength="20"
+                            android:minHeight="@dimen/ml_button_height"
+                            android:saveEnabled="false" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/create_location_error"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_xs"
+                    android:accessibilityLiveRegion="polite"
+                    android:textAppearance="@style/TextAppearance.MemoryLane.Caption"
+                    android:textColor="@color/ml_error"
+                    android:visibility="gone"
+                    tools:text="@string/memory_location_incomplete"
+                    tools:visibility="visible" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
         <!-- Photos (ML-10): picked here, uploaded after the memory is saved. -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.MemoryLane.Card.Scrapbook"

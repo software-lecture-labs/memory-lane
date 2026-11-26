@@ -30,6 +30,10 @@ public final class LoginViewModel extends ViewModel {
             @NonNull
             @Override
             public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                // A wrong class would otherwise fail later with a bare ClassCastException.
+                if (!modelClass.isAssignableFrom(LoginViewModel.class)) {
+                    throw new IllegalArgumentException("Unsupported ViewModel: " + modelClass.getName());
+                }
                 return modelClass.cast(new LoginViewModel(repository));
             }
         };

@@ -63,7 +63,7 @@ public class MemoryEditViewModelTest {
         details.last().succeed(new MemoryApi.Detail(MEMORY, "Sade", null, "2025-01-01", null, null, null,
                 null, null, 0, null, List.of()));
 
-        assertEquals(MemoryEditViewModel.DEFAULT_CATEGORY, state().getCategory());
+        assertEquals(MemoryLabels.DEFAULT_CATEGORY, state().getCategory());
         assertEquals("", viewModel.description());
         assertFalse(viewModel.hasUnsavedChanges());
     }

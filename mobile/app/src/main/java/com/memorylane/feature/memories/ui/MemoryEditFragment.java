@@ -21,6 +21,8 @@ import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.datepicker.CalendarConstraints;
 import com.google.android.material.datepicker.DateValidatorPointBackward;
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -37,7 +39,6 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -55,15 +56,6 @@ public class MemoryEditFragment extends Fragment {
 
     private static final Locale TURKISH = Locale.forLanguageTag("tr-TR");
     private static final String DATE_PICKER_TAG = "memory_edit_date";
-
-    /** Category chips and the API codes they stand for. */
-    private static final Map<Integer, String> CATEGORY_CHIPS = Map.of(
-            R.id.edit_category_travel, "TRAVEL",
-            R.id.edit_category_family, "FAMILY",
-            R.id.edit_category_friends, "FRIENDS",
-            R.id.edit_category_school, "SCHOOL",
-            R.id.edit_category_daily_life, "DAILY_LIFE",
-            R.id.edit_category_other, "OTHER");
 
     private FragmentMemoryEditBinding binding;
     private AppContainer app;
@@ -115,10 +107,11 @@ public class MemoryEditFragment extends Fragment {
         binding.editUseLatest.setOnClickListener(button -> viewModel.useLatest());
         binding.editKeepDraft.setOnClickListener(button -> viewModel.keepDraft());
         binding.editDate.setOnClickListener(row -> openDatePicker());
+        addCategoryChips();
         binding.editCategories.setOnCheckedStateChangeListener((group, checked) -> {
             if (writingForm || checked.isEmpty()) return;
-            String code = CATEGORY_CHIPS.get(checked.get(0));
-            if (code != null) viewModel.onCategorySelected(code);
+            View chip = group.findViewById(checked.get(0));
+            if (chip != null) viewModel.onCategorySelected((String) chip.getTag());
         });
         onEdit(binding.editTitleInput, viewModel::onTitleChanged);
         onEdit(binding.editNoteInput, viewModel::onDescriptionChanged);
@@ -189,9 +182,8 @@ public class MemoryEditFragment extends Fragment {
         binding.editDateValue.setText(date == null ? getString(R.string.memory_create_date_empty) : dateFormat.format(date));
 
         writingForm = true;
-        for (Map.Entry<Integer, String> chip : CATEGORY_CHIPS.entrySet()) {
-            if (chip.getValue().equals(state.getCategory())) binding.editCategories.check(chip.getKey());
-        }
+        View chosen = binding.editCategories.findViewWithTag(state.getCategory());
+        if (chosen != null) binding.editCategories.check(chosen.getId());
         writingForm = false;
 
         ApiError saveError = state.getSaveError();
@@ -206,7 +198,9 @@ public class MemoryEditFragment extends Fragment {
         binding.editTitleInput.setEnabled(!saving);
         binding.editNoteInput.setEnabled(!saving);
         binding.editDate.setEnabled(!saving);
-        for (int id : CATEGORY_CHIPS.keySet()) binding.getRoot().findViewById(id).setEnabled(!saving);
+        for (int i = 0; i < binding.editCategories.getChildCount(); i++) {
+            binding.editCategories.getChildAt(i).setEnabled(!saving);
+        }
 
         switch (state.getFocus()) {
             case TITLE:
@@ -371,6 +365,23 @@ public class MemoryEditFragment extends Fragment {
 
     private String describe(@Nullable ApiError error) {
         return ErrorMessages.describe(requireContext(), error != null ? error : ApiError.unexpected());
+    }
+
+    /**
+     * One chip per {@link MemoryLabels#CATEGORIES} entry, tagged with its API code; render checks
+     * the chip whose tag is the draft's category.
+     */
+    private void addCategoryChips() {
+        ChipGroup group = binding.editCategories;
+        group.removeAllViews();
+        LayoutInflater inflater = LayoutInflater.from(group.getContext());
+        for (MemoryLabels.Choice choice : MemoryLabels.CATEGORIES) {
+            Chip chip = (Chip) inflater.inflate(R.layout.item_category_chip, group, false);
+            chip.setId(View.generateViewId());
+            chip.setTag(choice.code());
+            chip.setText(choice.label());
+            group.addView(chip);
+        }
     }
 
     @Override

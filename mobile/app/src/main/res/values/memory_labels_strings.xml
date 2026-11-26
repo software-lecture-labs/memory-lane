@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Turkish labels of the fixed API codes (docs/api-contract.md, "Anı alanları"). -->
+<!-- Turkish labels of the fixed API codes (docs/api-contract.md, "Anı alanları"), the only
+     definition: MemoryLabels maps the codes to these for the create, edit, list and detail screens. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
     <string name="memory_category_travel">Gezi</string>
     <string name="memory_category_family">Aile</string>

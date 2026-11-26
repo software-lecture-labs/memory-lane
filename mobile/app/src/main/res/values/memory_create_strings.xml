@@ -21,6 +21,16 @@
     <string name="memory_create_description_hint">O güne dair hissettiklerini, kokuları, duyduklarını yaz…</string>
     <string name="memory_create_photos_label">Fotoğraflar</string>
     <string name="memory_create_photos_note">en fazla 5</string>
+    <string name="memory_create_today">Bugün</string>
+
+    <!-- ML-08: category (default Diğer), optional emotion and location. The category and
+         emotion labels themselves are in memory_labels_strings.xml, shared with every screen. -->
+    <string name="memory_category_label">Kategori</string>
+    <string name="memory_emotion_label">Duygu</string>
+    <string name="memory_location_label">Konum</string>
+    <string name="memory_optional_note">isteğe bağlı</string>
+    <string name="memory_latitude_hint">Enlem</string>
+    <string name="memory_longitude_hint">Boylam</string>
 
     <!-- Validation and result messages -->
     <string name="memory_create_title_required">Anına bir başlık ver.</string>
@@ -28,6 +38,8 @@
     <string name="memory_create_description_too_long">Açıklama en fazla 3000 karakter olabilir.</string>
     <string name="memory_create_date_required">Anının tarihini seç.</string>
     <string name="memory_create_date_future">Anı tarihi gelecekte olamaz.</string>
+    <string name="memory_location_incomplete">Enlem ve boylamı birlikte gir ya da ikisini de boş bırak.</string>
+    <string name="memory_location_invalid">Enlem −90 ile 90, boylam −180 ile 180 arasında bir sayı olmalı.</string>
     <string name="memory_create_saved">Anın kaydedildi.</string>
     <string name="memory_create_photos_wait">Fotoğraflar yükleniyor; bitince anılarına dönülecek.</string>
 </resources>
