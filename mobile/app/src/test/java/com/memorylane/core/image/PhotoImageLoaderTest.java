@@ -20,6 +20,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -132,6 +134,43 @@ public class PhotoImageLoaderTest {
         assertNull(load(new Object(), "p1", 100, 100));
         assertEquals("kapak@100x100", load(new Object(), "p1", 100, 100));
         assertEquals(3, server.getRequestCount());
+    }
+
+    @Test
+    public void oneMissingPhotoLeavesTheOthersAndReopeningRetriesOnlyThatOne() throws Exception {
+        // A five-photo gallery whose third file is missing on the server the first time.
+        AtomicBoolean fileRestored = new AtomicBoolean(false);
+        List<String> requested = new CopyOnWriteArrayList<>();
+        server.setDispatcher(new Dispatcher() {
+            @NonNull
+            @Override
+            public MockResponse dispatch(@NonNull RecordedRequest request) {
+                String path = String.valueOf(request.getPath());
+                String id = path.replaceAll(".*/photos/([^/]+)/content", "$1");
+                requested.add(id);
+                if (id.equals("p3") && !fileRestored.get()) {
+                    return new MockResponse().setResponseCode(404)
+                            .setBody("{\"code\":\"PHOTO_NOT_FOUND\",\"message\":\"Fotoğraf bulunamadı.\"}");
+                }
+                return photo("foto-" + id);
+            }
+        });
+        List<String> gallery = List.of("p1", "p2", "p3", "p4", "p5");
+
+        // First opening: every page gets its own answer; only the missing one is null.
+        List<String> first = new ArrayList<>();
+        for (String id : gallery) first.add(load(new Object(), id, 300, 200));
+        assertEquals(Arrays.asList("foto-p1@300x200", "foto-p2@300x200", null, "foto-p4@300x200", "foto-p5@300x200"),
+                first);
+
+        // Reopened after the file is back: the four photos come from memory, only p3 is asked again.
+        fileRestored.set(true);
+        requested.clear();
+        List<String> reopened = new ArrayList<>();
+        for (String id : gallery) reopened.add(load(new Object(), id, 300, 200));
+        assertEquals(List.of("foto-p1@300x200", "foto-p2@300x200", "foto-p3@300x200", "foto-p4@300x200",
+                "foto-p5@300x200"), reopened);
+        assertEquals(List.of("p3"), requested);
     }
 
     @Test
