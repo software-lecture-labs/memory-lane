@@ -25,6 +25,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import androidx.annotation.NonNull;
+
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -250,6 +253,48 @@ public class SessionLogoutTest {
         assertEquals(List.of("Bearer " + TOKEN), takeRequest().getHeaders().values("Authorization"));
         assertEquals(401, answer.get().getError().getHttpStatus());
         // Already expired when the screen receives the 401.
+        assertNull(app.authorization());
+        assertEquals(List.of(SessionStore.EndReason.EXPIRED), events);
+    }
+
+    /**
+     * The container's photo loader is a session listener: a photo still downloading when the user
+     * signs out is never delivered (nor cached) for the next account. Without the wiring the late
+     * answer would reach the target (as a null image, Bitmap being unavailable on the JVM).
+     */
+    @Test
+    public void signOutDropsPhotosOfTheEndedSession() throws Exception {
+        app.startSession(TOKEN, EMAIL);
+        server.setDispatcher(new Dispatcher() {
+            @NonNull
+            @Override
+            public MockResponse dispatch(@NonNull RecordedRequest request) {
+                if ("/api/v1/auth/logout".equals(request.getPath())) return new MockResponse().setResponseCode(204);
+                return new MockResponse().setBody("jpeg").setBodyDelay(300, TimeUnit.MILLISECONDS);
+            }
+        });
+        CountDownLatch delivered = new CountDownLatch(1);
+
+        app.getPhotoImageLoader().load(new Object(), "m1", "p1", 100, 100, image -> delivered.countDown());
+        app.endSession();
+
+        assertFalse(delivered.await(1, TimeUnit.SECONDS));
+        assertSignedOut(app);
+    }
+
+    @Test
+    public void rejectedPhotoDownloadExpiresTheSessionAndDropsTheAnswer() throws Exception {
+        app.startSession(TOKEN, EMAIL);
+        server.enqueue(new MockResponse().setResponseCode(401)
+                .setBody("{\"code\":\"INVALID_SESSION\",\"message\":\"x\"}"));
+        CountDownLatch delivered = new CountDownLatch(1);
+
+        app.getPhotoImageLoader().load(new Object(), "m1", "p1", 100, 100, image -> delivered.countDown());
+
+        assertFalse(delivered.await(1, TimeUnit.SECONDS));
+        RecordedRequest sent = takeRequest();
+        assertEquals("/api/v1/memories/m1/photos/p1/content", sent.getPath());
+        assertEquals(List.of("Bearer " + TOKEN), sent.getHeaders().values("Authorization"));
         assertNull(app.authorization());
         assertEquals(List.of(SessionStore.EndReason.EXPIRED), events);
     }

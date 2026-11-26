@@ -60,7 +60,9 @@ public final class MemoryListMapper {
         if (isBlank(memory.id())) throw new IllegalArgumentException("Memory id is missing");
         if (isBlank(memory.title())) throw new IllegalArgumentException("Memory title is missing");
         return MemoryListItem.memory(memory.id(), memory.title(), memory.description(),
-                date(memory.memoryDate()));
+                        date(memory.memoryDate()))
+                .withDetails(memory.category(), memory.emotion(), memory.location(), memory.photoCount(),
+                        memory.coverPhotoId());
     }
 
     private static LocalDate date(String value) {

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft pink field (Stitch "Anıyı Düzenle": surface-container-low, rounded) for the date row. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/memory_card_stroke">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/memory_pink_soft" />
+            <corners android:radius="@dimen/ml_radius_input" />
+        </shape>
+    </item>
+</ripple>

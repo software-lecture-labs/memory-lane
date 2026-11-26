@@ -52,10 +52,15 @@ public class MemoriesFragment extends Fragment {
         viewModel = new ViewModelProvider(this, MemoriesViewModel.factory(app.getMemoryRepository()))
                 .get(MemoriesViewModel.class);
 
+        // Covers are decoded for the card's width on this screen and the cover's fixed height.
+        int coverWidth = getResources().getDisplayMetrics().widthPixels;
+        int coverHeight = getResources().getDimensionPixelSize(R.dimen.memory_cover_height);
         listAdapter = new MemoryListAdapter(DateTimeFormatter.ofPattern(
-                getString(R.string.memory_list_date_pattern), TURKISH));
+                getString(R.string.memory_list_date_pattern), TURKISH), app.getPhotoImageLoader(),
+                coverWidth, coverHeight, this::openDetail);
         footerAdapter = new MemoryListFooterAdapter(viewModel::loadMore, viewModel::retry);
         binding.memoryList.setAdapter(new ConcatAdapter(listAdapter, footerAdapter));
+        binding.memoryList.addItemDecoration(new MemoryTimelineDecoration(requireContext(), listAdapter));
         listAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
@@ -80,7 +85,7 @@ public class MemoriesFragment extends Fragment {
         binding.memoryAdd.setOnClickListener(button -> openCreate());
 
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
-        observeCreatedMemory();
+        observeSavedMemories();
         viewModel.sessionExpired().observe(getViewLifecycleOwner(), expired -> {
             if (!Boolean.TRUE.equals(expired)) return;
             viewModel.consumeSessionExpired();
@@ -155,35 +160,44 @@ public class MemoriesFragment extends Fragment {
         return ErrorMessages.describe(requireContext(), error != null ? error : ApiError.unexpected());
     }
 
-    private void openLogin() {
-        navigateFromList(R.id.loginFragment);
+    private void openCreate() {
+        navigateFromList(R.id.action_memoriesFragment_to_memoryCreateFragment, null);
     }
 
-    private void openCreate() {
-        navigateFromList(R.id.action_memoriesFragment_to_memoryCreateFragment);
+    private void openDetail(@NonNull String memoryId) {
+        navigateFromList(R.id.action_memoriesFragment_to_memoryDetailFragment,
+                MemoryDetailFragment.arguments(memoryId));
+    }
+
+    private void openLogin() {
+        navigateFromList(R.id.loginFragment, null);
     }
 
     /** A fast double tap delivers a second click after the first navigation; it is ignored. */
-    private void navigateFromList(int destinationOrAction) {
+    private void navigateFromList(int destinationOrAction, @Nullable Bundle arguments) {
         NavController navController = NavHostFragment.findNavController(this);
         NavDestination current = navController.getCurrentDestination();
         if (current != null && current.getId() == R.id.memoriesFragment) {
-            navController.navigate(destinationOrAction);
+            navController.navigate(destinationOrAction, arguments);
         }
     }
 
     /**
-     * The create screen leaves {@link MemoryCreateFragment#RESULT_CREATED} on this entry after a
-     * save; refresh once and remove it so a later view does not refresh again.
+     * The create screen leaves {@link MemoryCreateFragment#RESULT_CREATED} and the edit screen
+     * {@link MemoryEditFragment#RESULT_UPDATED} on this entry after a save; refresh once and
+     * remove the flag so a later view does not refresh again. A created memory is announced here;
+     * an edit was already announced on the detail screen, so the rows just follow it.
+     *
+     * <p>On a cold start without a session, SessionNavigator replaces this destination with the
+     * login screen before this view is created; the entry is then already gone and there is no
+     * result to wait for.
      */
-    private void observeCreatedMemory() {
+    private void observeSavedMemories() {
         SavedStateHandle results;
         try {
             results = NavHostFragment.findNavController(this)
                     .getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle();
-        } catch (IllegalArgumentException replaced) {
-            // Without a session SessionNavigator has already replaced this screen with login;
-            // the view is still created once, but there is no entry left to hear from.
+        } catch (IllegalArgumentException replacedByLogin) {
             return;
         }
         results.<Boolean>getLiveData(MemoryCreateFragment.RESULT_CREATED, false)
@@ -194,6 +208,12 @@ public class MemoriesFragment extends Fragment {
                     Snackbar.make(binding.getRoot(), R.string.memory_create_saved, Snackbar.LENGTH_SHORT)
                             .setAnchorView(binding.memoryAdd)
                             .show();
+                });
+        results.<Boolean>getLiveData(MemoryEditFragment.RESULT_UPDATED, false)
+                .observe(getViewLifecycleOwner(), updated -> {
+                    if (!Boolean.TRUE.equals(updated)) return;
+                    results.set(MemoryEditFragment.RESULT_UPDATED, false);
+                    viewModel.refresh();
                 });
     }
 

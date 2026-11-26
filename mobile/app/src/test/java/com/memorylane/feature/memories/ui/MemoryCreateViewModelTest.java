@@ -18,6 +18,7 @@ import com.memorylane.core.network.Cancellable;
 import com.memorylane.core.network.ResultCallback;
 import com.memorylane.feature.health.ui.HealthViewModel;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.memories.data.MemoryFixtures;
 import com.memorylane.feature.memories.data.MemoryCreateRepository;
 
 import org.junit.Rule;
@@ -224,7 +225,7 @@ public class MemoryCreateViewModelTest {
     public void successWithoutIdIsAParseError() {
         fillValid();
         viewModel.save(SESSION);
-        repository.last().answer(ApiResult.success(new MemoryApi.Memory(null, "Bursa", "", "2024-10-20")));
+        repository.last().answer(ApiResult.success(MemoryFixtures.memory(null, "Bursa", "", "2024-10-20")));
 
         // Photos could not be attached to a memory without an id.
         assertEquals(ApiError.Kind.PARSE, state().getServerError().getKind());
@@ -382,8 +383,8 @@ public class MemoryCreateViewModelTest {
 
     @Test
     public void stripRemovesUnicodeWhitespaceOnBothEnds() {
-        assertEquals("Bursa gezisi", MemoryCreateViewModel.strip("  Bursa gezisi　\n"));
-        assertEquals("", MemoryCreateViewModel.strip(" \t "));
+        assertEquals("Bursa gezisi", MemoryFormRules.strip("  Bursa gezisi　\n"));
+        assertEquals("", MemoryFormRules.strip(" \t "));
     }
 
     // --- ML-08: category, emotion, location, today ---
@@ -566,7 +567,7 @@ public class MemoryCreateViewModelTest {
             }
 
             void succeed() {
-                answer(ApiResult.success(new MemoryApi.Memory("m1", draft.title(), draft.description(),
+                answer(ApiResult.success(MemoryFixtures.memory("m1", draft.title(), draft.description(),
                         draft.memoryDate())));
             }
 

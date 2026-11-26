@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory detail (Stitch "Anı Detayı"): back button and title on top; then the polaroid photo
+     gallery (left out when the memory has no photos), the date pill, title, category and emotion
+     badges, the "Günlük Notu" card, the location card (left out without a location) and the
+     "Anıyı Düzenle" button. Deleting a memory is ML-13 and has no control here. Loading, error
+     and not-found messages replace the content. Insets are applied by MainActivity. -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/ml_space_md">
+
+        <ImageButton
+            android:id="@+id/detail_back"
+            android:layout_width="@dimen/ml_button_height"
+            android:layout_height="@dimen/ml_button_height"
+            android:background="@drawable/memory_create_back_bg"
+            android:contentDescription="@string/memory_detail_back"
+            android:src="@drawable/register_back"
+            app:tint="@color/ml_plum" />
+
+        <TextView
+            android:id="@+id/detail_screen_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ml_space_md"
+            android:layout_weight="1"
+            android:text="@string/memory_detail_title"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Headline" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/detail_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/ml_space_md"
+                android:paddingBottom="@dimen/ml_space_lg">
+
+                <!-- Gallery: a white polaroid frame with washi tape over its top edge. -->
+                <FrameLayout
+                    android:id="@+id/detail_gallery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/ml_space_md"
+                    android:clipChildren="false"
+                    android:clipToPadding="false">
+
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/Widget.MemoryLane.Card.Scrapbook"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/memory_tape_overlap"
+                        app:cardCornerRadius="@dimen/memory_detail_frame_radius"
+                        app:contentPadding="@dimen/memory_detail_frame_padding">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/memory_detail_photo_height">
+
+                            <androidx.recyclerview.widget.RecyclerView
+                                android:id="@+id/detail_photos"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="horizontal"
+                                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                                tools:listitem="@layout/item_memory_photo" />
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="@dimen/memory_detail_photo_shade"
+                                android:layout_gravity="bottom"
+                                android:background="@drawable/memory_photo_shade"
+                                android:importantForAccessibility="no" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="top|end"
+                                android:layout_margin="@dimen/memory_detail_overlay_margin"
+                                android:background="@drawable/memory_photo_light_pill"
+                                android:gravity="center_vertical"
+                                android:importantForAccessibility="noHideDescendants"
+                                android:orientation="horizontal"
+                                android:paddingHorizontal="@dimen/memory_year_pill_padding_h"
+                                android:paddingVertical="@dimen/ml_space_xs"
+                                tools:ignore="UseCompoundDrawables">
+
+                                <ImageView
+                                    android:layout_width="@dimen/memory_icon_small"
+                                    android:layout_height="@dimen/memory_icon_small"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_photo"
+                                    app:tint="@color/ml_primary" />
+
+                                <TextView
+                                    android:id="@+id/detail_photo_counter"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/ml_space_xs"
+                                    android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                                    tools:text="1 / 4" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/detail_dots"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:layout_margin="@dimen/memory_detail_overlay_margin"
+                                android:background="@drawable/memory_photo_scrim_pill"
+                                android:gravity="center_vertical"
+                                android:importantForAccessibility="noHideDescendants"
+                                android:orientation="horizontal"
+                                android:paddingHorizontal="@dimen/ml_space_sm"
+                                android:paddingVertical="@dimen/ml_space_xs" />
+
+                            <LinearLayout
+                                android:id="@+id/detail_zoom_hint"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|end"
+                                android:layout_margin="@dimen/memory_detail_overlay_margin"
+                                android:background="@drawable/memory_photo_scrim_pill"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:paddingHorizontal="@dimen/memory_year_pill_padding_h"
+                                android:paddingVertical="@dimen/ml_space_xs"
+                                tools:ignore="UseCompoundDrawables">
+
+                                <ImageView
+                                    android:layout_width="@dimen/memory_icon_small"
+                                    android:layout_height="@dimen/memory_icon_small"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_zoom_in"
+                                    app:tint="@color/ml_peach" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/ml_space_xs"
+                                    android:text="@string/memory_detail_zoom_hint"
+                                    android:textAppearance="@style/TextAppearance.MemoryLane.Label.OnPhoto" />
+                            </LinearLayout>
+                        </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <View
+                        android:layout_width="@dimen/memory_tape_width"
+                        android:layout_height="@dimen/memory_tape_height"
+                        android:layout_gravity="top|start"
+                        android:layout_marginStart="@dimen/memory_detail_tape_start"
+                        android:background="@drawable/memory_tape"
+                        android:elevation="@dimen/memory_tape_elevation"
+                        android:importantForAccessibility="no"
+                        android:rotation="-3" />
+                </FrameLayout>
+
+                <!-- Date pill (a memory has a day, no time of day). -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/memory_pill_pink"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/memory_badge_padding_h"
+                    android:paddingVertical="@dimen/ml_space_xs"
+                    tools:ignore="UseCompoundDrawables">
+
+                    <ImageView
+                        android:layout_width="@dimen/memory_icon_inline"
+                        android:layout_height="@dimen/memory_icon_inline"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="@color/ml_primary" />
+
+                    <TextView
+                        android:id="@+id/detail_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/ml_space_xs"
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Label"
+                        android:textColor="@color/ml_plum_muted"
+                        tools:text="28 Ekim 2024, Pazartesi" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/detail_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    android:textAppearance="@style/TextAppearance.MemoryLane.DetailTitle"
+                    tools:text="Bursa’da Bir Sonbahar Günü" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/detail_badges"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    app:chipSpacingHorizontal="@dimen/ml_space_sm"
+                    app:chipSpacingVertical="@dimen/memory_badge_spacing">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/detail_badge_category"
+                        style="@style/Widget.MemoryLane.Badge.Category"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="Gezi" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/detail_badge_emotion"
+                        style="@style/Widget.MemoryLane.Badge.Mood"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="Huzurlu" />
+                </com.google.android.material.chip.ChipGroup>
+
+                <!-- "Günlük Notu": a scrapbook page with a pastel washi strip on its left edge. -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.MemoryLane.Card.Scrapbook.Flush"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_md">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="@dimen/memory_detail_note_stripe"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/memory_note_stripe"
+                            android:importantForAccessibility="no" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="@dimen/memory_detail_note_padding">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="@dimen/memory_icon_inline"
+                                    android:layout_height="@dimen/memory_icon_inline"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_edit_note"
+                                    app:tint="@color/ml_primary" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/ml_space_xs"
+                                    android:layout_weight="1"
+                                    android:text="@string/memory_detail_note_heading"
+                                    android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                                    android:textColor="@color/ml_primary" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:importantForAccessibility="no"
+                                    android:text="@string/memory_detail_note_flourish"
+                                    android:textAppearance="@style/TextAppearance.MemoryLane.Label"
+                                    android:textColor="@color/ml_primary" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/ml_space_sm"
+                                android:background="@drawable/memory_divider"
+                                android:importantForAccessibility="no" />
+
+                            <TextView
+                                android:id="@+id/detail_note"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/ml_space_sm"
+                                android:lineSpacingExtra="@dimen/memory_detail_note_line_extra"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.Body"
+                                android:textIsSelectable="true"
+                                android:textSize="@dimen/memory_detail_note_text"
+                                tools:text="Tophane yamaçlarında ılık sonbahar rüzgarı eserken sıcacık bir fincan çay içtik." />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Location: the stored point; no map SDK and no address lookup in this version. -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/detail_location_card"
+                    style="@style/Widget.MemoryLane.Card.Scrapbook"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_md">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="@dimen/memory_detail_icon_box"
+                            android:layout_height="@dimen/memory_detail_icon_box"
+                            android:background="@drawable/memory_icon_circle_mint"
+                            android:importantForAccessibility="no"
+                            android:padding="@dimen/ml_space_sm"
+                            android:src="@drawable/ic_location"
+                            app:tint="@color/memory_mint_ink" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/ml_space_md"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/memory_detail_location_heading"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle" />
+
+                            <TextView
+                                android:id="@+id/detail_location"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.Label"
+                                android:textColor="@color/ml_plum_muted"
+                                tools:text="41,0082° K, 28,9784° D" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/detail_edit"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/memory_detail_button_height"
+                    android:layout_marginTop="@dimen/ml_space_lg"
+                    android:text="@string/memory_detail_edit"
+                    app:icon="@drawable/ic_edit_note"
+                    app:iconGravity="textStart"
+                    app:iconPadding="@dimen/ml_space_sm"
+                    app:iconSize="@dimen/memory_detail_icon"
+                    app:iconTint="@color/ml_on_primary" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- Loading, error, not-found and signed-out messages; scrolls on short screens. -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/detail_status"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/ml_space_lg"
+                android:paddingTop="@dimen/memory_status_top"
+                android:paddingBottom="@dimen/ml_space_lg">
+
+                <com.memorylane.core.ui.widget.StateView
+                    android:id="@+id/detail_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/detail_back_to_list"
+                    style="@style/Widget.MemoryLane.Button.Ghost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_md"
+                    android:text="@string/memory_detail_back_to_list"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </FrameLayout>
+</LinearLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shade at the bottom of a gallery photo so the white dots and hint stay readable. Its bottom
+     corners follow the photo's. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="90"
+        android:endColor="@color/memory_photo_shade_clear"
+        android:startColor="@color/memory_photo_shade" />
+    <corners
+        android:bottomLeftRadius="@dimen/memory_detail_photo_radius"
+        android:bottomRightRadius="@dimen/memory_detail_photo_radius" />
+</shape>

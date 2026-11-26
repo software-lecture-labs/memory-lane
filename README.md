@@ -46,7 +46,7 @@ K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğr
 4. Uygulamayı kapatıp yeniden açın. Token süreç belleğinde olduğu için tekrar giriş gerekir; A ile girince anı sunucudan yeniden yüklenir.
 5. **Profil → Çıkış yap** ile çıkıp B hesabına girin. Anılar listesi sıfırlanır; B'nin listesinde A'nın anısı görünmez.
 
-`POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Liste 20'şer kayıtla sayfalanır; "Daha fazla anı göster" sonraki sayfayı ekler. Yükleme hatası boş liste gibi gösterilmez, "Tekrar dene" ile yinelenir; 401 yanıtı oturumu kapatır. Kayıt tekrar denendiğinde aynı `Idempotency-Key` kullanılır, böylece bağlantı kopsa da anı iki kez oluşmaz. Türkçe arama ve kategori filtresi liste API'sindedir; mobil arayüzü ve detay/düzenleme, fotoğraf, konum ve harita akışları kendi kartlarında uygulanır.
+`POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Liste 20'şer kayıtla sayfalanır; "Daha fazla anı göster" sonraki sayfayı ekler. Yükleme hatası boş liste gibi gösterilmez, "Tekrar dene" ile yinelenir; 401 yanıtı oturumu kapatır. Kayıt tekrar denendiğinde aynı `Idempotency-Key` kullanılır, böylece bağlantı kopsa da anı iki kez oluşmaz. Türkçe arama ve kategori filtresi liste API'sindedir; mobil arama arayüzü ve harita kendi kartlarında uygulanır. Karta dokununca anı detayı açılır (fotoğraf galerisi ve tam ekran görüntüleyiciyle); "Anıyı Düzenle" `GET /api/v1/memories/{id}` ile alınan ETag'i `PUT` isteğinin `If-Match` başlığında gönderir; anı başka yerde değiştiyse (412) taslak korunur ve son hal gösterilir.
 
 ## Fotoğraf yükleme (ML-09)
 

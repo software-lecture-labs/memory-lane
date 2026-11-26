@@ -25,6 +25,59 @@
         <action
             android:id="@+id/action_memoriesFragment_to_memoryCreateFragment"
             app:destination="@id/memoryCreateFragment" />
+        <action
+            android:id="@+id/action_memoriesFragment_to_memoryDetailFragment"
+            app:destination="@id/memoryDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/memoryDetailFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryDetailFragment"
+        android:label="@string/memory_detail_title">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_memoryDetailFragment_to_memoryPhotoViewerFragment"
+            app:destination="@id/memoryPhotoViewerFragment" />
+        <action
+            android:id="@+id/action_memoryDetailFragment_to_memoryEditFragment"
+            app:destination="@id/memoryEditFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/memoryEditFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryEditFragment"
+        android:label="@string/memory_edit_title">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/memoryPhotoViewerFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryPhotoViewerFragment"
+        android:label="@string/memory_viewer_label">
+        <argument
+            android:name="memoryId"
+            app:argType="string" />
+        <argument
+            android:name="photoIds"
+            app:argType="string[]" />
+        <argument
+            android:name="initialPosition"
+            android:defaultValue="0"
+            app:argType="integer" />
+        <argument
+            android:name="title"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
+        <argument
+            android:name="memoryDate"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
     </fragment>
 
     <fragment

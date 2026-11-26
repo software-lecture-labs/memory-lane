@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Full-screen photo viewer (ML-11). The "1 / 4" counter reuses memory_detail_photo_counter. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="memory_viewer_label">Fotoğraflar</string>
+    <string name="memory_viewer_close">Fotoğrafı kapat</string>
+    <string name="memory_viewer_previous">Önceki fotoğraf</string>
+    <string name="memory_viewer_next">Sonraki fotoğraf</string>
+    <string name="memory_viewer_photo_description">Fotoğraf %1$d / %2$d</string>
+    <string name="memory_viewer_loading">Fotoğraf yükleniyor</string>
+    <string name="memory_viewer_error">Fotoğraf yüklenemedi.</string>
+</resources>

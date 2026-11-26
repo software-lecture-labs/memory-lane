@@ -23,20 +23,10 @@
     <string name="memory_create_photos_note">en fazla 5</string>
     <string name="memory_create_today">Bugün</string>
 
-    <!-- ML-08: category (default Diğer), optional emotion and location -->
+    <!-- ML-08: category (default Diğer), optional emotion and location. The category and
+         emotion labels themselves are in memory_labels_strings.xml, shared with every screen. -->
     <string name="memory_category_label">Kategori</string>
-    <string name="memory_category_travel">Gezi</string>
-    <string name="memory_category_family">Aile</string>
-    <string name="memory_category_friends">Arkadaşlar</string>
-    <string name="memory_category_school">Okul</string>
-    <string name="memory_category_daily_life">Günlük yaşam</string>
-    <string name="memory_category_other">Diğer</string>
     <string name="memory_emotion_label">Duygu</string>
-    <string name="memory_emotion_happy">Mutlu</string>
-    <string name="memory_emotion_peaceful">Huzurlu</string>
-    <string name="memory_emotion_excited">Heyecanlı</string>
-    <string name="memory_emotion_nostalgic">Nostaljik</string>
-    <string name="memory_emotion_sad">Hüzünlü</string>
     <string name="memory_location_label">Konum</string>
     <string name="memory_optional_note">isteğe bağlı</string>
     <string name="memory_latitude_hint">Enlem</string>

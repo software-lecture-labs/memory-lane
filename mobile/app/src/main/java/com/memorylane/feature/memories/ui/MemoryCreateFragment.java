@@ -121,9 +121,9 @@ public final class MemoryCreateFragment extends Fragment {
         onEdit(binding.createLatitudeInput, viewModel::onLatitudeChanged);
         onEdit(binding.createLongitudeInput, viewModel::onLongitudeChanged);
         // Chips are rebuilt from the ViewModel's choice on every new view, rotation included.
-        addChips(binding.createCategoryGroup, MemoryChoices.CATEGORIES, viewModel.category(),
+        addChips(binding.createCategoryGroup, MemoryLabels.CATEGORIES, viewModel.category(),
                 viewModel::onCategorySelected);
-        addChips(binding.createEmotionGroup, MemoryChoices.EMOTIONS, viewModel.emotion(),
+        addChips(binding.createEmotionGroup, MemoryLabels.EMOTIONS, viewModel.emotion(),
                 viewModel::onEmotionSelected);
         // A picker left open across rotation lost its listener with the old view.
         Fragment openPicker = getChildFragmentManager().findFragmentByTag(DATE_PICKER);
@@ -281,11 +281,11 @@ public final class MemoryCreateFragment extends Fragment {
      * One chip per choice, tagged with its code. Selection is reported as the chosen code, or
      * null when nothing is chosen (only possible for the optional emotion).
      */
-    private void addChips(ChipGroup group, List<MemoryChoices.Choice> choices, @Nullable String selected,
+    private void addChips(ChipGroup group, List<MemoryLabels.Choice> choices, @Nullable String selected,
                           Consumer<String> onSelected) {
         group.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(group.getContext());
-        for (MemoryChoices.Choice choice : choices) {
+        for (MemoryLabels.Choice choice : choices) {
             Chip chip = (Chip) inflater.inflate(R.layout.item_choice_chip, group, false);
             chip.setId(View.generateViewId());
             chip.setTag(choice.code());

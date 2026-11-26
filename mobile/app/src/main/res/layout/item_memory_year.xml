@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Year line of the timeline (Stitch "Anılar"): round badge (peach or lavender, set from code),
-     the year, a lavender rule and an italic "anı defteri" note. TalkBack reads the whole row as
-     one heading, set from code ("2024 yılındaki anılar"). -->
+<!-- Year line of the timeline (Stitch "Anılar"): a node on the guide line (raspberry, or plum
+     for odd years, set from code), the year in a lavender pill and a short note. The guide line
+     itself is drawn by MemoryTimelineDecoration. TalkBack reads the row as one heading. -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -14,44 +13,30 @@
     android:paddingTop="@dimen/ml_space_sm"
     android:paddingBottom="@dimen/ml_space_md">
 
-    <FrameLayout
-        android:id="@+id/memory_year_badge"
-        android:layout_width="@dimen/memory_year_badge"
-        android:layout_height="@dimen/memory_year_badge"
-        android:importantForAccessibility="noHideDescendants"
-        tools:background="@drawable/memory_year_badge_peach">
-
-        <ImageView
-            android:layout_width="@dimen/memory_icon_inline"
-            android:layout_height="@dimen/memory_icon_inline"
-            android:layout_gravity="center"
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_favorite"
-            app:tint="@color/ml_primary" />
-    </FrameLayout>
+    <View
+        android:id="@+id/memory_year_node"
+        android:layout_width="@dimen/memory_timeline_node"
+        android:layout_height="@dimen/memory_timeline_node"
+        android:background="@drawable/memory_timeline_node"
+        android:importantForAccessibility="no" />
 
     <TextView
         android:id="@+id/memory_year"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/ml_space_sm"
+        android:background="@drawable/memory_pill_lavender"
         android:importantForAccessibility="no"
-        android:textAppearance="@style/TextAppearance.MemoryLane.Headline"
-        android:textSize="@dimen/ml_text_title"
-        tools:text="2024" />
-
-    <View
-        android:layout_width="0dp"
-        android:layout_height="@dimen/memory_year_rule"
-        android:layout_marginHorizontal="@dimen/ml_space_sm"
-        android:layout_weight="1"
-        android:background="@drawable/memory_year_rule"
-        android:importantForAccessibility="no" />
+        android:paddingHorizontal="@dimen/memory_year_pill_padding_h"
+        android:paddingVertical="@dimen/ml_space_xs"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+        tools:text="2026" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ml_space_sm"
         android:importantForAccessibility="no"
         android:text="@string/memory_list_year_note"
-        android:textAppearance="@style/TextAppearance.MemoryLane.Note.Accent" />
+        android:textAppearance="@style/TextAppearance.MemoryLane.Note" />
 </LinearLayout>

@@ -90,6 +90,11 @@ public class PhotoService {
                 .param("storageKey", storageKey).param("type", file.contentType())
                 .param("size", (long) file.bytes().length)
                 .query((row, number) -> photo(row)).single();
+        // The memory detail now has another photo, so its ETag must change in this transaction
+        // (contract, "Eşzamanlı güncelleme"). The row is already locked by lockMemory. Replays
+        // returned above and refused uploads change nothing, so they keep the version.
+        jdbc.sql("UPDATE memories SET version = version + 1 WHERE id = :memory")
+                .param("memory", memoryId).update();
         return new Uploaded(saved, false);
     }
 

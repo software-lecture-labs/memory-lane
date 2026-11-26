@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory edit (Stitch "Anıyı Düzenle"): back button, title and the "Düzenleme Modu" pill on top;
+     the conflict card after a 412; the "Temel Bilgiler" card (title, date, category) and the
+     description card; "Değişiklikleri Kaydet" and "İptal" stay at the bottom. Photos, emotion and
+     location have no controls here (their values are kept and sent back unchanged). Loading,
+     error and not-found messages replace the form. Insets are applied by MainActivity. -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/ml_space_md">
+
+        <ImageButton
+            android:id="@+id/edit_back"
+            android:layout_width="@dimen/ml_button_height"
+            android:layout_height="@dimen/ml_button_height"
+            android:background="@drawable/memory_create_back_bg"
+            android:contentDescription="@string/memory_edit_back"
+            android:src="@drawable/register_back"
+            app:tint="@color/ml_plum" />
+
+        <TextView
+            android:id="@+id/edit_screen_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ml_space_md"
+            android:layout_weight="1"
+            android:text="@string/memory_edit_title"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Headline" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/memory_pill_lavender"
+            android:paddingHorizontal="@dimen/memory_year_pill_padding_h"
+            android:paddingVertical="@dimen/ml_space_xs"
+            android:text="@string/memory_edit_mode"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/edit_form"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusableInTouchMode="true"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/ml_space_md"
+                android:paddingBottom="@dimen/ml_space_md">
+
+                <!-- 412: the memory changed elsewhere. MODIFIED offers "Son Halini Yükle";
+                     REVIEW shows the latest version next to the kept draft. -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/edit_conflict"
+                    style="@style/Widget.MemoryLane.Card.Scrapbook"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/ml_space_md"
+                    android:visibility="gone"
+                    app:strokeColor="@color/ml_error"
+                    tools:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/edit_conflict_message"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:accessibilityLiveRegion="polite"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Body"
+                            tools:text="@string/memory_edit_conflict_message" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/edit_conflict_reload"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_sm"
+                            android:text="@string/memory_edit_conflict_reload" />
+
+                        <LinearLayout
+                            android:id="@+id/edit_latest"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_sm"
+                            android:background="@drawable/memory_edit_field_bg"
+                            android:orientation="vertical"
+                            android:padding="@dimen/ml_space_md"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/memory_edit_latest_heading"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                                android:textColor="@color/ml_primary" />
+
+                            <TextView
+                                android:id="@+id/edit_latest_title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/ml_space_xs"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle"
+                                tools:text="Bursa’da Bir Sonbahar Günü" />
+
+                            <TextView
+                                android:id="@+id/edit_latest_meta"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.Label"
+                                android:textColor="@color/ml_plum_muted"
+                                tools:text="28 Ekim 2026 · Gezi" />
+
+                            <TextView
+                                android:id="@+id/edit_latest_note"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/ml_space_xs"
+                                android:ellipsize="end"
+                                android:maxLines="3"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                                tools:text="Tophane yamaçlarında ılık sonbahar rüzgarı…" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/ml_space_sm"
+                                android:orientation="horizontal">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/edit_use_latest"
+                                    style="@style/Widget.MemoryLane.Button.Secondary"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/memory_edit_use_latest" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/edit_keep_draft"
+                                    style="@style/Widget.MemoryLane.Button.Ghost"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/ml_space_sm"
+                                    android:layout_weight="1"
+                                    android:text="@string/memory_edit_keep_draft" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Refused saves that belong to no single field (400, 428, network, 503). -->
+                <TextView
+                    android:id="@+id/edit_error"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/ml_space_md"
+                    android:accessibilityLiveRegion="polite"
+                    android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
+                    android:textColor="@color/ml_error"
+                    android:visibility="gone"
+                    tools:text="@string/error_network"
+                    tools:visibility="visible" />
+
+                <!-- Temel Bilgiler -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.MemoryLane.Card.Scrapbook"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            tools:ignore="UseCompoundDrawables">
+
+                            <ImageView
+                                android:layout_width="@dimen/memory_icon_label"
+                                android:layout_height="@dimen/memory_icon_label"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_edit_note"
+                                app:tint="@color/ml_primary" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/ml_space_xs"
+                                android:text="@string/memory_edit_basics"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_md"
+                            android:labelFor="@id/edit_title_input"
+                            android:text="@string/memory_edit_title_label"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/edit_title_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_xs"
+                            app:counterEnabled="true"
+                            app:counterMaxLength="100"
+                            app:errorEnabled="true"
+                            app:hintEnabled="false">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edit_title_input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="@string/memory_create_title_hint"
+                                android:imeOptions="actionNext"
+                                android:importantForAutofill="no"
+                                android:inputType="textCapSentences"
+                                android:maxLines="2"
+                                android:minHeight="@dimen/ml_button_height"
+                                android:saveEnabled="false" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/memory_edit_date_label"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+                        <LinearLayout
+                            android:id="@+id/edit_date"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_xs"
+                            android:background="@drawable/memory_edit_field_bg"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="@dimen/ml_button_height"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="@dimen/ml_space_md">
+
+                            <ImageView
+                                android:layout_width="@dimen/memory_icon_label"
+                                android:layout_height="@dimen/memory_icon_label"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_calendar"
+                                app:tint="@color/ml_primary" />
+
+                            <TextView
+                                android:id="@+id/edit_date_value"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/ml_space_sm"
+                                android:layout_weight="1"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+                                android:textSize="@dimen/ml_text_body"
+                                tools:text="28 Ekim 2026" />
+
+                            <ImageView
+                                android:layout_width="@dimen/memory_icon_label"
+                                android:layout_height="@dimen/memory_icon_label"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_expand_more"
+                                app:tint="@color/ml_plum_muted" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/edit_date_error"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_xs"
+                            android:accessibilityLiveRegion="polite"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Caption"
+                            android:textColor="@color/ml_error"
+                            android:visibility="gone"
+                            tools:text="@string/memory_create_date_future"
+                            tools:visibility="visible" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_md"
+                            android:text="@string/memory_edit_category_label"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/edit_categories"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_xs"
+                            app:chipSpacingHorizontal="@dimen/ml_space_sm"
+                            app:chipSpacingVertical="@dimen/ml_space_xs"
+                            app:selectionRequired="true"
+                            app:singleSelection="true" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Açıklama / Günlük Notu -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.MemoryLane.Card.Scrapbook"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_md">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            tools:ignore="UseCompoundDrawables">
+
+                            <ImageView
+                                android:layout_width="@dimen/memory_icon_label"
+                                android:layout_height="@dimen/memory_icon_label"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_bookmark"
+                                app:tint="@color/ml_primary" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/ml_space_xs"
+                                android:labelFor="@id/edit_note_input"
+                                android:text="@string/memory_edit_note_label"
+                                android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle" />
+                        </LinearLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/edit_note_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_sm"
+                            app:counterEnabled="true"
+                            app:counterMaxLength="3000"
+                            app:errorEnabled="true"
+                            app:hintEnabled="false">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edit_note_input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="top|start"
+                                android:hint="@string/memory_create_description_hint"
+                                android:importantForAutofill="no"
+                                android:inputType="textMultiLine|textCapSentences"
+                                android:minHeight="@dimen/memory_edit_note_min_height"
+                                android:saveEnabled="false" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- Loading, load error, not-found and signed-out messages. -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/edit_status"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/ml_space_lg"
+                android:paddingTop="@dimen/memory_status_top"
+                android:paddingBottom="@dimen/ml_space_lg">
+
+                <com.memorylane.core.ui.widget.StateView
+                    android:id="@+id/edit_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/edit_back_to_list"
+                    style="@style/Widget.MemoryLane.Button.Ghost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_md"
+                    android:text="@string/memory_detail_back_to_list"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </FrameLayout>
+
+    <!-- Actions stay above the keyboard; locked with a progress bar while saving. -->
+    <LinearLayout
+        android:id="@+id/edit_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/ml_space_md"
+        android:paddingBottom="@dimen/ml_space_md"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/edit_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/ml_space_sm"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/edit_save"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/memory_detail_button_height"
+            android:text="@string/memory_edit_save"
+            app:icon="@drawable/ic_status_ok"
+            app:iconGravity="textEnd"
+            app:iconPadding="@dimen/ml_space_sm"
+            app:iconSize="@dimen/memory_detail_icon"
+            app:iconTint="@color/ml_on_primary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/edit_cancel"
+            style="@style/Widget.MemoryLane.Button.Ghost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ml_space_sm"
+            android:text="@string/memory_edit_cancel" />
+    </LinearLayout>
+</LinearLayout>

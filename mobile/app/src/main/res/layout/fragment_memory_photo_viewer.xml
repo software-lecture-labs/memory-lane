@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Full-screen photo viewer (Stitch "Fotoğraf Görüntüleyici") on a cinematic dark backdrop:
+     a frosted top bar with the close button and the "1 / 4" counter; the photos as swipeable
+     pages with previous/next buttons; page dots and a caption with the memory's title and date.
+     Share, zoom, favourite and photo metadata (EXIF, location) are out of scope and left out.
+     The system bars are hidden while the viewer is open (set from code).
+     Overdraw: this is the app's only dark screen; it paints one full-screen fill over the light
+     window background of the single-activity theme, which is cheaper than swapping the window
+     background for one destination. -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/memory_viewer_backdrop"
+    android:orientation="vertical"
+    tools:ignore="Overdraw">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/ml_space_md">
+
+        <ImageButton
+            android:id="@+id/viewer_close"
+            android:layout_width="@dimen/memory_viewer_button"
+            android:layout_height="@dimen/memory_viewer_button"
+            android:layout_gravity="start|center_vertical"
+            android:background="@drawable/memory_viewer_glass_circle"
+            android:contentDescription="@string/memory_viewer_close"
+            android:padding="@dimen/ml_space_sm"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_close"
+            app:tint="@color/ml_on_primary" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/memory_viewer_glass_pill"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/memory_year_pill_padding_h"
+            android:paddingVertical="@dimen/ml_space_xs"
+            tools:ignore="UseCompoundDrawables">
+
+            <ImageView
+                android:layout_width="@dimen/memory_icon_small"
+                android:layout_height="@dimen/memory_icon_small"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_photo"
+                app:tint="@color/memory_viewer_accent" />
+
+            <TextView
+                android:id="@+id/viewer_counter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/ml_space_xs"
+                android:accessibilityLiveRegion="polite"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Viewer.Counter"
+                tools:text="1 / 4" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ml_stroke_thin"
+        android:background="@color/memory_viewer_glass_stroke"
+        android:importantForAccessibility="no" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/viewer_pages"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_memory_viewer_photo" />
+
+        <ImageButton
+            android:id="@+id/viewer_previous"
+            android:layout_width="@dimen/memory_viewer_button"
+            android:layout_height="@dimen/memory_viewer_button"
+            android:layout_gravity="start|center_vertical"
+            android:layout_marginStart="@dimen/memory_viewer_arrow_margin"
+            android:background="@drawable/memory_viewer_glass_circle"
+            android:contentDescription="@string/memory_viewer_previous"
+            android:src="@drawable/ic_chevron_left"
+            app:tint="@color/ml_on_primary" />
+
+        <ImageButton
+            android:id="@+id/viewer_next"
+            android:layout_width="@dimen/memory_viewer_button"
+            android:layout_height="@dimen/memory_viewer_button"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="@dimen/memory_viewer_arrow_margin"
+            android:background="@drawable/memory_viewer_glass_circle"
+            android:contentDescription="@string/memory_viewer_next"
+            android:src="@drawable/ic_chevron_right"
+            app:tint="@color/ml_on_primary" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/viewer_dots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginVertical="@dimen/ml_space_md"
+        android:gravity="center_vertical"
+        android:importantForAccessibility="noHideDescendants"
+        android:orientation="horizontal" />
+
+    <LinearLayout
+        android:id="@+id/viewer_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/ml_stroke_thin"
+            android:background="@color/memory_viewer_glass_stroke"
+            android:importantForAccessibility="no" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/memory_viewer_glass"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="@dimen/ml_space_md">
+
+            <TextView
+                android:id="@+id/viewer_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Viewer.Title"
+                tools:text="Bursa’da Bir Sonbahar Günü" />
+
+            <TextView
+                android:id="@+id/viewer_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/ml_space_sm"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Viewer.Meta"
+                tools:text="28 Ekim 2026" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

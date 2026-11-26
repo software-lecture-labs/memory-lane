@@ -8,6 +8,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.Map;
 
+/**
+ * Turns the memory endpoints' refusals into the contract's {@code {code,message}} body: field
+ * and parameter errors (400 INVALID_INPUT), a reused create key (409), and the PUT preconditions
+ * (428 PRECONDITION_REQUIRED, 400 INVALID_PRECONDITION, 412 MEMORY_MODIFIED). Missing and foreign
+ * memories (404) are answered by OwnershipErrors, outages and unexpected errors by AuthErrors.
+ */
 @Order(-1)
 @RestControllerAdvice(assignableTypes = MemoryController.class)
 class MemoryErrors {
@@ -17,13 +23,32 @@ class MemoryErrors {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    ResponseEntity<Map<String, String>> parameter() {
-        return response(400, "INVALID_INPUT", "Sayfa veya sayfa boyutu geçersiz.");
+    ResponseEntity<Map<String, String>> parameter(MethodArgumentTypeMismatchException error) {
+        return response(400, "INVALID_INPUT", "id".equals(error.getName())
+                ? "Anı kimliği geçersiz." : "Sayfa veya sayfa boyutu geçersiz.");
     }
 
     @ExceptionHandler(MemoryService.IdempotencyConflict.class)
     ResponseEntity<Map<String, String>> conflict() {
         return response(409, "IDEMPOTENCY_CONFLICT", "Bu anahtar farklı bir kayıt için kullanıldı.");
+    }
+
+    @ExceptionHandler(MemoryPrecondition.Required.class)
+    ResponseEntity<Map<String, String>> preconditionRequired() {
+        return response(428, "PRECONDITION_REQUIRED",
+                "Güncelleme için If-Match başlığı gerekir. Önce anının güncel halini alın.");
+    }
+
+    @ExceptionHandler(MemoryPrecondition.Invalid.class)
+    ResponseEntity<Map<String, String>> invalidPrecondition() {
+        return response(400, "INVALID_PRECONDITION",
+                "If-Match başlığı bu anının tek ve tırnaklı etiketi olmalıdır.");
+    }
+
+    @ExceptionHandler(MemoryPrecondition.Modified.class)
+    ResponseEntity<Map<String, String>> modified() {
+        return response(412, "MEMORY_MODIFIED",
+                "Anı başka bir işlemle değişti. Güncel halini alıp değişikliklerinizi kontrol edin.");
     }
 
     private ResponseEntity<Map<String, String>> response(int status, String code, String message) {

@@ -11,6 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * HTTP side of the memory endpoints (docs/api-contract.md, "Anı endpointleri"): create, paged
+ * list, detail with a strong ETag and PUT with If-Match. It reads headers and the body, leaves
+ * the rules to {@link MemoryInput} and {@link MemoryPrecondition}, the data work to
+ * {@link MemoryService}, and answers with {@code Cache-Control: no-store}.
+ */
 @RestController
 @RequestMapping("/api/v1/memories")
 public class MemoryController {
@@ -53,6 +59,30 @@ public class MemoryController {
         String term = MemoryInput.text(query.strip(), "", 100, "Arama");
         return ResponseEntity.ok().header("Cache-Control", "no-store")
                 .body(memories.list(owner, page, size, term, category));
+    }
+
+    /** Contract: 200 MemoryDetail with a strong ETag; missing and foreign memories are both 404. */
+    @GetMapping("/{id}")
+    ResponseEntity<Detail> detail(@CurrentUser UUID owner, @PathVariable UUID id) {
+        var found = memories.detail(owner, id);
+        return ResponseEntity.ok().eTag(MemoryPrecondition.tag(id, found.version()))
+                .header("Cache-Control", "no-store")
+                .body(new Detail(found.summary(), found.photos()));
+    }
+
+    /**
+     * Contract: same body rules as POST; If-Match is required. 200 with the current MemoryDetail
+     * and no ETag (the body is normalised, so the next edit takes its tag from a detail GET).
+     */
+    @PutMapping("/{id}")
+    ResponseEntity<Detail> update(
+            @CurrentUser UUID owner,
+            @PathVariable UUID id,
+            @RequestHeader(name = "If-Match", required = false) String ifMatch,
+            @RequestBody Map<String, Object> body) {
+        var updated = memories.update(owner, id, ifMatch, MemoryInput.from(body, clock));
+        return ResponseEntity.ok().header("Cache-Control", "no-store")
+                .body(new Detail(updated.summary(), updated.photos()));
     }
 
     private static UUID requestId(String key) {

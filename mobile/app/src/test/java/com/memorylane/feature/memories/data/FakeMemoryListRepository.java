@@ -32,10 +32,10 @@ public final class FakeMemoryListRepository implements MemoryListRepository {
     /** Sample memories in the server's order (newest first) across two years. */
     public static List<MemoryApi.Memory> sampleMemories() {
         return List.of(
-                new MemoryApi.Memory("m3", "Bursa'da bir sonbahar günü",
+                MemoryFixtures.memory("m3", "Bursa'da bir sonbahar günü",
                         "Tophane yamaçlarında kestane şekeri molası.", "2024-10-28"),
-                new MemoryApi.Memory("m2", "Annemle kahve molası", "", "2024-10-14"),
-                new MemoryApi.Memory("m1", "Üniversitedeki ilk günüm",
+                MemoryFixtures.memory("m2", "Annemle kahve molası", "", "2024-10-14"),
+                MemoryFixtures.memory("m1", "Üniversitedeki ilk günüm",
                         "Amfinin kapısındaki o tatlı heyecan.", "2023-09-18"));
     }
 

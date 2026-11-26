@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One memory as a notebook page (Stitch "Anılar", photo-less card): white 32dp card with the
-     pink border, a raspberry-to-lavender margin stripe, the date in a pink pill, the title and
-     up to two lines of description. A strip of washi tape overlaps the top edge, so the card
-     sits in a frame that does not clip its children. -->
+<!-- One memory on the timeline (Stitch "Anılar"). Two variants, chosen from code:
+     - with photos: a rounded cover with an "X fotoğraf" pill in its top corner;
+     - without photos: no cover, a raspberry-to-lavender margin stripe instead.
+     Below: date, title, two lines of description and the pastel badges that apply. The card sits
+     to the right of the timeline gutter; washi tape overlaps its top edge, so the frame does not
+     clip its children. The whole card opens the memory. -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,13 +13,18 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/ml_space_md"
     android:clipChildren="false"
-    android:clipToPadding="false">
+    android:clipToPadding="false"
+    android:paddingStart="@dimen/memory_timeline_gutter"
+    tools:ignore="RtlSymmetry">
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/memory_card"
         style="@style/Widget.MemoryLane.Card.Scrapbook"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/memory_tape_overlap">
+        android:layout_marginTop="@dimen/memory_tape_overlap"
+        android:clickable="true"
+        android:focusable="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -25,27 +32,71 @@
             android:orientation="horizontal">
 
             <View
+                android:id="@+id/memory_stripe"
                 android:layout_width="@dimen/memory_card_stripe"
                 android:layout_height="match_parent"
+                android:layout_marginEnd="@dimen/ml_space_md"
                 android:background="@drawable/memory_card_stripe"
                 android:importantForAccessibility="no" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/ml_space_md"
                 android:layout_weight="1"
                 android:orientation="vertical">
+
+                <FrameLayout
+                    android:id="@+id/memory_cover_frame"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/memory_cover_height"
+                    android:layout_marginBottom="@dimen/memory_cover_gap"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/memory_cover"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:importantForAccessibility="no"
+                        android:scaleType="centerCrop"
+                        android:src="@color/memory_pink_soft"
+                        app:shapeAppearance="@style/ShapeAppearance.MemoryLane.Cover" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="@dimen/memory_cover_badge_margin"
+                        android:background="@drawable/memory_photo_scrim_pill"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/memory_badge_padding_h"
+                        android:paddingVertical="@dimen/ml_space_xs"
+                        tools:ignore="UseCompoundDrawables">
+
+                        <ImageView
+                            android:layout_width="@dimen/memory_icon_small"
+                            android:layout_height="@dimen/memory_icon_small"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_photo"
+                            app:tint="@color/ml_on_primary" />
+
+                        <TextView
+                            android:id="@+id/memory_photo_count"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/ml_space_xs"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Label.OnPhoto"
+                            tools:text="4 fotoğraf" />
+                    </LinearLayout>
+                </FrameLayout>
 
                 <!-- A compound drawable cannot shrink the 24dp icon to the 16dp inline size. -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/memory_pill_pink"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="@dimen/ml_space_sm"
-                    android:paddingVertical="@dimen/ml_space_xs"
                     tools:ignore="UseCompoundDrawables">
 
                     <ImageView
@@ -60,20 +111,20 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/ml_space_xs"
-                        android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
-                        android:textColor="@color/ml_primary"
-                        tools:text="28 Ekim 2024" />
+                        android:textAppearance="@style/TextAppearance.MemoryLane.Label"
+                        android:textColor="@color/ml_plum_muted"
+                        tools:text="28 Ekim 2026" />
                 </LinearLayout>
 
                 <TextView
                     android:id="@+id/memory_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ml_space_sm"
+                    android:layout_marginTop="@dimen/ml_space_xs"
                     android:ellipsize="end"
                     android:maxLines="2"
                     android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle"
-                    tools:text="Bursa’da bir sonbahar günü" />
+                    tools:text="Bursa’da Bir Sonbahar Günü" />
 
                 <TextView
                     android:id="@+id/memory_description"
@@ -83,7 +134,37 @@
                     android:ellipsize="end"
                     android:maxLines="2"
                     android:textAppearance="@style/TextAppearance.MemoryLane.Body.Muted"
-                    tools:text="Tophane yamaçlarında ılık rüzgar eşliğinde kestane şekeri molası ve eski sokaklarda uzun bir yürüyüş." />
+                    tools:text="Tophane yamaçlarında ılık sonbahar rüzgarı eserken sıcacık bir fincan çay içtik." />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/memory_badges"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/memory_cover_gap"
+                    app:chipSpacingHorizontal="@dimen/memory_badge_spacing"
+                    app:chipSpacingVertical="@dimen/memory_badge_spacing">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/memory_badge_category"
+                        style="@style/Widget.MemoryLane.Badge.Category"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="Gezi" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/memory_badge_emotion"
+                        style="@style/Widget.MemoryLane.Badge.Emotion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="Huzurlu" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/memory_badge_location"
+                        style="@style/Widget.MemoryLane.Badge.Location"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="41,0082° K, 28,9784° D" />
+                </com.google.android.material.chip.ChipGroup>
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

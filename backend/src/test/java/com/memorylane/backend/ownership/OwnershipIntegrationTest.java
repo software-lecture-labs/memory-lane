@@ -21,6 +21,8 @@ import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -163,6 +165,20 @@ class OwnershipIntegrationTest {
 
         assertEquals(404, api.send("PUT", memoryPath(memoryOfA), null, tokenOfB).statusCode());
         assertEquals(404, api.send("DELETE", memoryPath(memoryOfA), null, tokenOfB).statusCode());
+
+        // The real PUT: even A's exact current tag (guessable, the memory is at version 1) or no
+        // tag at all gives B the same 404 as a missing memory, before any If-Match rule applies.
+        String body = "{\"title\":\"B'nin başlığı\",\"memoryDate\":\"2026-01-01\"}";
+        String tagOfA = "\"memory-" + memoryOfA + "-r1\"";
+        var missing = api.send("PUT", "/api/v1/memories/" + UUID.randomUUID(), body, tokenOfB,
+                Map.of("If-Match", tagOfA));
+        assertEquals(404, missing.statusCode());
+        for (Map<String, String> headers : List.of(Map.of("If-Match", tagOfA), Map.of("If-Match", "*"), Map.<String, String>of())) {
+            var foreign = api.send("PUT", "/api/v1/memories/" + memoryOfA, body, tokenOfB, headers);
+            assertEquals(404, foreign.statusCode(), headers + " " + foreign.body());
+            assertEquals(missing.body(), foreign.body());
+        }
+        assertEquals(1L, jdbc.queryForObject("SELECT version FROM memories WHERE id = ?", Long.class, memoryOfA));
         assertEquals("Test", jdbc.queryForObject("SELECT title FROM memories WHERE id = ?", String.class, memoryOfA));
         assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM photos WHERE memory_id = ?", Integer.class, memoryOfA));
 

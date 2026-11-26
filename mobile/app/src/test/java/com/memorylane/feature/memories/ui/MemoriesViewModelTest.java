@@ -15,6 +15,7 @@ import com.memorylane.core.network.ApiError;
 import com.memorylane.feature.health.ui.HealthViewModel;
 import com.memorylane.feature.memories.data.FakeMemoryListRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.memories.data.MemoryFixtures;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -138,7 +139,7 @@ public class MemoriesViewModelTest {
     @Test
     public void memoryOutsideTheContractIsAParseError() {
         signIn();
-        repository.last().succeed(List.of(new MemoryApi.Memory("m1", "Başlık", "", "28.10.2024")), false);
+        repository.last().succeed(List.of(MemoryFixtures.memory("m1", "Başlık", "", "28.10.2024")), false);
 
         assertEquals(MemoryListUiState.Status.ERROR, status());
         assertEquals(ApiError.Kind.PARSE, state().getError().getKind());
@@ -246,6 +247,32 @@ public class MemoriesViewModelTest {
 
         viewModel.loadMore();
         assertEquals("Paging starts again after a refresh", 1, repository.last().page);
+    }
+
+    /** After an edit the timeline refreshes; its rows must show the saved values, not the old ones. */
+    @Test
+    public void refreshAfterAnEditShowsTheSavedTitleCategoryCoverAndYear() {
+        signIn();
+        repository.last().succeed(List.of(
+                new MemoryApi.Memory("m1", "Eski başlık", "", "2025-03-01", "OTHER", null, null,
+                        null, null, 0, null),
+                memory("m2", "2024-05-01")), false);
+        assertEquals(List.of("year:2025", "memory:m1", "year:2024", "memory:m2"), keys(state().getItems()));
+
+        viewModel.refresh();
+        repository.last().succeed(List.of(
+                memory("m2", "2024-05-01"),
+                new MemoryApi.Memory("m1", "Yeni başlık", "Not", "2023-08-20", "TRAVEL", "HAPPY", null,
+                        null, null, 2, "p1")), false);
+
+        // The edited date moved the memory into another year.
+        assertEquals(List.of("year:2024", "memory:m2", "year:2023", "memory:m1"), keys(state().getItems()));
+        MemoryListItem edited = state().getItems().get(3);
+        assertEquals("Yeni başlık", edited.getTitle());
+        assertEquals("TRAVEL", edited.getCategory());
+        assertEquals("HAPPY", edited.getEmotion());
+        assertEquals("p1", edited.getCoverPhotoId());
+        assertEquals(2, edited.getPhotoCount());
     }
 
     @Test
@@ -409,7 +436,7 @@ public class MemoriesViewModelTest {
     }
 
     private static MemoryApi.Memory memory(String id, String date) {
-        return new MemoryApi.Memory(id, "Anı " + id, "", date);
+        return MemoryFixtures.memory(id, "Anı " + id, "", date);
     }
 
     private static List<String> keys(List<MemoryListItem> rows) {

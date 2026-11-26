@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One page of the detail gallery: the photo fills the frame with rounded corners. Tapping it
+     opens the full-screen viewer; its spoken text ("Fotoğraf 1 / 4…") is set from code. -->
+<com.google.android.material.imageview.ShapeableImageView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/memory_photo"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true"
+    android:scaleType="centerCrop"
+    android:src="@color/memory_pink_soft"
+    app:shapeAppearance="@style/ShapeAppearance.MemoryLane.DetailPhoto" />

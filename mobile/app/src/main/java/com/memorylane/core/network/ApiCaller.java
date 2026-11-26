@@ -26,11 +26,35 @@ public final class ApiCaller {
 
     /** On Android the callback runs on the main thread (Retrofit's default callback executor). */
     public <T> Cancellable enqueue(Call<T> call, ResultCallback<T> callback) {
+        return enqueue(call, response -> ApiResult.success(response.body()), callback);
+    }
+
+    /**
+     * Like {@link #enqueue} for endpoints whose 2xx answer must carry a body and an {@code ETag}
+     * (the memory detail). A 2xx answer missing either breaks the contract and is reported as
+     * {@link ApiError.Kind#PARSE}, so a screen never edits without a tag to send back.
+     * Non-2xx answers are classified exactly as in {@link #enqueue}.
+     */
+    public <T> Cancellable enqueueTagged(Call<T> call, ResultCallback<Tagged<T>> callback) {
+        return enqueue(call, response -> {
+            T body = response.body();
+            String etag = response.headers().get("ETag");
+            return body == null || etag == null || etag.trim().isEmpty()
+                    ? ApiResult.failure(ApiError.parse())
+                    : ApiResult.success(new Tagged<>(body, etag.trim()));
+        }, callback);
+    }
+
+    private interface SuccessMapper<T, R> {
+        ApiResult<R> map(Response<T> response);
+    }
+
+    private <T, R> Cancellable enqueue(Call<T> call, SuccessMapper<T, R> onSuccess, ResultCallback<R> callback) {
         call.enqueue(new Callback<T>() {
             @Override
             public void onResponse(@NonNull Call<T> c, @NonNull Response<T> response) {
                 if (!c.isCanceled()) {
-                    callback.onResult(toResult(response));
+                    callback.onResult(response.isSuccessful() ? onSuccess.map(response) : toError(response));
                 }
             }
 
@@ -45,10 +69,7 @@ public final class ApiCaller {
         return call::cancel;
     }
 
-    private <T> ApiResult<T> toResult(Response<T> response) {
-        if (response.isSuccessful()) {
-            return ApiResult.success(response.body());
-        }
+    private <R> ApiResult<R> toError(Response<?> response) {
         ErrorBody body = readErrorBody(response.errorBody());
         return ApiResult.failure(ApiError.http(
                 response.code(),

@@ -1,11 +1,13 @@
 package com.memorylane.feature.memories.ui;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.memorylane.feature.memories.data.FakeMemoryListRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
+import com.memorylane.feature.memories.data.MemoryFixtures;
 
 import org.junit.Test;
 
@@ -27,7 +29,31 @@ public class MemoryListMapperTest {
 
         assertEquals(List.of("year:2024", "memory:m3", "memory:m2", "year:2023", "memory:m1"), keys(rows));
         assertEquals(MemoryListItem.memory("m3", "Bursa'da bir sonbahar günü",
-                "Tophane yamaçlarında kestane şekeri molası.", LocalDate.of(2024, 10, 28)), rows.get(1));
+                "Tophane yamaçlarında kestane şekeri molası.", LocalDate.of(2024, 10, 28))
+                .withDetails("OTHER", null, null, 0, null), rows.get(1));
+    }
+
+    @Test
+    public void cardsCarryBadgesAndCoverOfTheirMemory() {
+        MemoryApi.Location bursa = new MemoryApi.Location(40.1885, 29.0610);
+        List<MemoryListItem> rows = MemoryListMapper.toItems(List.of(
+                new MemoryApi.Memory("p", "Fotoğraflı", "", "2024-10-28", "TRAVEL", "PEACEFUL", bursa,
+                        "2026-01-01T09:00:00Z", "2026-01-01T09:00:00Z", 4, "cover"),
+                new MemoryApi.Memory("t", "Yazılı", "", "2024-10-27", "OTHER", null, null,
+                        "2026-01-01T09:00:00Z", "2026-01-01T09:00:00Z", 0, null)));
+
+        MemoryListItem withPhotos = rows.get(1);
+        assertEquals("cover", withPhotos.getCoverPhotoId());
+        assertEquals(4, withPhotos.getPhotoCount());
+        assertEquals("TRAVEL", withPhotos.getCategory());
+        assertEquals("PEACEFUL", withPhotos.getEmotion());
+        assertEquals(bursa, withPhotos.getLocation());
+
+        MemoryListItem textOnly = rows.get(2);
+        assertNull(textOnly.getCoverPhotoId());
+        assertEquals(0, textOnly.getPhotoCount());
+        assertNull(textOnly.getEmotion());
+        assertNull(textOnly.getLocation());
     }
 
     @Test
@@ -77,7 +103,7 @@ public class MemoryListMapperTest {
     @Test
     public void missingDescriptionIsEmptyText() {
         MemoryListItem card = MemoryListMapper.toItems(
-                List.of(new MemoryApi.Memory("a", "Başlık", null, "2024-06-01"))).get(1);
+                List.of(MemoryFixtures.memory("a", "Başlık", null, "2024-06-01"))).get(1);
 
         assertEquals("", card.getDescription());
     }
@@ -86,13 +112,13 @@ public class MemoryListMapperTest {
     public void contractViolationsFailInsteadOfHidingMemories() {
         List<MemoryApi.Memory> invalid = new ArrayList<>();
         invalid.add(null);
-        invalid.add(new MemoryApi.Memory(null, "Başlık", "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory(" ", "Başlık", "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory("a", null, "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory("a", "   ", "", "2024-06-01"));
-        invalid.add(new MemoryApi.Memory("a", "Başlık", "", null));
+        invalid.add(MemoryFixtures.memory(null, "Başlık", "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory(" ", "Başlık", "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory("a", null, "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory("a", "   ", "", "2024-06-01"));
+        invalid.add(MemoryFixtures.memory("a", "Başlık", "", null));
         for (String date : new String[] {"", "2024-6-1", "01.06.2024", "2024-02-30", "2024-06-01T10:00"}) {
-            invalid.add(new MemoryApi.Memory("a", "Başlık", "", date));
+            invalid.add(MemoryFixtures.memory("a", "Başlık", "", date));
         }
 
         for (MemoryApi.Memory memory : invalid) {
@@ -105,7 +131,7 @@ public class MemoryListMapperTest {
     }
 
     private static MemoryApi.Memory memory(String id, String date) {
-        return new MemoryApi.Memory(id, "Anı " + id, "", date);
+        return MemoryFixtures.memory(id, "Anı " + id, "", date);
     }
 
     private static List<String> keys(List<MemoryListItem> rows) {

@@ -314,7 +314,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Category: exactly one, "Diğer" until another is chosen. Chips come from MemoryChoices. -->
+        <!-- Category: exactly one, "Diğer" until another is chosen. Chips come from MemoryLabels. -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.MemoryLane.Card.Scrapbook"
             android:layout_width="match_parent"
