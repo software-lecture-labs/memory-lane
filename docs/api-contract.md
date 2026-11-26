@@ -280,6 +280,8 @@ Geçersiz dosya/tarih gibi 4xx hataları veri düzeltilmeden tekrar gönderilmez
 
 Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından karar verir. Alan hatası `message` içinde anlaşılır anlatılır. Dosya yolu, SQL, stack trace, parola ve token yanıta yazılmaz.
 
+Bu gövde yalnız controller'ların kendi hatalarında değil, isteğin bir controller'a hiç ulaşmadığı durumlarda da kullanılır: tanımsız adres, desteklenmeyen yöntem, `Accept` veya `Content-Type` değeri ve filtre içinde oluşan beklenmeyen hata. Bütün hata yanıtları `Cache-Control: no-store` taşır; Spring Boot'un varsayılan `timestamp/status/error/path` gövdesi dönmez. Gövdede `code` ve `message` dışında alan bulunmaz. Tek istisna, Spring'e ulaşmadan web sunucusunun (Tomcat) reddettiği bozuk URL'lerdir (örneğin `%00` içeren yol); bunlar ayrıntı içermeyen kısa bir HTML 400 sayfası döner.
+
 ```json
 {"code":"INVALID_INPUT","message":"Başlık 1–100 karakter olmalıdır."}
 ```
@@ -287,7 +289,7 @@ Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından ka
 | HTTP | Kod | Anlam |
 | --- | --- | --- |
 | 400 | `INVALID_INPUT` | Alan, UUID, tarih, koordinat, sayfa geçersiz; zorunlu anahtar eksik |
-| 400 | `INVALID_JSON` | Okunamayan JSON |
+| 400 | `INVALID_JSON` | Okunamayan JSON; aynı alanın gövdede birden çok kez gönderilmesi |
 | 400 | `INVALID_PRECONDITION` | PUT için If-Match biçimi desteklenmiyor veya * kullanılmış |
 | 401 | `INVALID_CREDENTIALS` | Hesap/parola doğrulanamadı; yalnız login |
 | 401 | `INVALID_SESSION` | Eksik, geçersiz, iptal edilmiş veya süresi dolmuş oturum; `WWW-Authenticate: Bearer` |
@@ -299,7 +301,7 @@ Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından ka
 | 428 | `PRECONDITION_REQUIRED` | PUT için If-Match eksik; önce detay GET yapılmalı |
 | 413 | `FILE_TOO_LARGE` / `REQUEST_TOO_LARGE` | Dosya limiti / auth gövde limiti aşıldı |
 | 415 | `UNSUPPORTED_PHOTO_TYPE` | Fotoğraf JPEG/PNG değil veya içerik türü uyuşmuyor |
-| 405 / 415 | `HTTP_ERROR` | Yöntem veya JSON isteğinin Content-Type değeri desteklenmiyor |
+| 404 / 405 / 406 / 415 | `HTTP_ERROR` | Tanımsız adres (kaynak bulunamadı 404'ü değil), desteklenmeyen yöntem, JSON dışında yanıt isteyen `Accept` veya desteklenmeyen `Content-Type` |
 | 429 | `RATE_LIMITED` | IP veya login e-posta deneme sınırı; Retry-After saniye bilgisi |
 | 500 | `INTERNAL_ERROR` | İstemciye iç ayrıntısı verilmeyen beklenmeyen hata |
 | 503 | `AUTH_BUSY` | Sunucunun eşzamanlı hash kapasitesi dolu; `Retry-After: 1`, yeni istek daha sonra denenebilir |
