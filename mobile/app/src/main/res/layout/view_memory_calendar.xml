@@ -7,6 +7,37 @@
     tools:orientation="vertical"
     tools:parentTag="android.widget.LinearLayout">
 
+    <!-- "On this day": memories of today's date in earlier years; hidden when there are none. -->
+    <LinearLayout
+        android:id="@+id/calendar_on_this_day"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/ml_space_md"
+        android:background="@drawable/calendar_reminder_bg"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/ml_space_md"
+        android:paddingTop="@dimen/ml_space_sm"
+        android:paddingBottom="@dimen/ml_space_xs"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawablePadding="@dimen/ml_space_xs"
+            android:gravity="center_vertical"
+            android:text="@string/calendar_on_this_day_title"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Note.Accent"
+            app:drawableStartCompat="@drawable/ic_favorite"
+            app:drawableTint="@color/ml_primary" />
+
+        <LinearLayout
+            android:id="@+id/calendar_on_this_day_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

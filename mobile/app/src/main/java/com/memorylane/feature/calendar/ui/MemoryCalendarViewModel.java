@@ -154,7 +154,7 @@ public final class MemoryCalendarViewModel extends ViewModel {
         notesByDate.clear();
         notesByDate.putAll(incoming);
         incoming.clear();
-        if (!loadedOnce) openLatestMonth();
+        if (!loadedOnce) openToday();
         loadedOnce = true;
         publish(MemoryCalendarUiState.Status.READY, null);
     }
@@ -176,19 +176,11 @@ public final class MemoryCalendarViewModel extends ViewModel {
                 .add(new CalendarNote(memory.id(), memory.title(), description, date));
     }
 
-    /** Opens on the newest memory so the calendar never starts on an empty month. */
-    private void openLatestMonth() {
-        LocalDate latest = null;
-        for (LocalDate date : notesByDate.keySet()) {
-            if (latest == null || date.isAfter(latest)) latest = date;
-        }
-        if (latest == null) {
-            month = YearMonth.now(clock);
-            selected = null;
-        } else {
-            month = YearMonth.from(latest);
-            selected = latest;
-        }
+    /** Opens on today, like a paper calendar; "on this day" points to past years' memories. */
+    private void openToday() {
+        LocalDate today = LocalDate.now(clock);
+        month = YearMonth.from(today);
+        selected = today;
     }
 
     private void republish() {
@@ -204,7 +196,7 @@ public final class MemoryCalendarViewModel extends ViewModel {
     private MemoryCalendarUiState snapshot(MemoryCalendarUiState.Status status, @Nullable ApiError error) {
         Map<LocalDate, List<CalendarNote>> copy = new HashMap<>();
         notesByDate.forEach((date, notes) -> copy.put(date, List.copyOf(notes)));
-        return new MemoryCalendarUiState(status, copy, month, selected, error);
+        return new MemoryCalendarUiState(status, copy, month, selected, LocalDate.now(clock), error);
     }
 
     private void cancel() {

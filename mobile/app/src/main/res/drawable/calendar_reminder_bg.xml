@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "On this day" reminder above the calendar: a butter note with a soft edge. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/calendar_reminder" />
+    <stroke android:width="@dimen/ml_stroke_thin" android:color="@color/calendar_note_butter" />
+    <corners android:radius="@dimen/ml_radius_input" />
+</shape>

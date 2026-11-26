@@ -141,7 +141,7 @@ public class ProfileFragment extends Fragment {
         }
         // The empty grid is never shown under a loading or error message.
         binding.profileCalendar.setVisibility(ready ? View.VISIBLE : View.GONE);
-        binding.profileCalendar.render(state, LocalDate.now());
+        binding.profileCalendar.render(state);
         // Once the memories are in, the owner card says how many and since when.
         binding.profileOwnerNote.setText(ready ? summary(state) : getString(R.string.profile_owner_note));
     }

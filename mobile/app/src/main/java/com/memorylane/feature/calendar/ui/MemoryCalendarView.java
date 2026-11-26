@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import com.memorylane.R;
 import com.memorylane.core.ui.Motion;
 import com.memorylane.databinding.ItemCalendarNoteBinding;
+import com.memorylane.databinding.ItemCalendarReminderBinding;
 import com.memorylane.databinding.ViewMemoryCalendarBinding;
 
 import java.time.DayOfWeek;
@@ -82,7 +83,9 @@ public class MemoryCalendarView extends LinearLayout {
         this.listener = listener;
     }
 
-    public void render(@NonNull MemoryCalendarUiState state, @NonNull LocalDate today) {
+    public void render(@NonNull MemoryCalendarUiState state) {
+        LocalDate today = state.getToday();
+        renderOnThisDay(state.getOnThisDay(), today);
         YearMonth month = state.getMonth();
         binding.calendarMonth.setText(monthFormat.format(month));
         int monthCount = state.getMonthCount();
@@ -98,6 +101,26 @@ public class MemoryCalendarView extends LinearLayout {
         adapter.submitList(state.getDays());
         adapter.setMarks(state.getSelected(), today);
         renderSelected(state);
+    }
+
+    /** "1 yıl önce bugün: …" rows; tapping one opens that day, in its own month. */
+    private void renderOnThisDay(List<CalendarNote> notes, LocalDate today) {
+        binding.calendarOnThisDayList.removeAllViews();
+        binding.calendarOnThisDay.setVisibility(notes.isEmpty() ? View.GONE : View.VISIBLE);
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        for (CalendarNote note : notes) {
+            ItemCalendarReminderBinding row = ItemCalendarReminderBinding.inflate(
+                    inflater, binding.calendarOnThisDayList, true);
+            int years = today.getYear() - note.date().getYear();
+            String ago = getResources().getQuantityString(R.plurals.calendar_years_ago, years, years);
+            row.reminderYears.setText(ago);
+            row.reminderTitle.setText(note.title());
+            row.getRoot().setContentDescription(
+                    getContext().getString(R.string.calendar_on_this_day_description, ago, note.title()));
+            row.getRoot().setOnClickListener(view -> {
+                if (listener != null) listener.onDayPicked(note.date());
+            });
+        }
     }
 
     private void renderSelected(MemoryCalendarUiState state) {
