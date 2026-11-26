@@ -280,7 +280,7 @@ Geçersiz dosya/tarih gibi 4xx hataları veri düzeltilmeden tekrar gönderilmez
 
 Auth için belirlenen biçim korunur; mobil metinden değil `code` alanından karar verir. Alan hatası `message` içinde anlaşılır anlatılır. Dosya yolu, SQL, stack trace, parola ve token yanıta yazılmaz.
 
-Bu gövde yalnız controller'ların kendi hatalarında değil, isteğin bir controller'a hiç ulaşmadığı durumlarda da kullanılır: tanımsız adres, desteklenmeyen yöntem, `Accept` veya `Content-Type` değeri ve filtre içinde oluşan beklenmeyen hata. Bütün hata yanıtları `Cache-Control: no-store` taşır; Spring Boot'un varsayılan `timestamp/status/error/path` gövdesi dönmez. Gövdede `code` ve `message` dışında alan bulunmaz. Tek istisna, Spring'e ulaşmadan web sunucusunun (Tomcat) reddettiği bozuk URL'lerdir (örneğin `%00` içeren yol); bunlar ayrıntı içermeyen kısa bir HTML 400 sayfası döner.
+Bu gövde yalnız controller'ların kendi hatalarında değil, isteğin bir controller'a hiç ulaşmadığı durumlarda da kullanılır: tanımsız adres, desteklenmeyen yöntem, `Accept` veya `Content-Type` değeri ve filtre içinde oluşan beklenmeyen hata. Bütün hata yanıtları `Cache-Control: no-store` taşır; Spring Boot'un varsayılan `timestamp/status/error/path` gövdesi dönmez. Gövdede `code` ve `message` dışında alan bulunmaz. Spring'e ulaşmadan web sunucusunun (Tomcat) reddettiği bozuk istekler de (örneğin `%00` içeren yol veya bozuk başlık) HTML sayfası yerine aynı gövdeyle `400 INVALID_INPUT` alır.
 
 ```json
 {"code":"INVALID_INPUT","message":"Başlık 1–100 karakter olmalıdır."}
