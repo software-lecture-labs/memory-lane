@@ -39,6 +39,14 @@
     <string name="error_http">Sunucu beklenmeyen bir yanıt verdi.</string>
     <string name="error_parse">Sunucu yanıtı okunamadı.</string>
     <string name="error_unexpected">Beklenmeyen bir hata oluştu.</string>
+    <!-- ML-18: texts chosen by error code, not by the server's message -->
+    <string name="error_server">Sunucuda beklenmeyen bir hata oluştu. Biraz sonra tekrar dene.</string>
+    <string name="error_server_busy">Sunucu şu an çok yoğun. Birkaç saniye sonra tekrar dene.</string>
+    <string name="error_rate_limited">Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene.</string>
+    <string name="error_rate_limited_seconds">Çok fazla deneme yapıldı. %1$d saniye sonra tekrar dene.</string>
+    <string name="error_rate_limited_minutes">Çok fazla deneme yapıldı. %1$d dakika sonra tekrar dene.</string>
+    <string name="error_app_mismatch">Uygulama ile sunucu bu isteği anlaşamadı. Uygulamayı güncelleyip tekrar dene.</string>
+    <string name="error_session_expired">Oturumun sona erdi. Lütfen tekrar giriş yap.</string>
     <!-- Login -->
     <string name="login_email_placeholder">ornek@mail.com</string>
     <string name="login_welcome">Tekrar hoş geldin</string>
