@@ -15,9 +15,8 @@
     <string name="map_title">Anı haritası</string>
     <string name="map_subtitle">Konumlu anıların haritada gösterilecek.</string>
     <string name="profile_title">Profil</string>
-    <string name="profile_subtitle">Oturumun ve sunucu bağlantın.</string>
+    <string name="profile_subtitle">Hesabın ve uygulama ayarların.</string>
     <string name="profile_session_title">Oturum</string>
-    <string name="profile_signed_in">Hesabınla giriş yaptın. Anıların yalnızca oturum açıkken görünür.</string>
     <string name="profile_signed_out">Giriş yapmadın. Anılarını görmek için giriş yap.</string>
     <string name="profile_sign_in">Giriş yap</string>
     <string name="profile_sign_out">Çıkış yap</string>
