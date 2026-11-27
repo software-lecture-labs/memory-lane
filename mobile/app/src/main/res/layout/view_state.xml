@@ -5,11 +5,11 @@
     tools:orientation="vertical"
     tools:parentTag="android.widget.LinearLayout">
 
-    <com.google.android.material.progressindicator.CircularProgressIndicator
+    <!-- Waiting: the app's logo swaying (MemoryLaneLoader); the message below names what loads. -->
+    <com.memorylane.core.ui.widget.MemoryLaneLoader
         android:id="@+id/state_progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:indeterminate="true" />
+        android:layout_width="@dimen/loading_logo_size"
+        android:layout_height="@dimen/loading_logo_size" />
 
     <ImageView
         android:id="@+id/state_icon"

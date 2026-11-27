@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ButtonProgress keeps a button's own icon and text here while it shows the spinner. -->
+    <item name="tag_button_progress" type="id" />
+</resources>

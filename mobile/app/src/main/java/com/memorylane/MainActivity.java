@@ -16,6 +16,7 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.memorylane.core.di.AppContainer;
 import com.memorylane.core.navigation.SessionNavigator;
+import com.memorylane.core.ui.SplashExit;
 import com.memorylane.databinding.ActivityMainBinding;
 
 /** Single activity; every tab is a fragment destination in res/navigation/nav_graph.xml. */
@@ -24,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SplashExit.install(this);
         // targetSdk 35 is edge-to-edge on Android 15 anyway; enabling it everywhere keeps
         // older versions consistent. The bottom bar pads itself for the gesture area.
         EdgeToEdge.enable(this);
