@@ -134,6 +134,44 @@ Düz `http` yalnız debug sürümde açıktır (`mobile/app/src/debug/AndroidMan
 4. Uygulamayı kapatıp açın: token yalnız bellekte tutulduğu için yeniden giriş istenir.
 5. **Profil → Çıkış yap** ile çıkıp B ile girin: B'nin listesinde, aramasında ve haritasında A'nın anısı görünmez.
 
+## Mimari özeti
+
+İki tarafta da **katmanlı mimari** kullanılır; her katman yalnız bir alttakini bilir. Backend tek bir uygulama olarak dağıtılır. Değerlendirilen alternatifler (controller içinde doğrudan veri erişimi, mikroservisler, Jakarta EE/Payara) ve seçimin gerekçesi [mimari belgesinde](docs/architecture.md#ml-01-ders-kriterleri-ve-alternatifler): katmanlar dört kişilik ekipte sorumlulukları ayırır, tek dağıtım kapsam için yeterlidir; mikroservisler gereksiz servis iletişimi ve dağıtım yükü getirirdi.
+
+```
+Android (MVVM)                               Backend (katmanlı)
+Fragment (XML ekran, yalnız çizer)            Controller   HTTP sözleşmesi, doğrulama, durum kodları
+  -> ViewModel (ekran durumu, kurallar)         -> Service  iş kuralları, @Transactional sınırı, sahiplik
+    -> Repository arayüzü                         -> JdbcClient / Spring Data JPA
+      -> Retrofit + OkHttp  --- HTTPS/JSON --->      -> PostgreSQL 17 (şema: Flyway V1-V5)
+```
+
+- **Çalışma ortamı (application server):** Spring Boot'un gömülü Tomcat'i; öğretim elemanı bu seçimi PR #2 incelemesinde bu dönem için kabul etti. Payara Micro yerine seçilme gerekçesi ve Jakarta EE karşılıkları [ADR-0001](docs/adr/0001-spring-boot-uygulama-calisma-ortami.md)'de. `bootJar` çalıştırılabilir tek bir JAR üretir.
+- **Veritabanı:** PostgreSQL 17. Şemanın sahibi Flyway'dir; uygulanmış migration değiştirilmez, her değişiklik yeni bir sürüm dosyasıdır. Hibernate şemayı yalnız doğrular (`ddl-auto=validate`).
+
+### SOLID
+
+Koddan örnekler; ilke ilke açıklama [mimari belgesinde](docs/architecture.md#solid):
+
+- **Tek sorumluluk:** `MemoryController` yalnız HTTP'yi, `MemoryService` iş kurallarını ve transaction'ı, `OwnershipGuard` yalnız sahiplik denetimini, `PhotoStorage` dosya saklamayı, `PhotoFileCleanup` commit sonrası dosya temizliğini yürütür. Mobilde Fragment yalnız çizer, kurallar ViewModel'dedir.
+- **Açık/kapalı:** Fotoğraf servisi `PhotoStorage` arayüzünü bilir; bugün `LocalPhotoStorage` diske yazar, başka bir depolama servis değişmeden eklenebilir.
+- **Liskov:** Testlerdeki sahte repository'ler (`FakeMemoryDetailRepository` vb.) gerçek uygulamanın sözleşmesine uyar (geri çağrı tam bir kez, iptal edilince hiç); ViewModel'ler aynı kodla iki uygulamada da çalışır.
+- **Arayüz ayrımı:** Mobil `MemoryRepository` tek sınıftır ama ekranlar yalnız ihtiyaç duydukları arayüzü görür: `MemoryListRepository`, `MemoryDetailRepository`, `MemoryEditRepository`…
+- **Bağımlılığın tersine çevrilmesi:** Ekranlar somut sınıfları değil arayüzleri ister; somut sınıfları yalnız `AppContainer` (mobilde elle bağımlılık enjeksiyonu) ve Spring'in constructor injection'ı bilir.
+
+### Transaction
+
+Birden çok yazma tek bir service transaction'ında yapılır; biri başarısız olursa hepsi geri alınır. Kurallar [mimari belgesinde](docs/architecture.md#transaction) ve [ADR-0002](docs/adr/0002-silme-politikasi.md)'de.
+
+- **Anı silme** (`MemoryService.delete`, ML-13): anı satırı kilitlenir, fotoğraf dosyaları temizlik kuyruğuna alınır, fotoğraf kayıtları ve anı silinir. `MemoryDeleteIntegrationTest`, fotoğraflar silindikten sonra kasıtlı bir hata üretir ve anının, fotoğraf kayıtlarının ve dosyaların korunduğunu gösterir. Dosyalar transaction'a dahil edilemediği için yalnız commit sonrasında silinir.
+- **Fotoğraf yükleme** (`PhotoService.upload`): anı satırı kilitlenir; tekrar denemesi, 5 fotoğraf sınırı ve sıra aynı kilit altında karar verilir. Transaction geri alınırsa diske yazılmış dosya da silinir.
+- **Anı güncelleme** (`MemoryService.update`): `If-Match` sürüm kontrolü ve yazma aynı kilit altında yapılır; eşzamanlı ikinci yazma 412 alır, veri kaybolmaz.
+
+## Güvenlik: hesap, oturum ve sahiplik
+
+- **Hesap ve oturum:** Parolalar Argon2id ile özetlenir; 24 saat geçerli rastgele tokenın veritabanında yalnız SHA-256 özeti tutulur. Çıkış tokenı iptal eder. Ham parola ve token loglanmaz. Kayıt/giriş IP başına dakikada 20 istekle, hatalı giriş hesap başına 5 denemeyle sınırlıdır. Mobil uygulama tokenı yalnız bellekte tutar. Ayrıntılar aşağıdaki [Hesap ve oturum ayrıntıları](#hesap-ve-oturum-ayrıntıları) bölümünde.
+- **Sahiplik** ([ADR-0003](docs/adr/0003-sahiplik-denetimi.md)): `SessionAuthenticationFilter`, `/api/v1/auth/` dışındaki her istekte oturumu controller'dan önce doğrular; oturumsuz istek `401 INVALID_SESSION` alır. Kullanıcı kimliği yalnız oturumdan gelir (`@CurrentUser`); istemcinin gönderdiği sahip bilgisi kullanılmaz. Her anı ve fotoğraf işlemi `OwnershipGuard` ile denetlenir; başka hesabın kaynağı ile var olmayan kaynak aynı `404` yanıtını alır, böylece varlığı sızmaz. Fotoğraflar herkese açık bir klasörden değil, yalnız sahibine dönen korumalı bir uçtan sunulur.
+
 ## Veri modeli ve API
 
 Hesap, oturum, kullanıcıya özel anı ve fotoğraf işlemlerinin ortak alanları, endpointleri, hata yanıtları ve tekrar deneme kuralları [ML-03 API sözleşmesinde](docs/api-contract.md) tanımlıdır. Bu belge geliştirme sözleşmesidir; endpointlerin uygulanmış olduğunu göstermez.
