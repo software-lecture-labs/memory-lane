@@ -7,5 +7,5 @@
     <string name="memory_viewer_next">Sonraki fotoğraf</string>
     <string name="memory_viewer_photo_description">Fotoğraf %1$d / %2$d</string>
     <string name="memory_viewer_loading">Fotoğraf yükleniyor</string>
-    <string name="memory_viewer_error">Fotoğraf yüklenemedi.</string>
+    <string name="memory_viewer_error">Bu fotoğraf açılamadı. Dosyası eksik olabilir ya da bağlantı kesilmiş olabilir.</string>
 </resources>

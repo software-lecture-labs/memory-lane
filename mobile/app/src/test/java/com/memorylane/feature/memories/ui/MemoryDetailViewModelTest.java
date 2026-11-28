@@ -17,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MemoryDetailViewModelTest {
@@ -56,6 +57,27 @@ public class MemoryDetailViewModelTest {
         assertEquals(List.of("p1", "p2"), List.of(state.getMemory().photos().get(0).id(),
                 state.getMemory().photos().get(1).id()));
         assertNull(state.getError());
+    }
+
+    @Test
+    public void galleryFollowsPhotoOrderWhateverOrderTheServerListsThemIn() {
+        viewModel.start(SESSION);
+        MemoryApi.Detail full = FakeMemoryDetailRepository.fullMemory(MEMORY);
+        // Five photos, listed out of order; p3 and p4 share an order and keep the server's sequence.
+        MemoryApi.Detail shuffled = new MemoryApi.Detail(full.id(), full.title(), full.description(),
+                full.memoryDate(), full.category(), full.emotion(), full.location(), full.createdAt(),
+                full.updatedAt(), 5, "p1", List.of(
+                        FakeMemoryDetailRepository.photo(MEMORY, "p5", 4),
+                        FakeMemoryDetailRepository.photo(MEMORY, "p3", 2),
+                        FakeMemoryDetailRepository.photo(MEMORY, "p1", 0),
+                        FakeMemoryDetailRepository.photo(MEMORY, "p4", 2),
+                        FakeMemoryDetailRepository.photo(MEMORY, "p2", 1)));
+
+        repository.last().succeed(shuffled);
+
+        List<String> gallery = new ArrayList<>();
+        for (MemoryApi.Photo photo : state().getPhotos()) gallery.add(photo.id());
+        assertEquals(List.of("p1", "p2", "p3", "p4", "p5"), gallery);
     }
 
     @Test

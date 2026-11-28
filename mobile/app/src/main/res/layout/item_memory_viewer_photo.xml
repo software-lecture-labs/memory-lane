@@ -42,6 +42,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:text="@string/memory_viewer_error"
             android:textAppearance="@style/TextAppearance.MemoryLane.Body"
             android:textColor="@color/ml_on_primary" />

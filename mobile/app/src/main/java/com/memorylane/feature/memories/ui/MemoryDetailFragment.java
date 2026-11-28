@@ -51,6 +51,8 @@ public class MemoryDetailFragment extends Fragment {
     private final PagerSnapHelper pager = new PagerSnapHelper();
     /** The memory the gallery was built for; a re-delivered state keeps the page the user is on. */
     @Nullable private MemoryApi.Detail shownMemory;
+    /** The gallery's photos in gallery order; the full-screen viewer opens with the same list. */
+    private List<MemoryApi.Photo> shownPhotos = new ArrayList<>();
     private int photoCount;
     private int currentPhoto;
 
@@ -155,12 +157,13 @@ public class MemoryDetailFragment extends Fragment {
         binding.detailGallery.setVisibility(state.hasPhotos() ? View.VISIBLE : View.GONE);
         if (memory != shownMemory) {
             shownMemory = memory;
-            bindGallery(memory);
+            shownPhotos = state.getPhotos();
+            bindGallery(shownPhotos);
         }
     }
 
-    private void bindGallery(MemoryApi.Detail memory) {
-        photoCount = memory.photos().size();
+    private void bindGallery(List<MemoryApi.Photo> photos) {
+        photoCount = photos.size();
         if (photoCount == 0) {
             binding.detailPhotos.setAdapter(null);
             return;
@@ -172,7 +175,7 @@ public class MemoryDetailFragment extends Fragment {
                 - 2 * resources.getDimensionPixelSize(R.dimen.memory_detail_frame_padding);
         int height = resources.getDimensionPixelSize(R.dimen.memory_detail_photo_height);
         binding.detailPhotos.setAdapter(new MemoryPhotoAdapter(app.getPhotoImageLoader(), viewModel.memoryId(),
-                memory.photos(), Math.max(width, 1), height, this::openPhotoViewer));
+                photos, Math.max(width, 1), height, this::openPhotoViewer));
         buildDots();
         currentPhoto = 0;
         showCurrentPhoto();
@@ -226,7 +229,7 @@ public class MemoryDetailFragment extends Fragment {
         MemoryApi.Detail memory = shownMemory;
         if (memory == null || position < 0 || position >= photoCount) return;
         List<String> photoIds = new ArrayList<>();
-        for (MemoryApi.Photo photo : memory.photos()) photoIds.add(photo.id());
+        for (MemoryApi.Photo photo : shownPhotos) photoIds.add(photo.id());
         NavController navController = NavHostFragment.findNavController(this);
         NavDestination current = navController.getCurrentDestination();
         // A fast double tap delivers a second click after the first navigation; it is ignored.

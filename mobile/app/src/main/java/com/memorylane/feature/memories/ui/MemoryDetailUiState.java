@@ -7,6 +7,10 @@ import com.memorylane.core.network.ApiError;
 import com.memorylane.feature.memories.data.MemoryApi;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 /** Immutable state of the memory detail screen; the fragment draws it in one render call. */
@@ -63,6 +67,19 @@ public final class MemoryDetailUiState {
 
     /** CONTENT with at least one photo: the gallery is shown, otherwise it is left out entirely. */
     public boolean hasPhotos() { return memory != null && !memory.photos().isEmpty(); }
+
+    /**
+     * Photos in gallery order, {@code order} ascending, so the gallery, its counter and the
+     * full-screen viewer always agree even if the server lists them differently. Photos with the
+     * same {@code order} keep the server's sequence (the sort is stable). Empty outside CONTENT.
+     */
+    @NonNull
+    public List<MemoryApi.Photo> getPhotos() {
+        if (memory == null) return Collections.emptyList();
+        List<MemoryApi.Photo> photos = new ArrayList<>(memory.photos());
+        photos.sort(Comparator.comparingInt(MemoryApi.Photo::order));
+        return photos;
+    }
 
     /** CONTENT with a location: the location card is shown, otherwise it is left out entirely. */
     public boolean hasLocation() { return memory != null && memory.location() != null; }
