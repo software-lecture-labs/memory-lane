@@ -11,9 +11,7 @@
     <string name="memories_title">Anılarım</string>
     <string name="memories_subtitle">Kaydettiğin anılar burada listelenecek.</string>
 
-    <!-- Map and profile tabs -->
-    <string name="map_title">Anı haritası</string>
-    <string name="map_subtitle">Konumlu anıların haritada gösterilecek.</string>
+    <!-- Profile tab (the map tab's texts are in map_strings.xml) -->
     <string name="profile_title">Profil</string>
     <string name="profile_subtitle">Oturumun ve sunucu bağlantın.</string>
     <string name="profile_session_title">Oturum</string>
@@ -22,7 +20,6 @@
     <string name="profile_sign_in">Giriş yap</string>
     <string name="profile_sign_out">Çıkış yap</string>
     <string name="profile_signed_out_done">Çıkış yaptın.</string>
-    <string name="screen_not_ready">Bu bölüm sonraki geliştirmede eklenecek.</string>
 
     <!-- Server health -->
     <string name="health_section_title">Sunucu durumu</string>

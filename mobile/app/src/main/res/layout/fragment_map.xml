@@ -3,19 +3,177 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="@dimen/ml_space_md">
+    android:orientation="vertical">
 
     <com.memorylane.core.ui.widget.ScreenHeaderView
+        android:id="@+id/map_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:headerSubtitle="@string/map_subtitle"
+        android:paddingHorizontal="@dimen/ml_space_md"
+        android:paddingTop="@dimen/ml_space_md"
+        android:paddingBottom="@dimen/ml_space_sm"
         app:headerTitle="@string/map_title" />
 
-    <TextView
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/ml_space_lg"
-        android:text="@string/screen_not_ready"
-        android:textAppearance="@style/TextAppearance.MemoryLane.Body" />
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <org.maplibre.android.maps.MapView
+            android:id="@+id/map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/map_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="@dimen/ml_space_md"
+            android:background="@drawable/memory_pill_lavender"
+            android:paddingHorizontal="@dimen/ml_space_md"
+            android:paddingVertical="@dimen/ml_space_sm"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="@dimen/ml_space_md"
+            android:orientation="vertical">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/map_zoom_in"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/map_zoom_in"
+                android:src="@drawable/ic_add"
+                app:backgroundTint="@color/ml_surface"
+                app:fabSize="mini"
+                app:tint="@color/ml_primary" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/map_zoom_out"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm"
+                android:contentDescription="@string/map_zoom_out"
+                android:src="@drawable/ic_remove"
+                app:backgroundTint="@color/ml_surface"
+                app:fabSize="mini"
+                app:tint="@color/ml_primary" />
+        </LinearLayout>
+
+        <!-- Shown when the tiles fail; the pins and the card still work over the plain background. -->
+        <TextView
+            android:id="@+id/map_tiles_error"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|top"
+            android:layout_marginHorizontal="@dimen/ml_space_lg"
+            android:layout_marginTop="@dimen/map_notice_top"
+            android:background="@drawable/memory_pill_pink"
+            android:gravity="center"
+            android:paddingHorizontal="@dimen/ml_space_md"
+            android:paddingVertical="@dimen/ml_space_sm"
+            android:text="@string/map_tiles_error"
+            android:textAppearance="@style/TextAppearance.MemoryLane.Label"
+            android:visibility="gone" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/map_state_card"
+            style="@style/Widget.MemoryLane.Card.Scrapbook"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="@dimen/ml_space_lg">
+
+            <com.memorylane.core.ui.widget.StateView
+                android:id="@+id/map_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/ml_space_md" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:padding="@dimen/ml_space_md">
+
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/map_add"
+                style="@style/Widget.MemoryLane.ExtendedFab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:contentDescription="@string/map_add_description"
+                android:text="@string/map_add"
+                app:icon="@drawable/ic_add" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/map_card"
+                style="@style/Widget.MemoryLane.Card.Scrapbook"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ml_space_sm"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/ml_space_md">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/map_card_cover"
+                        android:layout_width="@dimen/map_card_cover"
+                        android:layout_height="@dimen/map_card_cover"
+                        android:importantForAccessibility="no"
+                        android:scaleType="centerCrop"
+                        android:src="@color/memory_pink_soft"
+                        app:shapeAppearance="@style/ShapeAppearance.MemoryLane.Cover" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/ml_space_md"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/map_card_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Caption" />
+
+                        <TextView
+                            android:id="@+id/map_card_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_xs"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.CardTitle" />
+                    </LinearLayout>
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/map_card_open"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/map_open_detail"
+                        android:src="@drawable/ic_chevron_right"
+                        app:backgroundTint="@color/memory_pink_soft"
+                        app:elevation="0dp"
+                        app:fabSize="mini"
+                        app:tint="@color/ml_primary" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </FrameLayout>
 </LinearLayout>

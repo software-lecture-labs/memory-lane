@@ -10,6 +10,9 @@ if (localPropertiesFile.exists()) {
 // 10.0.2.2 is the emulator's alias for the host machine's localhost. Release builds block
 // cleartext HTTP, so a production address has to be https:// (enforced below).
 def apiBaseUrl = localProperties.getProperty('memorylane.apiBaseUrl', 'http://10.0.2.2:8080/')
+// Map tiles: OpenStreetMap data served by OpenFreeMap, which needs no API key or account. Another
+// MapLibre style can be set per developer in local.properties (ML-15 "harita ayarını yerel yapılandır").
+def mapStyleUrl = localProperties.getProperty('memorylane.mapStyleUrl', 'https://tiles.openfreemap.org/styles/positron')
 
 // A release APK with an http:// address builds fine but every request then fails as "no
 // connection", with nothing on screen pointing at the cause. Stop the release build instead.
@@ -35,6 +38,7 @@ android {
         versionCode 1
         versionName '0.1.0'
         buildConfigField 'String', 'API_BASE_URL', "\"${apiBaseUrl}\""
+        buildConfigField 'String', 'MAP_STYLE_URL', "\"${mapStyleUrl}\""
     }
     buildFeatures {
         buildConfig true
@@ -67,6 +71,8 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.11.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // OpenStreetMap-based map (ML-16/ML-15). osmdroid was archived in 2024; MapLibre is maintained.
+    implementation 'org.maplibre.gl:android-sdk:13.7.1'
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'androidx.arch.core:core-testing:2.2.0'
