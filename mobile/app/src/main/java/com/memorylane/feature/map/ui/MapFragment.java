@@ -330,6 +330,15 @@ public class MapFragment extends Fragment {
         if (binding != null) binding.mapView.onSaveInstanceState(outState);
     }
 
+    // MapView frees its tile cache here. Android 14 deprecated the callback in favour of
+    // onTrimMemory, but MapView only offers onLowMemory, which the system still calls.
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (binding != null) binding.mapView.onLowMemory();
+    }
+
     @Override
     public void onDestroyView() {
         app.getPhotoImageLoader().cancel(binding.mapCardCover);
