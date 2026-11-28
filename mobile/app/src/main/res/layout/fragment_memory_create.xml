@@ -385,7 +385,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Location: optional; latitude and longitude together. A map picker belongs to a later card. -->
+        <!-- Location: optional; latitude and longitude together, typed or chosen on the map (ML-15). -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.MemoryLane.Card.Scrapbook"
             android:layout_width="match_parent"
@@ -466,6 +466,17 @@
                             android:saveEnabled="false" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/create_location_pick"
+                    style="@style/Widget.MemoryLane.Button.Secondary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    android:text="@string/memory_location_pick"
+                    app:icon="@drawable/ic_location"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/ml_primary" />
 
                 <TextView
                     android:id="@+id/create_location_error"

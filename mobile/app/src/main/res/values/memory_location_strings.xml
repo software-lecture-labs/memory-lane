@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <!-- Map location picker (ML-15) -->
+    <string name="memory_location_pick">Haritadan seç</string>
+    <string name="memory_location_picker_title">Konum seç</string>
+    <string name="memory_location_picker_back">Forma dön</string>
+    <string name="memory_location_picker_hint">Anının geçtiği yere dokun</string>
+    <string name="memory_location_picker_none">Henüz bir nokta seçmedin.</string>
+    <string name="memory_location_picker_confirm">Bu konumu kullan</string>
+    <string name="memory_location_picker_remove">Konumu kaldır</string>
+    <string name="memory_location_picker_tiles_error">Harita yüklenemedi. Geri dönüp konumu elle yazabilir ya da boş bırakabilirsin.</string>
+</resources>
