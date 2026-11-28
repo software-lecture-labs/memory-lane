@@ -4,6 +4,7 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
@@ -32,6 +33,10 @@ public interface MemoryApi {
     @PUT("api/v1/memories/{id}")
     Call<Detail> update(@Header("Authorization") String session, @Path("id") String id,
                         @Header("If-Match") String ifMatch, @Body Draft draft);
+
+    /** 204 after the memory, its photos and (after commit) their files are deleted; 404 MEMORY_NOT_FOUND. */
+    @DELETE("api/v1/memories/{id}")
+    Call<Void> delete(@Header("Authorization") String session, @Path("id") String id);
 
     /**
      * Write body shared by POST and PUT. Null fields are left out of the JSON (Gson default), and

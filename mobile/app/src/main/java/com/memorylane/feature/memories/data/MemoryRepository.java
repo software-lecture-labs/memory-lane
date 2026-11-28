@@ -5,9 +5,9 @@ import com.memorylane.core.network.Cancellable;
 import com.memorylane.core.network.ResultCallback;
 import com.memorylane.core.network.Tagged;
 
-/** Remote memories over HTTP; serves the list, create, detail and edit screens. */
-public final class MemoryRepository
-        implements MemoryListRepository, MemoryCreateRepository, MemoryDetailRepository, MemoryEditRepository {
+/** Remote memories over HTTP; serves the list, create, detail, edit and delete screens. */
+public final class MemoryRepository implements MemoryListRepository, MemoryCreateRepository,
+        MemoryDetailRepository, MemoryEditRepository, MemoryDeleteRepository {
     private final MemoryApi api;
     private final ApiCaller caller;
 
@@ -37,5 +37,10 @@ public final class MemoryRepository
     public Cancellable updateMemory(String authorization, String memoryId, String ifMatch, MemoryApi.Draft draft,
                                     ResultCallback<MemoryApi.Detail> callback) {
         return caller.enqueue(api.update(authorization, memoryId, ifMatch, draft), callback);
+    }
+
+    @Override
+    public Cancellable deleteMemory(String authorization, String memoryId, ResultCallback<Void> callback) {
+        return caller.enqueue(api.delete(authorization, memoryId), callback);
     }
 }

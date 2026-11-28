@@ -215,6 +215,16 @@ public class MemoriesFragment extends Fragment {
                     results.set(MemoryEditFragment.RESULT_UPDATED, false);
                     viewModel.refresh();
                 });
+        // ML-13: the detail screen deleted a memory and came back here.
+        results.<Boolean>getLiveData(MemoryDeleteSheet.RESULT_DELETED, false)
+                .observe(getViewLifecycleOwner(), deleted -> {
+                    if (!Boolean.TRUE.equals(deleted)) return;
+                    results.set(MemoryDeleteSheet.RESULT_DELETED, false);
+                    viewModel.refresh();
+                    Snackbar.make(binding.getRoot(), R.string.memory_deleted, Snackbar.LENGTH_SHORT)
+                            .setAnchorView(binding.memoryAdd)
+                            .show();
+                });
     }
 
     @Override
