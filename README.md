@@ -1,10 +1,32 @@
 # Memory Lane
 
-Android mobil uygulaması ve Java HTTP backend için ortak repo.
+Memory Lane, kişisel bir anı defteridir. Kullanıcı hesap açar; anılarını başlık, tarih, kategori, duygu, isteğe bağlı konum ve en fazla beş fotoğrafla kaydeder; zaman çizelgesinde, haritada ve aramayla geri bulur. Her hesabın verisi yalnızca kendisine görünür.
 
-- `mobile/`: Java 17, Android SDK 35 ve AGP 8.7.3 uygulama iskeleti.
-- `backend/`: Java 17, Spring Boot 4.1.1 ve gömülü Tomcat.
-- `docs/`: kalıcı mimari kararlar ve Git çalışma biçimi.
+Repo iki uygulamadan oluşur: Java + XML ile yazılmış bir **Android uygulaması** ve Java **Spring Boot REST API**. Veriler **PostgreSQL**'de tutulur. Proje bir ders kapsamında kontrollü demo olarak geliştirilir; mağaza yayını ve herkese açık hizmet planlanmaz.
+
+## Proje yapısı
+
+| Klasör | İçerik |
+|---|---|
+| `backend/` | Java 17, Spring Boot 4.1.1 (Spring Web MVC, Spring Data JPA, JdbcClient), gömülü Tomcat, Flyway migration'ları, entegrasyon testleri |
+| `mobile/` | Java 17, Android SDK 35, AGP 8.7.3; özellik bazlı paketler (`feature/<özellik>/data`, `feature/<özellik>/ui`) ve ortak altyapı (`core/`) |
+| `docs/` | [Mimari](docs/architecture.md), [API sözleşmesi](docs/api-contract.md), [Git çalışma biçimi](docs/git-workflow.md) ve mimari karar kayıtları (`docs/adr/`) |
+| `.github/` | CI iş akışı (Verify: backend ve mobil derleme, lint, test), PR şablonu, CODEOWNERS |
+
+Mimari karar kayıtları (ADR):
+
+- [ADR-0001](docs/adr/0001-spring-boot-uygulama-calisma-ortami.md): Payara Micro yerine Spring Boot ve gömülü Tomcat
+- [ADR-0002](docs/adr/0002-silme-politikasi.md): Silme politikası ve fotoğraf sırası
+- [ADR-0003](docs/adr/0003-sahiplik-denetimi.md): Oturum ve sahiplik denetimi
+- [ADR-0004](docs/adr/0004-harita-kutuphanesi.md): Harita için MapLibre ve OpenStreetMap
+
+## Kapsam
+
+Temel kapsam: kayıt, giriş, çıkış ve 24 saatlik iptal edilebilir oturum; anı oluşturma, listeleme (yıl gruplu zaman çizelgesi), detay, düzenleme ve silme; fotoğraf yükleme ve görüntüleme; Türkçe arama ve kategori filtresi; harita. Anılar ve fotoğraflar oturum sahibine bağlıdır; bir hesabın başka bir hesabın verisini okuyamaması, değiştirememesi ve silememesi ML-29 ile uygulanmıştır ve ML-31'in iki hesaplı testleriyle doğrulanır.
+
+Kapsam dışı: şifre sıfırlama, profil düzenleme, e-posta doğrulama, sosyal giriş, sesli anı, EXIF, yakındakiler, senkronizasyon ve dışa aktarma. Tarihte Bugün ve gelişmiş filtreler yalnız temel teslim tamamlanırsa ele alınır.
+
+Görev dağılımı: K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğraflar; K3 mobil oturum, liste, detay, düzenleme ve arama; K4 veritabanı altyapısı, sahiplik, harita, silme ve transaction.
 
 ## Veri modeli ve API
 
@@ -29,14 +51,6 @@ Süresi dolan token, temizlik beklenmeden hemen 401 ile reddedilir. Başlangıç
 ### Proxy varsayımı
 
 Mevcut geliştirme/ders demosu backend'e doğrudan bağlantı varsayar. `getRemoteAddr()` doğrudan bağlantının adresidir; reverse proxy/load balancer arkasında bütün kullanıcılar için proxy IP'si görünebilir ve IP başına 20/dakika sınırı ortak bir kotaya dönüşebilir. Bu kurulum proxy arkasında kullanıcı bazlı doğru IP sınırı sağladığı iddiasını taşımaz. Hesap başına başarısız giriş sınırı bundan bağımsız kalır. `Forwarded`/`X-Forwarded-For` başlıkları kodda doğrudan okunmaz; istemcinin yazdığı başlığa güvenilmez. Dağıtımda güvenilir proxy adresleri, backend'e doğrudan erişim ve başlıkların proxy tarafından temizlenip yeniden yazılması birlikte ele alınmalı; ancak bundan sonra uygun Spring/Tomcat forwarded-header stratejisi seçilip iki farklı istemciyle test edilmelidir. Load balancer yapılandırması bu K1 backend değişikliğine dahil değildir.
-
-## İlk teslim kapsamı
-
-İlk hesaplı Trello planı esas alınır; yalnız backend teknolojisi Spring Boot olarak güncellenmiştir. Kayıt, giriş, çıkış ve 24 saatlik iptal edilebilir oturum korunur. Anılar ve fotoğraflar oturum sahibine bağlıdır; farklı hesapların birbirinin verisine erişmemesi hedefi ML-29/ML-31 kapsamında doğrulanacaktır. Bu sahiplik denetimi henüz tamamlanmış sayılmaz.
-
-Anı oluşturma/düzenleme, fotoğraf yükleme/görüntüleme, liste/detay, arama, harita ve silme temel kapsamdadır. Şifre sıfırlama, profil düzenleme, e-posta doğrulama, sosyal giriş, sesli anı, EXIF, yakındakiler, senkronizasyon ve dışa aktarma kapsam dışıdır. Tarihte Bugün ve gelişmiş filtreler temel teslimden sonra değerlendirilir. Mağaza yayını ve herkese açık hizmet planlanmaz.
-
-K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğraflar; K3 mobil oturum, liste, detay, anı düzenleme ve arama; K4 veritabanı altyapısı, sahiplik, harita, silme ve transaction işlerinden sorumludur. İlk plandaki görev dağılımı değişmez. Mimari alternatifler ve bekleyen ders kriterleri [mimari belgesindedir](docs/architecture.md#ml-01-ders-kriterleri-ve-alternatifler).
 
 ## İlk sprint anı demosu (ML-07)
 
