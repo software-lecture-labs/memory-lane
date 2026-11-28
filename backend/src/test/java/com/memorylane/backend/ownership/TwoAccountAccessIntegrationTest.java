@@ -11,9 +11,12 @@ import com.memorylane.backend.auth.AuthLimiter;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -38,6 +41,7 @@ import java.util.UUID;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @RequiresDocker
+@ExtendWith(OutputCaptureExtension.class)
 class TwoAccountAccessIntegrationTest {
     private static final Path PHOTOS = temporaryDirectory();
     /** JPEG signature, as in PhotoFileTest; the server checks the leading bytes. */
@@ -185,6 +189,29 @@ class TwoAccountAccessIntegrationTest {
         assertEquals(before, memoryRow(), "A's memory is unchanged");
         assertEquals(1, photoRows());
         assertEquals(filesBefore, storedFiles(), "no upload reached the disk");
+    }
+
+    @Test
+    void tokensAndPasswordsNeverReachTheLog(CapturedOutput output) throws Exception {
+        String email = UUID.randomUUID() + "@example.test";
+        String wrongPassword = "Yanlis parola " + UUID.randomUUID();
+        String account = "{\"email\":\"" + email + "\",\"password\":\"" + TestApi.PASSWORD + "\"}";
+        assertEquals(201, api.send("POST", "/api/v1/auth/register", account, null).statusCode());
+        var login = api.send("POST", "/api/v1/auth/login", account, null);
+        String token = TestApi.field(login.body(), "accessToken");
+        assertEquals(401, api.send("POST", "/api/v1/auth/login",
+                "{\"email\":\"" + email + "\",\"password\":\"" + wrongPassword + "\"}", null).statusCode());
+        // Refused and accepted requests both, so error and success logging are covered.
+        api.get(memory(), token);
+        api.get("/api/v1/memories", token);
+        api.get("/api/v1/memories", "uydurma-" + token);
+        api.send("POST", "/api/v1/auth/logout", null, token);
+        api.get("/api/v1/memories", token);
+
+        String log = output.getAll();
+        for (String secret : List.of(token, a.token(), b.token(), TestApi.PASSWORD, wrongPassword)) {
+            assertFalse(log.contains(secret), "a token or password was written to the log");
+        }
     }
 
     private long storedFiles() throws IOException {
