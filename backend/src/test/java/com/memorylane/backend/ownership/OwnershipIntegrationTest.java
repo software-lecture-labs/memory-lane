@@ -1,10 +1,13 @@
 package com.memorylane.backend.ownership;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 
 import com.memorylane.backend.RequiresDocker;
 import com.memorylane.backend.SharedPostgres;
 import com.memorylane.backend.TestApi;
+import com.memorylane.backend.auth.AuthLimiter;
 import com.memorylane.backend.auth.CurrentUser;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +49,8 @@ class OwnershipIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired OwnershipGuard guard;
     @Autowired TransactionTemplate transaction;
+    /** Real limiter, with only the per-IP counter switched off (see client()). */
+    @MockitoSpyBean AuthLimiter limiter;
     TestApi api;
 
     /** Test-only endpoints using the guard the way the memory and photo services will. */
@@ -113,6 +119,10 @@ class OwnershipIntegrationTest {
     @BeforeEach
     void client() {
         api = new TestApi(port);
+        // Every request of this class comes from one IP; without this, adding tests would make
+        // register/login fail with 429 at random once 20 auth requests fall into one minute.
+        // The per-account failure limit stays active.
+        doNothing().when(limiter).ip(anyString());
     }
 
     @Test
@@ -260,10 +270,7 @@ class OwnershipIntegrationTest {
         return "/api/v1/ownership-probe/memories/" + memory;
     }
 
-    /**
-     * Account A only owns data and never calls the API, so it is inserted directly. The auth
-     * limiter allows 20 register/login requests per minute from one IP for the whole test class.
-     */
+    /** Account A only owns data and never calls the API, so it is inserted directly. */
     private UUID insertUser() {
         return jdbc.queryForObject("INSERT INTO users (email, password_hash) VALUES (?, 'x') RETURNING id",
                 UUID.class, UUID.randomUUID() + "@example.test");
