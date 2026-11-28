@@ -4,6 +4,8 @@ Memory Lane, kişisel bir anı defteridir. Kullanıcı hesap açar; anılarını
 
 Repo iki uygulamadan oluşur: Java + XML ile yazılmış bir **Android uygulaması** ve Java **Spring Boot REST API**. Veriler **PostgreSQL**'de tutulur. Proje bir ders kapsamında kontrollü demo olarak geliştirilir; mağaza yayını ve herkese açık hizmet planlanmaz.
 
+**İçindekiler:** [Proje yapısı](#proje-yapısı) · [Kapsam](#kapsam) · [Önkoşullar](#önkoşullar) · [Yapılandırma](#yapılandırma) · [Kurulum](#kurulum) · [Sunucu adresi](#mobil-uygulama-ve-sunucu-adresi) · [İlk deneme](#i̇lk-deneme) · [Testler ve kalite](#testler-ve-kalite) · [Mimari özeti](#mimari-özeti) · [Güvenlik](#güvenlik-hesap-oturum-ve-sahiplik) · [API özeti](#api-özeti) · [Bilinen eksikler](#bilinen-eksikler) · [Ortak Supabase](#ortak-postgresql--supabase)
+
 ## Proje yapısı
 
 | Klasör | İçerik |
