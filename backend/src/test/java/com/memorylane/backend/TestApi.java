@@ -2,10 +2,12 @@ package com.memorylane.backend;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -56,7 +58,36 @@ public final class TestApi {
         return http.send(request.method(method, publisher).build(), HttpResponse.BodyHandlers.ofString());
     }
 
-    private static String field(String json, String name) {
+    /** Creates a memory through the API as {@code token}'s account and returns its id. */
+    public UUID createMemory(String token, String title, Double latitude, Double longitude) throws Exception {
+        String location = latitude == null ? ""
+                : ",\"location\":{\"latitude\":" + latitude + ",\"longitude\":" + longitude + "}";
+        var response = send("POST", "/api/v1/memories",
+                "{\"title\":\"" + title + "\",\"memoryDate\":\"2026-01-01\"" + location + "}", token,
+                Map.of("Idempotency-Key", UUID.randomUUID().toString()));
+        assertEquals(201, response.statusCode(), response.body());
+        return UUID.fromString(field(response.body(), "id"));
+    }
+
+    /** Uploads {@code bytes} as the multipart part "file" to {@code memory}'s photos. */
+    public HttpResponse<String> uploadPhoto(UUID memory, byte[] bytes, String contentType, String token)
+            throws Exception {
+        String boundary = "memorylane-" + UUID.randomUUID();
+        var body = new ByteArrayOutputStream();
+        body.write(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo\"\r\n"
+                + "Content-Type: " + contentType + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        body.write(bytes);
+        body.write(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+        var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/v1/memories/" + memory + "/photos"))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .header("Idempotency-Key", UUID.randomUUID().toString())
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()));
+        if (token != null) request.header("Authorization", "Bearer " + token);
+        return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    /** A string field of a JSON body, e.g. the {@code id} of a created photo. */
+    public static String field(String json, String name) {
         Matcher m = Pattern.compile("\"" + name + "\":\"([^\"]+)\"").matcher(json);
         assertTrue(m.find(), json);
         return m.group(1);
