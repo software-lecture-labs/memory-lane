@@ -25,6 +25,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -129,6 +130,28 @@ class TwoAccountAccessIntegrationTest {
         assertEquals(filesBefore, storedFiles(), "and left no file on disk");
         assertTrue(Files.exists(PHOTOS.resolve(fileOfA)));
         assertEquals(200, api.get(memory() + "/photos/" + photoOfA + "/content", a.token()).statusCode());
+    }
+
+    @Test
+    void listSearchAndMapNeverShowAnotherAccountsMemory() throws Exception {
+        String search = "?q=" + titleOfA.toLowerCase(Locale.ROOT);
+        String[] reads = {"/api/v1/memories", "/api/v1/memories" + search,
+                "/api/v1/memories?category=OTHER", "/api/v1/memories/map", "/api/v1/memories/map" + search};
+
+        for (String path : reads) {
+            var ofA = api.get(path, a.token());
+            assertEquals(200, ofA.statusCode(), path);
+            // The same request finds the memory for its owner, so a pass below is not vacuous.
+            assertTrue(ofA.body().contains(memoryOfA.toString()), "A sees it at " + path);
+
+            var ofB = api.get(path, b.token());
+            assertEquals(200, ofB.statusCode(), path);
+            assertFalse(ofB.body().contains(memoryOfA.toString()), "B must not see A's memory at " + path);
+            assertFalse(ofB.body().contains(titleOfA), "nor its title at " + path);
+        }
+        // Counts leak too: B's search for A's word matches nothing.
+        assertTrue(api.get("/api/v1/memories" + search, b.token()).body().contains("\"totalElements\":0"));
+        assertTrue(api.get("/api/v1/memories/map" + search, b.token()).body().contains("\"returned\":0"));
     }
 
     private long storedFiles() throws IOException {
