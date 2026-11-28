@@ -2,6 +2,7 @@ package com.memorylane.backend.memory;
 
 import com.memorylane.backend.ownership.OwnershipGuard;
 import com.memorylane.backend.ownership.ResourceNotFoundException;
+import com.memorylane.backend.photo.PhotoFileCleanup;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -47,11 +48,13 @@ public class MemoryService {
 
     private final JdbcClient jdbc;
     private final OwnershipGuard guard;
+    private final PhotoFileCleanup fileCleanup;
     private static final JsonMapper HASH_JSON = JsonMapper.builder().build();
 
-    public MemoryService(JdbcClient jdbc, OwnershipGuard guard) {
+    public MemoryService(JdbcClient jdbc, OwnershipGuard guard, PhotoFileCleanup fileCleanup) {
         this.jdbc = jdbc;
         this.guard = guard;
+        this.fileCleanup = fileCleanup;
     }
 
     record Summary(UUID id, String title, String description, LocalDate memoryDate, String category,
@@ -94,6 +97,24 @@ public class MemoryService {
                 }).optional()
                 .map(memory -> new Created(memory, photos(memory.id()), inserted.isEmpty()))
                 .orElseThrow(IdempotencyConflict::new);
+    }
+
+    /**
+     * Deletes the memory and its photo rows in one transaction (ML-13, ADR-0002). If any step fails,
+     * all of them roll back and both the rows and the files stay. The files are not deleted here: a
+     * file delete cannot be rolled back, so they are queued and removed only after commit (ML-14).
+     */
+    @Transactional
+    public void delete(UUID owner, UUID memoryId) {
+        // Every write starts with the memory lock (ADR-0003): a photo upload running at the same
+        // time either finishes first and its photo is deleted here, or waits and then gets 404.
+        guard.lockMemory(owner, memoryId);
+        List<String> files = jdbc.sql("SELECT storage_key FROM photos WHERE memory_id = :memory")
+                .param("memory", memoryId).query(String.class).list();
+        fileCleanup.deleteAfterCommit(files);
+        // Foreign keys are ON DELETE RESTRICT, so the photos go first (ADR-0002).
+        jdbc.sql("DELETE FROM photos WHERE memory_id = :memory").param("memory", memoryId).update();
+        jdbc.sql("DELETE FROM memories WHERE id = :memory").param("memory", memoryId).update();
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
