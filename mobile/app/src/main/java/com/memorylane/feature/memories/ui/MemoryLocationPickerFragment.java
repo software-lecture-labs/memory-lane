@@ -187,6 +187,14 @@ public class MemoryLocationPickerFragment extends Fragment {
         if (binding != null) binding.pickerMap.onSaveInstanceState(outState);
     }
 
+    // Same as MapFragment: MapView frees its tile cache when the system runs low on memory.
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (binding != null) binding.pickerMap.onLowMemory();
+    }
+
     @Override
     public void onDestroyView() {
         if (map != null) map.removeOnMapClickListener(tapListener);
