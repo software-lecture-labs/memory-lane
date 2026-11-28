@@ -320,6 +320,49 @@
                             app:chipSpacingVertical="@dimen/ml_space_xs"
                             app:selectionRequired="true"
                             app:singleSelection="true" />
+
+                        <!-- ML-15: the location is chosen on the map picker or removed. -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_md"
+                            android:text="@string/memory_location_label"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Label" />
+
+                        <TextView
+                            android:id="@+id/edit_location_value"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_xs"
+                            android:accessibilityLiveRegion="polite"
+                            android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/ml_space_sm"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/edit_location_pick"
+                                style="@style/Widget.MemoryLane.Button.Secondary"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/memory_location_pick"
+                                app:icon="@drawable/ic_location"
+                                app:iconGravity="textStart"
+                                app:iconTint="@color/ml_primary" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/edit_location_remove"
+                                style="@style/Widget.MemoryLane.Button.Secondary"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/ml_space_sm"
+                                android:contentDescription="@string/memory_location_picker_remove"
+                                android:text="@string/memory_location_remove_short" />
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
