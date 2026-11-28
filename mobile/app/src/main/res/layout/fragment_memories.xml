@@ -25,15 +25,32 @@
             android:paddingTop="@dimen/ml_space_md"
             app:layout_scrollFlags="scroll">
 
-            <TextView
+            <!-- The app's mark beside the notebook badge; decorative, the title names the screen.
+                 A compound drawable would put the mark inside the butter pill, so two views. -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/ml_space_sm"
-                android:background="@drawable/memory_pill_butter"
-                android:paddingHorizontal="@dimen/ml_space_md"
-                android:paddingVertical="@dimen/ml_space_xs"
-                android:text="@string/memory_list_badge"
-                android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                tools:ignore="UseCompoundDrawables">
+
+                <ImageView
+                    android:layout_width="@dimen/memory_header_logo"
+                    android:layout_height="@dimen/memory_header_logo"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_logo_mark" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/ml_space_sm"
+                    android:background="@drawable/memory_pill_butter"
+                    android:paddingHorizontal="@dimen/ml_space_md"
+                    android:paddingVertical="@dimen/ml_space_xs"
+                    android:text="@string/memory_list_badge"
+                    android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold" />
+            </LinearLayout>
 
             <com.memorylane.core.ui.widget.ScreenHeaderView
                 android:layout_width="match_parent"

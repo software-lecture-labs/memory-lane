@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
 import com.memorylane.core.ui.ErrorMessages;
+import com.memorylane.core.ui.Motion;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
@@ -41,6 +42,7 @@ public final class LoginFragment extends Fragment {
         viewModel = new ViewModelProvider(this, LoginViewModel.factory(
                 AppContainer.from(requireContext()).getAuthRepository())).get(LoginViewModel.class);
         ViewCompat.setAccessibilityHeading(binding.loginHeading, true);
+        if (savedInstanceState == null) playIntro();
         binding.passwordLayout.setEndIconOnClickListener(icon -> togglePassword());
         binding.loginButton.setOnClickListener(button -> submit());
         binding.registerLink.setOnClickListener(button -> openRegister());
@@ -67,6 +69,18 @@ public final class LoginFragment extends Fragment {
             NavHostFragment.findNavController(this).navigate(R.id.memoriesFragment, null,
                     new NavOptions.Builder().setPopUpTo(R.id.nav_graph, true).build());
         });
+    }
+
+    /**
+     * First arrival only (not after rotation): the logo lands, then the words and the form follow
+     * in reading order. Every view is usable while it moves.
+     */
+    private void playIntro() {
+        Motion.dropIn(binding.loginLogo, 80);
+        Motion.riseIn(binding.loginHeading, 300);
+        Motion.riseIn(binding.loginSubtitle, 380);
+        Motion.riseIn(binding.loginForm, 460);
+        Motion.riseIn(binding.loginFooter, 560);
     }
 
     private void submit() {

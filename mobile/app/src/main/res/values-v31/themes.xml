@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ launch screen: the warm canvas, with the logo landing like a polaroid
+         dropped on the page (splash_logo_animated). Older versions show the launcher icon. -->
+    <style name="Theme.MemoryLane" parent="Base.Theme.MemoryLane">
+        <item name="android:windowSplashScreenBackground">@color/ml_canvas</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo_animated</item>
+        <item name="android:windowSplashScreenAnimationDuration">900</item>
+    </style>
+</resources>

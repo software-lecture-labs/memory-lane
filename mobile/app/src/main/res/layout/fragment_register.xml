@@ -39,9 +39,7 @@
                 <ImageView
                     android:layout_width="@dimen/login_badge_icon_size"
                     android:layout_height="@dimen/login_badge_icon_size"
-                    android:background="@drawable/login_icon_circle"
-                    android:padding="@dimen/login_icon_padding"
-                    android:src="@drawable/login_book"
+                    android:src="@drawable/ic_logo_mark"
                     android:importantForAccessibility="no" />
                 <TextView
                     android:layout_width="wrap_content"
