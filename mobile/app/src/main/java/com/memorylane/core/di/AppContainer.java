@@ -24,6 +24,9 @@ import com.memorylane.feature.health.data.RemoteHealthRepository;
 import com.memorylane.feature.auth.data.AuthApi;
 import com.memorylane.feature.auth.data.AuthRepository;
 import com.memorylane.feature.auth.data.RemoteAuthRepository;
+import com.memorylane.feature.map.data.MapApi;
+import com.memorylane.feature.map.data.MapRepository;
+import com.memorylane.feature.map.data.RemoteMapRepository;
 import com.memorylane.feature.memories.data.MemoryApi;
 import com.memorylane.feature.memories.data.MemoryRepository;
 import com.memorylane.feature.photos.data.DevicePhotoPreparer;
@@ -57,6 +60,7 @@ public final class AppContainer {
     private final AuthApi authApi;
     private final AuthRepository authRepository;
     private final MemoryRepository memoryRepository;
+    private final MapRepository mapRepository;
     private final HealthRepository healthRepository;
     private final PhotoUploads photoUploads;
     private final PhotoPreparer photoPreparer;
@@ -81,6 +85,7 @@ public final class AppContainer {
         authApi = retrofit.create(AuthApi.class);
         authRepository = new RemoteAuthRepository(authApi, caller);
         memoryRepository = new MemoryRepository(retrofit.create(MemoryApi.class), caller);
+        mapRepository = new RemoteMapRepository(retrofit.create(MapApi.class), caller);
         this.baseUrl = retrofit.baseUrl().toString();
         this.healthRepository = new RemoteHealthRepository(retrofit.create(HealthApi.class), caller);
         PhotoApi photoApi = retrofit.create(PhotoApi.class);
@@ -121,6 +126,8 @@ public final class AppContainer {
     public AuthRepository getAuthRepository() { return authRepository; }
 
     public MemoryRepository getMemoryRepository() { return memoryRepository; }
+
+    public MapRepository getMapRepository() { return mapRepository; }
 
     public PhotoUploads getPhotoUploads() { return photoUploads; }
 
