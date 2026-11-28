@@ -219,7 +219,7 @@ Arama SQL'de ve sayfalamadan önce yapılır; deterministic Türkçe ICU collati
 
 ## ML-01 ders kriterleri ve alternatifler
 
-Sabit kapsam README'deki [ilk teslim kapsamı](../README.md#ilk-teslim-kapsamı) bölümündedir. Java/XML Android, Java 17 / Spring Boot 4.1.1 / gömülü Tomcat ve PostgreSQL kullanılır. İlk hesaplı plan korunur; hesapsız demo kararı alınmamıştır. Anı ve fotoğraf erişiminde owner_id istemciden alınmayacak, doğrulanan oturumdan belirlenecektir. User, Session, Memory ve Photo ilişkileri [ML-03 sözleşmesinde](api-contract.md) tanımlıdır.
+Sabit kapsam README'deki [kapsam](../README.md#kapsam) bölümündedir. Java/XML Android, Java 17 / Spring Boot 4.1.1 / gömülü Tomcat ve PostgreSQL kullanılır. İlk hesaplı plan korunur; hesapsız demo kararı alınmamıştır. Anı ve fotoğraf erişiminde owner_id istemciden alınmayacak, doğrulanan oturumdan belirlenecektir. User, Session, Memory ve Photo ilişkileri [ML-03 sözleşmesinde](api-contract.md) tanımlıdır.
 
 | Konu | Soru ve kayıtlı durum |
 | --- | --- |

@@ -1,58 +1,235 @@
 # Memory Lane
 
-Android mobil uygulaması ve Java HTTP backend için ortak repo.
+Memory Lane, kişisel bir anı defteridir. Kullanıcı hesap açar; anılarını başlık, tarih, kategori, duygu, isteğe bağlı konum ve en fazla beş fotoğrafla kaydeder; zaman çizelgesinde, haritada ve aramayla geri bulur. Her hesabın verisi yalnızca kendisine görünür.
 
-- `mobile/`: Java 17, Android SDK 35 ve AGP 8.7.3 uygulama iskeleti.
-- `backend/`: Java 17, Spring Boot 4.1.1 ve gömülü Tomcat.
-- `docs/`: kalıcı mimari kararlar ve Git çalışma biçimi.
+Repo iki uygulamadan oluşur: Java + XML ile yazılmış bir **Android uygulaması** ve Java **Spring Boot REST API**. Veriler **PostgreSQL**'de tutulur. Proje bir ders kapsamında kontrollü demo olarak geliştirilir; mağaza yayını ve herkese açık hizmet planlanmaz.
 
-## Veri modeli ve API
+**İçindekiler:** [Proje yapısı](#proje-yapısı) · [Kapsam](#kapsam) · [Önkoşullar](#önkoşullar) · [Yapılandırma](#yapılandırma) · [Kurulum](#kurulum) · [Sunucu adresi](#mobil-uygulama-ve-sunucu-adresi) · [İlk deneme](#i̇lk-deneme) · [Testler ve kalite](#testler-ve-kalite) · [Mimari özeti](#mimari-özeti) · [Güvenlik](#güvenlik-hesap-oturum-ve-sahiplik) · [API özeti](#api-özeti) · [Bilinen eksikler](#bilinen-eksikler) · [Ortak Supabase](#ortak-postgresql--supabase)
 
-Hesap, oturum, kullanıcıya özel anı ve fotoğraf işlemlerinin ortak alanları, endpointleri, hata yanıtları ve tekrar deneme kuralları [ML-03 API sözleşmesinde](docs/api-contract.md) tanımlıdır. Bu belge geliştirme sözleşmesidir; endpointlerin uygulanmış olduğunu göstermez.
+## Proje yapısı
 
-## Hesap API'si (ML-27)
+| Klasör | İçerik |
+|---|---|
+| `backend/` | Java 17, Spring Boot 4.1.1 (Spring Web MVC, Spring Data JPA, JdbcClient), gömülü Tomcat, Flyway migration'ları, entegrasyon testleri |
+| `mobile/` | Java 17, Android SDK 35, AGP 8.7.3; özellik bazlı paketler (`feature/<özellik>/data`, `feature/<özellik>/ui`) ve ortak altyapı (`core/`) |
+| `docs/` | [Mimari](docs/architecture.md), [API sözleşmesi](docs/api-contract.md), [Git çalışma biçimi](docs/git-workflow.md) ve mimari karar kayıtları (`docs/adr/`) |
+| `.github/` | CI iş akışı (Verify: backend ve mobil derleme, lint, test), PR şablonu, CODEOWNERS |
 
-`POST /api/v1/auth/register` e-posta ve parolayla hesap açar (201); otomatik oturum açmaz. `POST /api/v1/auth/login` aynı JSON alanlarıyla Bearer token ve `expiresAt` döndürür. `GET /api/v1/auth/me` token sahibini döndürür; `POST /api/v1/auth/logout` yalnız o tokenı iptal eder (204). Son iki istekte `Authorization: Bearer <accessToken>` gerekir. Çıkış aynı doğru biçimli tokenla tekrarlanabilir; geçersiz/süresi dolmuş oturumla `me` 401 döner.
+Mimari karar kayıtları (ADR):
 
-Kayıtta e-posta kırpılıp küçük harfe çevrilir; parola 15–128 Unicode karakterdir, kırpılmaz. Argon2id (19 MiB, 2 geçiş, 1 paralellik) parola özeti; 32 rastgele bayttan üretilen 24 saatlik tokenın yalnız SHA-256 özeti PostgreSQL'e yazılır. Ham parola/token loglanmaz. Yanıtlar `Cache-Control: no-store` taşır.
+- [ADR-0001](docs/adr/0001-spring-boot-uygulama-calisma-ortami.md): Payara Micro yerine Spring Boot ve gömülü Tomcat
+- [ADR-0002](docs/adr/0002-silme-politikasi.md): Silme politikası ve fotoğraf sırası
+- [ADR-0003](docs/adr/0003-sahiplik-denetimi.md): Oturum ve sahiplik denetimi
+- [ADR-0004](docs/adr/0004-harita-kutuphanesi.md): Harita için MapLibre ve OpenStreetMap
 
-Auth gövdesi 8 KiB ile, kayıt/giriş denemeleri gerçek bağlantı IP'si başına 20/dakika ile sınırlıdır. Login için normalize e-posta başına beş başarısız denemeden sonra pencere bitene kadar 429/Retry-After döner. Başarılı giriş hesabın başarısızlık sayacını sıfırlar. Sayaçlar bu kontrollü, tek sunuculu demo için bellektedir; yeniden başlatmada sıfırlanır ve birden çok sunucu arasında paylaşılmaz. Proxy başlıklarına güvenilmez; proxy kullanımı ayrıca yapılandırılmalıdır. HTTPS dağıtımı ML-32, iş kaynaklarının sahiplik denetimi ML-29 kapsamındadır.
+## Kapsam
 
-Mevcut Flyway `users`/`sessions` şeması, UserAccount/UserSession JPA eşlemeleri ve dar `AuthRepository` ile kullanılır. `INSERT ... ON CONFLICT` eşzamanlı kayıtta tek hesap üretir; parola hesaplaması transaction dışındadır; hesap ekleme, oturum oluşturma ve iptal yalnız repository'deki kısa transaction'lar içinde çalışır. Session–User ilişkisi çoktan-biredir; JPA şemayı değiştirmez, Flyway şemasını doğrular. Anı/fotoğraf geliştirmesi bu teslimden ayrıdır. API biçimleri [sözleşmede](docs/api-contract.md), çalıştırma/test komutları aşağıdadır. Auth entegrasyon testleri HTTP uçlarını gerçek PostgreSQL üzerinde kontrol eder; Docker yoksa yalnız yerelde atlanır, CI'da zorunludur.
+Temel kapsam: kayıt, giriş, çıkış ve 24 saatlik iptal edilebilir oturum; anı oluşturma, listeleme (yıl gruplu zaman çizelgesi), detay, düzenleme ve silme; fotoğraf yükleme ve görüntüleme; Türkçe arama ve kategori filtresi; harita. Anılar ve fotoğraflar oturum sahibine bağlıdır; bir hesabın başka bir hesabın verisini okuyamaması, değiştirememesi ve silememesi ML-29 ile uygulanmıştır ve ML-31'in iki hesaplı testleriyle doğrulanır.
 
-### Hash kapasitesi ve oturum bakımı
+Kapsam dışı: şifre sıfırlama, profil düzenleme, e-posta doğrulama, sosyal giriş, sesli anı, EXIF, yakındakiler, senkronizasyon ve dışa aktarma. Tarihte Bugün ve gelişmiş filtreler yalnız temel teslim tamamlanırsa ele alınır.
 
-Argon2id çalışma belleği işlem başına 19 MiB olarak yapılandırılmıştır. Kayıt, giriş ve bilinmeyen kullanıcı doğrulaması aynı Semaphore sınırını paylaşır: varsayılan en fazla iki hash işlemi, yani Argon2 çalışma alanları için yaklaşık 38 MiB. Bu sayı toplam JVM belleği veya ölçülmüş heap tepe değeri değildir; kütüphane nesneleri ve uygulamanın diğer kullanımları ayrıca yer tutar. `memorylane.auth.max-concurrent-hashes` 1–8 aralığında ayarlanabilir; yükseltmeden önce sunucunun belleği ölçülmelidir. Kapasite doluysa kuyruk oluşturulmaz; `503 AUTH_BUSY` ve `Retry-After: 1` döner. Parola hash/verify işlemi DB transaction'ı ve bağlantısı tutmaz; repository okuma/yazmaları ayrı kısa transaction'lardır.
+Görev dağılımı: K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğraflar; K3 mobil oturum, liste, detay, düzenleme ve arama; K4 veritabanı altyapısı, sahiplik, harita, silme ve transaction.
 
-Süresi dolan token, temizlik beklenmeden hemen 401 ile reddedilir. Başlangıçtan bir saat sonra ve ardından saatte bir çalışan temizlik işi `expires_at <= şimdi` kayıtlarını, çağrı başına en fazla 1.000 satırlık kısa transaction ile siler. İptal edilmiş kayıtlar da doğal sona erme zamanına kadar tutulur; ardından aynı iş tarafından silinir. Aktif oturumlar korunur. Büyük birikimde kalan kayıtlar sonraki turlarda temizlenir; daha yüksek trafik için ayrı indeks/bakım planı ve çalışma sıklığı değerlendirilmelidir. `memorylane.auth.session-cleanup-delay` ISO-8601 süre olarak ayarlanabilir (varsayılan `PT1H`). Temizlik hatası tokenın geçerlilik süresini uzatmaz.
+## Önkoşullar
 
-### Proxy varsayımı
+| Araç | Sürüm | Ne için |
+|---|---|---|
+| JDK | **17** (ör. Eclipse Temurin 17) | Backend ve mobil derleme. Gradle 8.14.3 JDK 25 ile çalışmaz; `JAVA_HOME` JDK 17'yi göstermelidir. |
+| Android Studio + Android SDK Platform 35 | Güncel Android Studio | Yalnız mobil uygulama için; emülatör de buradan kurulur. |
+| Docker Desktop | Güncel | Yerel PostgreSQL 17 ve backend entegrasyon testleri. Docker yoksa ortak Supabase veritabanı kullanılabilir; entegrasyon testleri yerelde atlanır, CI'da çalışır. |
+| Git | Güncel | Repo. |
 
-Mevcut geliştirme/ders demosu backend'e doğrudan bağlantı varsayar. `getRemoteAddr()` doğrudan bağlantının adresidir; reverse proxy/load balancer arkasında bütün kullanıcılar için proxy IP'si görünebilir ve IP başına 20/dakika sınırı ortak bir kotaya dönüşebilir. Bu kurulum proxy arkasında kullanıcı bazlı doğru IP sınırı sağladığı iddiasını taşımaz. Hesap başına başarısız giriş sınırı bundan bağımsız kalır. `Forwarded`/`X-Forwarded-For` başlıkları kodda doğrudan okunmaz; istemcinin yazdığı başlığa güvenilmez. Dağıtımda güvenilir proxy adresleri, backend'e doğrudan erişim ve başlıkların proxy tarafından temizlenip yeniden yazılması birlikte ele alınmalı; ancak bundan sonra uygun Spring/Tomcat forwarded-header stratejisi seçilip iki farklı istemciyle test edilmelidir. Load balancer yapılandırması bu K1 backend değişikliğine dahil değildir.
+Gradle ayrıca kurulmaz: backend wrapper Gradle 8.14.3, mobil wrapper Gradle 8.9 indirir ve SHA-256 ile doğrular. Backend ve mobil build'leri bağımsızdır; yalnız çalıştırdığınız tarafın araçları gerekir.
 
-## İlk teslim kapsamı
+## Yapılandırma
 
-İlk hesaplı Trello planı esas alınır; yalnız backend teknolojisi Spring Boot olarak güncellenmiştir. Kayıt, giriş, çıkış ve 24 saatlik iptal edilebilir oturum korunur. Anılar ve fotoğraflar oturum sahibine bağlıdır; farklı hesapların birbirinin verisine erişmemesi hedefi ML-29/ML-31 kapsamında doğrulanacaktır. Bu sahiplik denetimi henüz tamamlanmış sayılmaz.
+Kişiye özel ayarlar ve parolalar repoya girmez. `backend/.env`, `mobile/local.properties`, `backend/config/application-local.properties`, imzalama anahtarları ve SDK yolları `.gitignore` ile dışarıdadır; repoda yalnız parolasız örnekleri (`*.example`) vardır.
 
-Anı oluşturma/düzenleme, fotoğraf yükleme/görüntüleme, liste/detay, arama, harita ve silme temel kapsamdadır. Şifre sıfırlama, profil düzenleme, e-posta doğrulama, sosyal giriş, sesli anı, EXIF, yakındakiler, senkronizasyon ve dışa aktarma kapsam dışıdır. Tarihte Bugün ve gelişmiş filtreler temel teslimden sonra değerlendirilir. Mağaza yayını ve herkese açık hizmet planlanmaz.
+**Backend** (`backend/.env` dosyası veya gerçek ortam değişkenleri; ortam değişkenleri `.env` değerlerinin önüne geçer):
 
-K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğraflar; K3 mobil oturum, liste, detay, anı düzenleme ve arama; K4 veritabanı altyapısı, sahiplik, harita, silme ve transaction işlerinden sorumludur. İlk plandaki görev dağılımı değişmez. Mimari alternatifler ve bekleyen ders kriterleri [mimari belgesindedir](docs/architecture.md#ml-01-ders-kriterleri-ve-alternatifler).
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `DB_PASSWORD` | *(yok, zorunlu)* | PostgreSQL parolası. Varsayılanı yoktur. |
+| `DB_HOST`, `DB_PORT` | `127.0.0.1`, `5432` | Veritabanı adresi. |
+| `DB_NAME`, `DB_USER` | `memory_lane`, `memory_lane` | Veritabanı ve kullanıcı adı. |
+| `SPRING_DATASOURCE_URL`, `..._USERNAME`, `..._PASSWORD` | *(yukarıdakilerden oluşur)* | Tam JDBC adresi gerektiğinde (ör. Supabase, TLS parametreleriyle). |
+| `SERVER_PORT` | `8080` | API portu. |
+| `SPRING_FLYWAY_ENABLED` | `true` | Açılışta migration uygulanması. Ortak Supabase bağlantısında `false`'tur (aşağıda). |
+| `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE` | `10` | Bağlantı havuzu boyutu. |
+| `MEMORYLANE_PHOTOS_DIRECTORY` | `storage/photos` | Fotoğraf dosyalarının klasörü (backend dizinine göre). |
+| `SPRING_PROFILES_ACTIVE` | *(boş)* | `local` verilirse `backend/config/application-local.properties` okunur. |
 
-## İlk sprint anı demosu (ML-07)
+Fotoğraf temizliğinin zamanlamaları (`MEMORYLANE_PHOTOS_CLEANUP_RETRY_DELAY`, `..._ORPHAN_SWEEP_DELAY`, `..._QUARANTINE_LIFETIME`) ve auth ayarları da değiştirilebilir; varsayılanlar `backend/src/main/resources/application.properties` içindedir.
 
-1. Backend'i boş bir yerel PostgreSQL ile başlatın. Android uygulamasında **Anılar → Giriş yap → Kayıt ol** ile iki test hesabı (A ve B) açın; şifre 15–128 karakter olmalıdır. Kayıt oturum açmaz, başarılı kayıttan sonra giriş ekranına dönülür. Hesaplar istenirse `POST /api/v1/auth/register` ile de açılabilir; istek alanları [API sözleşmesinde](docs/api-contract.md#hesap-ve-oturum) yer alır.
-2. **Anılar → Giriş yap** ile A hesabına girin. Boş hesapta "Henüz anın yok" görünür.
-3. **Anı Ekle** ile oluşturma ekranını açın. Başlıksız veya tarihsiz kayıt alan hatası verir; tarih seçicide gelecek günler seçilemez. Başlık ve tarih girin, isterseniz **Fotoğraf ekle** ile en fazla 5 fotoğraf seçip **Kaydet**'e dokunun. Fotoğraf seçildiyse ekran fotoğraflar yüklenene kadar açık kalır ve ilerlemeyi gösterir; sonra listeye döner, liste yenilenir ve anı kendi yıl başlığının altında en üstte görünür.
-4. Uygulamayı kapatıp yeniden açın. Token süreç belleğinde olduğu için tekrar giriş gerekir; A ile girince anı sunucudan yeniden yüklenir.
-5. **Profil → Çıkış yap** ile çıkıp B hesabına girin. Anılar listesi sıfırlanır; B'nin listesinde A'nın anısı görünmez.
+**Mobil** (`mobile/local.properties`, `mobile/local.properties.example` dosyasından kopyalanır):
 
-`POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Liste 20'şer kayıtla sayfalanır; "Daha fazla anı göster" sonraki sayfayı ekler. Yükleme hatası boş liste gibi gösterilmez, "Tekrar dene" ile yinelenir; 401 yanıtı oturumu kapatır. Kayıt tekrar denendiğinde aynı `Idempotency-Key` kullanılır, böylece bağlantı kopsa da anı iki kez oluşmaz. Türkçe arama ve kategori filtresi liste API'sindedir; mobil arama arayüzü ve harita kendi kartlarında uygulanır. Karta dokununca anı detayı açılır (fotoğraf galerisi ve tam ekran görüntüleyiciyle); "Anıyı Düzenle" `GET /api/v1/memories/{id}` ile alınan ETag'i `PUT` isteğinin `If-Match` başlığında gönderir; anı başka yerde değiştiyse (412) taslak korunur ve son hal gösterilir.
+| Anahtar | Varsayılan | Açıklama |
+|---|---|---|
+| `sdk.dir` | — | Android SDK klasörü (`ANDROID_HOME` tanımlıysa gerekmez). |
+| `memorylane.apiBaseUrl` | `http://10.0.2.2:8080/` | Backend adresi; `/` ile bitmelidir. Emülatör ve telefon için aşağıdaki [adres tablosuna](#mobil-uygulama-ve-sunucu-adresi) bakın. |
 
-## Fotoğraf yükleme (ML-09)
+## Kurulum
 
-`POST /api/v1/memories/{id}/photos` tek bir JPEG/PNG dosyasını `file` adlı multipart alanında ve `Idempotency-Key` başlığıyla alır. `GET /api/v1/memories/{id}/photos` anının fotoğraflarını sırasıyla listeler, her fotoğrafın `contentUrl` adresi dosyayı yalnız anının sahibine döndürür. Kurallar ve hata kodları [API sözleşmesindedir](docs/api-contract.md#fotoğraf-endpointleri-ve-yanıtı).
+Komutlar Windows PowerShell içindir; macOS/Linux'ta `.\gradlew.bat` yerine `./gradlew`, `copy` yerine `cp` kullanın.
 
-Dosyalar backend'in diskinde, varsayılan olarak `backend/storage/photos` klasöründe tutulur; klasör Git dışındadır ve `MEMORYLANE_PHOTOS_DIRECTORY` ile değiştirilebilir. Veritabanında yalnız fotoğraf kaydı durur. Ortak Supabase veritabanını kullanırken her geliştiricinin backend'i kendi klasörünü kullanır: başka bir backend üzerinden yüklenmiş fotoğrafın kaydı görünür ama dosyası sizde olmadığı için içerik isteği 404 döner. Demo ve fotoğraf denemeleri tek bir backend üzerinden yapılmalıdır.
+**1. Repoyu klonlayın ve JDK'yı kontrol edin**
+
+```powershell
+git clone https://github.com/software-lecture-labs/memory-lane.git
+cd memory-lane
+java -version   # 17 olmalı
+```
+
+**2. Veritabanını hazırlayın** (iki seçenekten biri)
+
+*A) Yerel PostgreSQL (Docker):*
+
+```powershell
+cd backend
+copy .env.example .env      # .env içinde DB_PASSWORD değerini değiştirin
+docker compose up -d
+docker compose ps           # db servisi (healthy) görünmeli
+```
+
+Docker Compose ve uygulama aynı `backend/.env` dosyasını okur; parola tek yerde tutulur. Veriler `memorylane-db-data` volume'ünde kalır.
+
+*B) Ortak Supabase veritabanı (Docker yoksa):* [Ortak PostgreSQL — Supabase](#ortak-postgresql--supabase) bölümündeki adımları izleyin.
+
+**3. Backend'i başlatın** (`backend` dizininden)
+
+```powershell
+.\gradlew.bat bootRun
+```
+
+Açılışta Flyway bekleyen migration'ları uygular; boş veritabanı bu şekilde kurulur. Sunucu `http://localhost:8080` adresinde açılır. Kontrol:
+
+```powershell
+curl.exe http://localhost:8080/api/health    # {"status":"UP","database":"UP"}
+```
+
+Veritabanına ulaşılamazsa uygulama açılmaz ve ne yapılacağını yazar; açıkken veritabanı düşerse `/api/health` 503 döner. Yerel ayarlarla çalıştırmak için `backend/config/application-local.properties.example` dosyasını aynı klasörde `application-local.properties` olarak kopyalayıp `$env:SPRING_PROFILES_ACTIVE = 'local'` ile başlatın.
+
+**4. Mobil uygulamayı çalıştırın**
+
+```powershell
+cd mobile
+copy local.properties.example local.properties   # sdk.dir ve gerekirse memorylane.apiBaseUrl
+.\gradlew.bat installDebug                        # açık emülatöre veya bağlı telefona kurar
+```
+
+Android Studio'da `mobile` klasörünü açıp **Run** ile de çalıştırabilirsiniz.
+
+## Mobil uygulama ve sunucu adresi
+
+| Cihaz | `memorylane.apiBaseUrl` | Not |
+|---|---|---|
+| Android emülatörü | `http://10.0.2.2:8080/` (varsayılan) | `10.0.2.2`, emülatörün içinden bilgisayarın `localhost`'udur; ayar gerekmez. |
+| Gerçek telefon | `http://<bilgisayarın yerel IP adresi>:8080/` | Telefon ve bilgisayar aynı Wi-Fi'de olmalı; IP'yi `ipconfig` ile bulun. Windows Güvenlik Duvarı 8080 portuna gelen bağlantıya izin vermelidir. |
+
+Düz `http` yalnız debug sürümde açıktır (`mobile/app/src/debug/AndroidManifest.xml`). Release sürüm `https://` adres ister; adres `http://` ise release build bilerek durur.
+
+## İlk deneme
+
+1. Uygulamada **Kayıt ol** ile iki hesap (A ve B) açın; şifre 15–128 karakterdir. Kayıt oturum açmaz, ardından giriş ekranına dönülür.
+2. A ile giriş yapın. **Anı Ekle** ile başlık, tarih ve isterseniz kategori, duygu, konum ve en fazla 5 fotoğrafla bir anı kaydedin; anı zaman çizelgesinde kendi yılının altında görünür.
+3. Anıya dokunup detayını, galerisini ve tam ekran fotoğrafı açın; **Anıyı Düzenle** ile değiştirin.
+4. Uygulamayı kapatıp açın: token yalnız bellekte tutulduğu için yeniden giriş istenir.
+5. **Profil → Çıkış yap** ile çıkıp B ile girin: B'nin listesinde, aramasında ve haritasında A'nın anısı görünmez.
+
+## Testler ve kalite
+
+```powershell
+cd backend
+.\gradlew.bat test bootJar          # birim + entegrasyon testleri ve çalıştırılabilir JAR
+
+cd ..\mobile
+.\gradlew.bat assembleDebug lintDebug testDebugUnitTest
+```
+
+- **Backend entegrasyon testleri** gerçek PostgreSQL 17 üzerinde çalışır: Testcontainers tek bir geçici container açar, her test sınıfı Flyway ile kurulmuş şemayı kullanır. Docker yoksa bu testler yalnız yerelde atlanır (`@RequiresDocker`); CI'da (`CI` ortam değişkeni varken) hiçbir zaman atlanmaz, Docker yoksa build başarısız olur. Testlerde bağlantı havuzu küçültülmüştür (`backend/src/test/resources/config/application.properties`); her test sınıfının kendi uygulama bağlamı ortak test veritabanının bağlantı sınırını aşmasın diye.
+- **Öne çıkan testler:** transaction ve rollback (`MemoryDeleteIntegrationTest`: ara hatada anı ve fotoğraflar korunur), sahiplik ve iki hesap (`OwnershipIntegrationTest`, `TwoAccountAccessIntegrationTest`), auth (`AuthIntegrationTest`: süresi dolan ve iptal edilen token, eşzamanlı kayıt), şema kuralları (`SchemaRulesTest`), dosya temizliği (`PhotoFileCleanupIntegrationTest`).
+- **Mobil:** ViewModel, repository (MockWebServer) ve kural testleri JVM'de çalışır; Android lint uyarıları hata sayılır (`warningsAsErrors`).
+- **CI:** Her PR'da GitHub Actions *Verify* iş akışı backend ve mobil için yukarıdaki komutları çalıştırır; merge için ikisinin de geçmesi ve en az bir onay gerekir.
+- **Statik analiz:** Ders "A" notu bekler. Araç (SonarQube/SonarCloud adayı) henüz kurulmadı; durum ve kararlar [mimari belgesinde](docs/architecture.md#statik-analiz-a-hedefi). A alındığı iddia edilmez.
+
+Bir değişikliğin doğrulama sonucunun kaynağı ilgili PR açıklaması ve o commit'in GitHub Actions kontrolleridir; bu belge kalıcı kurulum bilgisini içerir.
+
+### CI raporları
+
+GitHub Actions içindeki Verify çalıştırmasının Artifacts bölümünden `backend-reports` ve `mobile-reports` raporlarına ulaşabilirsiniz. Test ve lint raporları, ilgili adım başarısız olsa da 14 gün saklanır. Derleme rapor üretemeden durursa artifact oluşmayabilir; rapor bulunmaması testlerin başarılı olduğu anlamına gelmez. Sonuç için ilgili işin durumunu ve loglarını kontrol edin.
+
+Her iki build Gradle önbelleğini kullanır; yalnızca main çalıştırmaları önbelleğe yazar.
+
+## Mimari özeti
+
+İki tarafta da **katmanlı mimari** kullanılır; her katman yalnız bir alttakini bilir. Backend tek bir uygulama olarak dağıtılır. Değerlendirilen alternatifler (controller içinde doğrudan veri erişimi, mikroservisler, Jakarta EE/Payara) ve seçimin gerekçesi [mimari belgesinde](docs/architecture.md#ml-01-ders-kriterleri-ve-alternatifler): katmanlar dört kişilik ekipte sorumlulukları ayırır, tek dağıtım kapsam için yeterlidir; mikroservisler gereksiz servis iletişimi ve dağıtım yükü getirirdi.
+
+```
+Android (MVVM)                               Backend (katmanlı)
+Fragment (XML ekran, yalnız çizer)            Controller   HTTP sözleşmesi, doğrulama, durum kodları
+  -> ViewModel (ekran durumu, kurallar)         -> Service  iş kuralları, @Transactional sınırı, sahiplik
+    -> Repository arayüzü                         -> JdbcClient / Spring Data JPA
+      -> Retrofit + OkHttp  --- HTTPS/JSON --->      -> PostgreSQL 17 (şema: Flyway V1-V5)
+```
+
+- **Çalışma ortamı (application server):** Spring Boot'un gömülü Tomcat'i; öğretim elemanı bu seçimi PR #2 incelemesinde bu dönem için kabul etti. Payara Micro yerine seçilme gerekçesi ve Jakarta EE karşılıkları [ADR-0001](docs/adr/0001-spring-boot-uygulama-calisma-ortami.md)'de. `bootJar` çalıştırılabilir tek bir JAR üretir.
+- **Veritabanı:** PostgreSQL 17. Şemanın sahibi Flyway'dir; uygulanmış migration değiştirilmez, her değişiklik yeni bir sürüm dosyasıdır. Hibernate şemayı yalnız doğrular (`ddl-auto=validate`).
+
+### SOLID
+
+Koddan örnekler; ilke ilke açıklama [mimari belgesinde](docs/architecture.md#solid):
+
+- **Tek sorumluluk:** `MemoryController` yalnız HTTP'yi, `MemoryService` iş kurallarını ve transaction'ı, `OwnershipGuard` yalnız sahiplik denetimini, `PhotoStorage` dosya saklamayı, `PhotoFileCleanup` commit sonrası dosya temizliğini yürütür. Mobilde Fragment yalnız çizer, kurallar ViewModel'dedir.
+- **Açık/kapalı:** Fotoğraf servisi `PhotoStorage` arayüzünü bilir; bugün `LocalPhotoStorage` diske yazar, başka bir depolama servis değişmeden eklenebilir.
+- **Liskov:** Testlerdeki sahte repository'ler (`FakeMemoryDetailRepository` vb.) gerçek uygulamanın sözleşmesine uyar (geri çağrı tam bir kez, iptal edilince hiç); ViewModel'ler aynı kodla iki uygulamada da çalışır.
+- **Arayüz ayrımı:** Mobil `MemoryRepository` tek sınıftır ama ekranlar yalnız ihtiyaç duydukları arayüzü görür: `MemoryListRepository`, `MemoryDetailRepository`, `MemoryEditRepository`…
+- **Bağımlılığın tersine çevrilmesi:** Ekranlar somut sınıfları değil arayüzleri ister; somut sınıfları yalnız `AppContainer` (mobilde elle bağımlılık enjeksiyonu) ve Spring'in constructor injection'ı bilir.
+
+### Transaction
+
+Birden çok yazma tek bir service transaction'ında yapılır; biri başarısız olursa hepsi geri alınır. Kurallar [mimari belgesinde](docs/architecture.md#transaction) ve [ADR-0002](docs/adr/0002-silme-politikasi.md)'de.
+
+- **Anı silme** (`MemoryService.delete`, ML-13): anı satırı kilitlenir, fotoğraf dosyaları temizlik kuyruğuna alınır, fotoğraf kayıtları ve anı silinir. `MemoryDeleteIntegrationTest`, fotoğraflar silindikten sonra kasıtlı bir hata üretir ve anının, fotoğraf kayıtlarının ve dosyaların korunduğunu gösterir. Dosyalar transaction'a dahil edilemediği için yalnız commit sonrasında silinir.
+- **Fotoğraf yükleme** (`PhotoService.upload`): anı satırı kilitlenir; tekrar denemesi, 5 fotoğraf sınırı ve sıra aynı kilit altında karar verilir. Transaction geri alınırsa diske yazılmış dosya da silinir.
+- **Anı güncelleme** (`MemoryService.update`): `If-Match` sürüm kontrolü ve yazma aynı kilit altında yapılır; eşzamanlı ikinci yazma 412 alır, veri kaybolmaz.
+
+## Güvenlik: hesap, oturum ve sahiplik
+
+- **Hesap ve oturum:** Parolalar Argon2id ile özetlenir; 24 saat geçerli rastgele tokenın veritabanında yalnız SHA-256 özeti tutulur. Çıkış tokenı iptal eder. Ham parola ve token loglanmaz. Kayıt/giriş IP başına dakikada 20 istekle, hatalı giriş hesap başına 5 denemeyle sınırlıdır. Mobil uygulama tokenı yalnız bellekte tutar. Ayrıntılar aşağıdaki [Hesap ve oturum ayrıntıları](#hesap-ve-oturum-ayrıntıları) bölümünde.
+- **Sahiplik** ([ADR-0003](docs/adr/0003-sahiplik-denetimi.md)): `SessionAuthenticationFilter`, `/api/v1/auth/` dışındaki her istekte oturumu controller'dan önce doğrular; oturumsuz istek `401 INVALID_SESSION` alır. Kullanıcı kimliği yalnız oturumdan gelir (`@CurrentUser`); istemcinin gönderdiği sahip bilgisi kullanılmaz. Her anı ve fotoğraf işlemi `OwnershipGuard` ile denetlenir; başka hesabın kaynağı ile var olmayan kaynak aynı `404` yanıtını alır, böylece varlığı sızmaz. Fotoğraflar herkese açık bir klasörden değil, yalnız sahibine dönen korumalı bir uçtan sunulur.
+
+## API özeti
+
+Tüm iş uçları `/api/v1` altındadır; `/api/v1/auth/` dışındakiler `Authorization: Bearer <token>` ister. Hatalar `{"code": "...", "message": "..."}` biçimindedir; yanıtlar `Cache-Control: no-store` taşır. Alanlar, örnek istek/yanıtlar, hata kodları, sayfalama ve tekrar deneme kuralları [API sözleşmesinde](docs/api-contract.md).
+
+| Yöntem ve yol | İş |
+|---|---|
+| `POST /api/v1/auth/register` | Hesap açar (201); oturum açmaz. |
+| `POST /api/v1/auth/login` | Bearer token ve `expiresAt` döndürür. |
+| `GET /api/v1/auth/me` | Token sahibini döndürür. |
+| `POST /api/v1/auth/logout` | Yalnız o tokenı iptal eder (204). |
+| `POST /api/v1/memories` | Anı oluşturur (201). `Idempotency-Key` zorunludur; aynı anahtarla tekrar ikinci anı oluşturmaz. |
+| `GET /api/v1/memories?page=&size=&q=&category=` | Hesabın anılarını `memoryDate` yeniden eskiye, 20'şerli sayfalarla listeler; Türkçe arama ve kategori filtresi SQL'de, sayfalamadan önce uygulanır. |
+| `GET /api/v1/memories/map?q=&category=` | Konumlu anıların noktaları; sayfalanmaz, en fazla 1000 nokta, fazlası `truncated=true`. |
+| `GET /api/v1/memories/{id}` | Anı detayı ve fotoğrafları; güçlü `ETag` başlığıyla. |
+| `PUT /api/v1/memories/{id}` | Anıyı günceller; `If-Match` zorunludur. Başka yerde değiştiyse 412. |
+| `DELETE /api/v1/memories/{id}` | Anıyı ve fotoğraflarını tek transaction'da siler (204). |
+| `POST /api/v1/memories/{id}/photos` | Tek JPEG/PNG yükler (multipart `file`, en fazla 5.000.000 bayt, anı başına 5 fotoğraf); `Idempotency-Key` zorunludur. |
+| `GET /api/v1/memories/{id}/photos` | Fotoğrafları sırasıyla listeler. |
+| `GET /api/v1/memories/{id}/photos/{photoId}/content` | Fotoğraf dosyası; yalnız anının sahibine. |
+| `GET /api/health` | Sunucu ve veritabanı durumu (oturum gerekmez). |
+
+Başka hesaba ait ve var olmayan anı/fotoğraf aynı `404` yanıtını alır.
+
+## Bilinen eksikler
+
+- **Fotoğraf silme:** `DELETE /api/v1/memories/{id}/photos/{photoId}` sözleşmede tanımlı, henüz uygulanmadı. Anı silindiğinde fotoğrafları da silinir.
+- **Silinen kaynağın tekrar deneme anahtarı:** Sözleşme, silinmiş bir anının `Idempotency-Key`'i yeniden gelirse `409 IDEMPOTENCY_KEY_RETIRED` ister. Kalıcı silme anahtarı da sildiği için, yanıtı kaybolmuş eski bir oluşturma isteği silinen anıyı yeniden oluşturabilir. Emekli anahtar tablosu yeni bir migration ile planlandı ([ADR-0002](docs/adr/0002-silme-politikasi.md)).
+- **Statik analiz:** Araç ve kalite kapısı henüz kurulmadı (yukarıda [Testler ve kalite](#testler-ve-kalite)).
+- **HTTPS:** Yerel sunucu düz HTTP ile çalışır; TLS ve cihaz güven zinciri ML-32 kapsamındadır. Release mobil sürüm `https` adres ister.
+- **Tek sunucu varsayımı:** Giriş sınırlama sayaçları bellektedir ve yeniden başlatmada sıfırlanır; proxy arkasında IP sınırı ortaklaşabilir ([Proxy varsayımı](#proxy-varsayımı)). Fotoğraf dosyaları backend'in diskindedir; birden çok backend dosyaları paylaşmaz ([Fotoğraf dosyaları](#fotoğraf-dosyaları)).
+- **Konum:** Yalnız koordinat tutulur; yer adı/adres çözümlemesi yapılmaz.
+- **Mobil oturum:** Token yalnız bellekte tutulur; uygulama kapanınca yeniden giriş gerekir. Bu bilinçli bir karardır (kalıcı giriş ve refresh token kapsam dışı).
 
 ## Ortak PostgreSQL — Supabase
 
@@ -72,52 +249,28 @@ docker run --rm -e FLYWAY_USER -e FLYWAY_PASSWORD -v "${PWD}\src\main\resources\
 
 Ortak Supabase şeması 27.11.2026 itibarıyla V5'tedir (V3, V4 ve V5 bu yöntemle, önce provada denenerek uygulandı; mevcut kayıtlar korundu, V5 mevcut anılara 1 sürümünü verdi). Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
 
-## İlk kurulum (yerel Docker seçeneği)
+## Hesap ve oturum ayrıntıları
 
-1. Repoyu klonlayın, JDK 17 kurun ve `java -version` ile kontrol edin.
-2. Android Studio ile Android SDK Platform 35 kurun. Lisanslar kabul edilmişse Gradle eksik SDK bileşenlerini de indirebilir.
-3. `mobile/local.properties.example` dosyasını `mobile/local.properties` olarak kopyalayıp Windows/macOS/Linux için kendi SDK yolunuzu girin veya `ANDROID_HOME` tanımlayın. Uygulama emülatörde varsayılan olarak `http://10.0.2.2:8080/` adresine bağlanır; gerçek telefonda aynı dosyaya `memorylane.apiBaseUrl=http://<bilgisayarın yerel IP adresi>:8080/` yazın.
-4. Backend PostgreSQL gerektirir. Docker Desktop kurun, ardından `backend/.env.example` dosyasını `backend/.env` olarak kopyalayıp `DB_PASSWORD` değerini değiştirin ve `backend` dizininde `docker compose up -d` çalıştırın. `docker compose ps` çıktısında `(healthy)` görünmelidir. Uygulama `backend` dizininden çalıştırıldığında aynı `.env` dosyasını kendisi okur; şifre tek yerde tutulur. Gerçek ortam değişkenleri `.env` değerlerinin önüne geçer. Şifrenin varsayılanı yoktur.
-5. Backend diğer ayarlarda varsayılanlarla çalışır. Yerel değişiklik gerekiyorsa `backend/config/application-local.properties.example` dosyasını aynı dizinde `application-local.properties` olarak kopyalayın. Bu dosya kaynak klasörlerinin dışındadır.
+`POST /api/v1/auth/register` e-posta ve parolayla hesap açar (201); otomatik oturum açmaz. `POST /api/v1/auth/login` aynı JSON alanlarıyla Bearer token ve `expiresAt` döndürür. `GET /api/v1/auth/me` token sahibini döndürür; `POST /api/v1/auth/logout` yalnız o tokenı iptal eder (204). Son iki istekte `Authorization: Bearer <accessToken>` gerekir. Çıkış aynı doğru biçimli tokenla tekrarlanabilir; geçersiz/süresi dolmuş oturumla `me` 401 döner.
 
-PowerShell, repo kökünden:
+Kayıtta e-posta kırpılıp küçük harfe çevrilir; parola 15–128 Unicode karakterdir, kırpılmaz. Argon2id (19 MiB, 2 geçiş, 1 paralellik) parola özeti; 32 rastgele bayttan üretilen 24 saatlik tokenın yalnız SHA-256 özeti PostgreSQL'e yazılır. Ham parola/token loglanmaz. Yanıtlar `Cache-Control: no-store` taşır.
 
-```powershell
-cd backend
-docker compose up -d
-.\gradlew.bat test bootJar
-# Yalnızca harici yerel ayarları kullanmak istediğinizde:
-$env:SPRING_PROFILES_ACTIVE = 'local'
-.\gradlew.bat bootRun
-```
+Auth gövdesi 8 KiB ile, kayıt/giriş denemeleri gerçek bağlantı IP'si başına 20/dakika ile sınırlıdır. Login için normalize e-posta başına beş başarısız denemeden sonra pencere bitene kadar 429/Retry-After döner. Başarılı giriş hesabın başarısızlık sayacını sıfırlar. Sayaçlar bu kontrollü, tek sunuculu demo için bellektedir; yeniden başlatmada sıfırlanır ve birden çok sunucu arasında paylaşılmaz. Proxy başlıklarına güvenilmez; proxy kullanımı ayrıca yapılandırılmalıdır. HTTPS dağıtımı ML-32, iş kaynaklarının sahiplik denetimi ML-29 kapsamındadır.
 
-Komutları backend dizininden çalıştırın. Farklı çalışma dizininde harici config konumunu `SPRING_CONFIG_ADDITIONAL_LOCATION` ile belirtin. Local profil etkin değilse `application-local.properties` okunmaz. Gerçek parolaları örneğe yazmayın; ortam değişkenleri kullanın.
+Mevcut Flyway `users`/`sessions` şeması, UserAccount/UserSession JPA eşlemeleri ve dar `AuthRepository` ile kullanılır. `INSERT ... ON CONFLICT` eşzamanlı kayıtta tek hesap üretir; parola hesaplaması transaction dışındadır; hesap ekleme, oturum oluşturma ve iptal yalnız repository'deki kısa transaction'lar içinde çalışır. Session–User ilişkisi çoktan-biredir; JPA şemayı değiştirmez, Flyway şemasını doğrular. API biçimleri [sözleşmede](docs/api-contract.md), çalıştırma/test komutları yukarıdadır. Auth entegrasyon testleri HTTP uçlarını gerçek PostgreSQL üzerinde kontrol eder; Docker yoksa yalnız yerelde atlanır, CI'da zorunludur.
 
-Sunucu varsayılan olarak 8080 portunda açılır. Açılışta Flyway bekleyen migration'ları uygular; boş veritabanı bu şekilde kurulur. `GET http://localhost:8080/api/health` veritabanı erişilebilirse 200 döner. Veritabanı kapalıysa uygulama açılmaz ve ne yapılacağını yazar. Veritabanı testleri Docker ile tek bir geçici PostgreSQL container'ı açar. Docker yoksa bu testler yalnızca yerelde atlanır; CI'da (`CI` ortam değişkeni varken) hiçbir zaman atlanmaz, Docker yoksa build başarısız olur. Gradle 8.14.3, JDK 25 ile çalışmaz; `JAVA_HOME` JDK 17'yi göstermelidir.
+### Hash kapasitesi ve oturum bakımı
 
-Mobil için tekrar repo kökünden başlayın:
+Argon2id çalışma belleği işlem başına 19 MiB olarak yapılandırılmıştır. Kayıt, giriş ve bilinmeyen kullanıcı doğrulaması aynı Semaphore sınırını paylaşır: varsayılan en fazla iki hash işlemi, yani Argon2 çalışma alanları için yaklaşık 38 MiB. Bu sayı toplam JVM belleği veya ölçülmüş heap tepe değeri değildir; kütüphane nesneleri ve uygulamanın diğer kullanımları ayrıca yer tutar. `memorylane.auth.max-concurrent-hashes` 1–8 aralığında ayarlanabilir; yükseltmeden önce sunucunun belleği ölçülmelidir. Kapasite doluysa kuyruk oluşturulmaz; `503 AUTH_BUSY` ve `Retry-After: 1` döner. Parola hash/verify işlemi DB transaction'ı ve bağlantısı tutmaz; repository okuma/yazmaları ayrı kısa transaction'lardır.
 
-```powershell
-cd mobile
-.\gradlew.bat assembleDebug lintDebug testDebugUnitTest
-```
+Süresi dolan token, temizlik beklenmeden hemen 401 ile reddedilir. Başlangıçtan bir saat sonra ve ardından saatte bir çalışan temizlik işi `expires_at <= şimdi` kayıtlarını, çağrı başına en fazla 1.000 satırlık kısa transaction ile siler. İptal edilmiş kayıtlar da doğal sona erme zamanına kadar tutulur; ardından aynı iş tarafından silinir. Aktif oturumlar korunur. Büyük birikimde kalan kayıtlar sonraki turlarda temizlenir; daha yüksek trafik için ayrı indeks/bakım planı ve çalışma sıklığı değerlendirilmelidir. `memorylane.auth.session-cleanup-delay` ISO-8601 süre olarak ayarlanabilir (varsayılan `PT1H`). Temizlik hatası tokenın geçerlilik süresini uzatmaz.
 
-macOS/Linux üzerinde `gradlew.bat` yerine `./gradlew` kullanın. Backend wrapper Gradle 8.14.3, mobil wrapper Gradle 8.9 indirir ve SHA-256 doğrular; global Gradle kurulumu gerekmez. Build'ler bağımsızdır; yalnızca çalıştırdığınız modülün araçları gerekir.
+### Proxy varsayımı
 
-Hedef mimaride anıların asıl kaydı backend'de tutulacak; mobil oturum anahtarları yedeklere dahil edilmeyecek. Bu veri saklama ve senkronizasyon akışı henüz uygulanmadı; ayrıntılar mimari belgesindedir.
+Mevcut geliştirme/ders demosu backend'e doğrudan bağlantı varsayar. `getRemoteAddr()` doğrudan bağlantının adresidir; reverse proxy/load balancer arkasında bütün kullanıcılar için proxy IP'si görünebilir ve IP başına 20/dakika sınırı ortak bir kotaya dönüşebilir. Bu kurulum proxy arkasında kullanıcı bazlı doğru IP sınırı sağladığı iddiasını taşımaz. Hesap başına başarısız giriş sınırı bundan bağımsız kalır. `Forwarded`/`X-Forwarded-For` başlıkları kodda doğrudan okunmaz; istemcinin yazdığı başlığa güvenilmez. Dağıtımda güvenilir proxy adresleri, backend'e doğrudan erişim ve başlıkların proxy tarafından temizlenip yeniden yazılması birlikte ele alınmalı; ancak bundan sonra uygun Spring/Tomcat forwarded-header stratejisi seçilip iki farklı istemciyle test edilmelidir. Load balancer yapılandırması bu K1 backend değişikliğine dahil değildir.
 
-Mobil uygulama Anılar sekmesiyle açılır; sekme oturum açıksa anıları yıllara göre gruplanmış kartlarla listeler, yeni anı oluşturma ekranına geçirir. Fotoğraflar oluşturma ekranında seçilir ve anı kaydedildikten sonra yüklenir. Profil sekmesi oturumu (giriş/çıkış) ve `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Giriş ekranındaki **Kayıt ol** bağlantısı kayıt ekranını açar; giriş, kayıt ve anı oluşturma ekranlarında alt menü gizlenir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
+## Fotoğraf dosyaları
 
-SDK yolları, parolalar, `.env`, imzalama anahtarları ve yerel ayarlar commitlenmez. Yanlışlıkla classpath altına konan application-local.properties/yml/yaml dosyaları da paketlemeden dışlanır.
+`POST /api/v1/memories/{id}/photos` tek bir JPEG/PNG dosyasını `file` adlı multipart alanında ve `Idempotency-Key` başlığıyla alır. `GET /api/v1/memories/{id}/photos` anının fotoğraflarını sırasıyla listeler, her fotoğrafın `contentUrl` adresi dosyayı yalnız anının sahibine döndürür. Kurallar ve hata kodları [API sözleşmesindedir](docs/api-contract.md#fotoğraf-endpointleri-ve-yanıtı).
 
-Ayrıntılar: [mimari](docs/architecture.md), [Git çalışma biçimi](docs/git-workflow.md). Anlık doğrulama sonuçlarının kaynağı ilgili PR açıklaması ve o commit için GitHub Actions kontrolleridir; repodaki belgeler kalıcı kurulum bilgilerini içerir.
-
-## Veritabanı ve profiller
-
-Backend her profilde PostgreSQL'e bağlanır ve açılışta Flyway migration'larını uygular; ayrı bir `database` profili yoktur. Bağlantı bilgileri yukarıdaki kurulum adımında anlatılan `backend/.env` dosyasından veya ortam değişkenlerinden gelir. Harici yerel ayarlarla çalıştırmak için backend dizininde: `.\gradlew.bat bootRun --args="--spring.profiles.active=local --spring.config.additional-location=optional:file:./config/"`.
-
-## CI raporları
-
-GitHub Actions içindeki Verify çalıştırmasının Artifacts bölümünden `backend-reports` ve `mobile-reports` raporlarına ulaşabilirsiniz. Test ve lint raporları, ilgili adım başarısız olsa da 14 gün saklanır. Derleme rapor üretemeden durursa artifact oluşmayabilir; rapor bulunmaması testlerin başarılı olduğu anlamına gelmez. Sonuç için ilgili işin durumunu ve loglarını kontrol edin.
-
-Her iki build Gradle önbelleğini kullanır; yalnızca main çalıştırmaları önbelleğe yazar.
+Dosyalar backend'in diskinde, varsayılan olarak `backend/storage/photos` klasöründe tutulur; klasör Git dışındadır ve `MEMORYLANE_PHOTOS_DIRECTORY` ile değiştirilebilir. Veritabanında yalnız fotoğraf kaydı durur. Ortak Supabase veritabanını kullanırken her geliştiricinin backend'i kendi klasörünü kullanır: başka bir backend üzerinden yüklenmiş fotoğrafın kaydı görünür ama dosyası sizde olmadığı için içerik isteği 404 döner. Demo ve fotoğraf denemeleri tek bir backend üzerinden yapılmalıdır.
