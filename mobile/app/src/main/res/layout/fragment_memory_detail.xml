@@ -373,6 +373,21 @@
                     app:iconPadding="@dimen/ml_space_sm"
                     app:iconSize="@dimen/memory_detail_icon"
                     app:iconTint="@color/ml_on_primary" />
+
+                <!-- ML-13: opens the delete panel; nothing is deleted before its confirmation. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/detail_delete"
+                    style="@style/Widget.MemoryLane.Button.Secondary"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/memory_detail_button_height"
+                    android:layout_marginTop="@dimen/ml_space_sm"
+                    android:text="@string/memory_detail_delete"
+                    android:textColor="@color/ml_primary"
+                    app:icon="@drawable/ic_delete"
+                    app:iconGravity="textStart"
+                    app:iconPadding="@dimen/ml_space_sm"
+                    app:iconSize="@dimen/memory_detail_icon"
+                    app:iconTint="@color/ml_primary" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 

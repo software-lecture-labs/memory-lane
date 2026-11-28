@@ -18,6 +18,9 @@
     <color name="memory_mint_ink">#2E6B54</color>
     <!-- Emotion badge on the list card (surface-container-high). -->
     <color name="memory_lilac_soft">#F6E1FF</color>
+    <!-- Delete panel note boxes (ML-13) -->
+    <color name="memory_mint_soft">#80C9EBDD</color>
+    <color name="memory_error_soft">#99FFDAD6</color>
 
     <!-- Photo overlays: the count pill (plum at 75%), the shade under the gallery badges
          (plum at 60% fading out) and the inactive page dots (white at 40%). -->

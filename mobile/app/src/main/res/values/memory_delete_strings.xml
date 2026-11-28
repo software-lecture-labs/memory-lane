@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <!-- Delete panel (ML-13) -->
+    <string name="memory_detail_delete">Anıyı sil</string>
+    <string name="memory_delete_heading">Bu anıyı silmek istiyor musun?</string>
+    <string name="memory_delete_message">Bu anı ve ona bağlı fotoğraflar uygulamadan silinecek. Bu işlem geri alınamaz.</string>
+    <string name="memory_delete_date_pattern" translatable="false">d MMMM yyyy</string>
+    <plurals name="memory_delete_photo_count">
+        <item quantity="one">%d fotoğraf</item>
+        <item quantity="other">%d fotoğraf</item>
+    </plurals>
+    <string name="memory_delete_gallery_note">Telefonunun galerisindeki orijinal fotoğraflar silinmez. Sadece Memory Lane günlüğünden kaldırılır.</string>
+    <string name="memory_delete_failed">Silme başarısız oldu. Anın olduğu gibi duruyor.</string>
+    <string name="memory_delete_confirm">Anıyı Sil</string>
+    <string name="memory_delete_running">Siliniyor…</string>
+    <string name="memory_delete_cancel">Vazgeç</string>
+    <string name="memory_deleted">Anı silindi.</string>
+</resources>

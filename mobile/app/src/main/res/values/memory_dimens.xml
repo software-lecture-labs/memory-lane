@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Memory screens' sizes. Shared spacing and radii stay in dimens.xml. -->
 <resources>
+    <!-- Delete panel (ML-13) -->
+    <dimen name="memory_delete_icon_circle">64dp</dimen>
+    <dimen name="memory_delete_cover">64dp</dimen>
     <!-- Bottom list padding so the last card can scroll above the add button
          (56dp button + 16dp margin above and below + 8dp gap). -->
     <!-- Small app mark in the memory list header. -->

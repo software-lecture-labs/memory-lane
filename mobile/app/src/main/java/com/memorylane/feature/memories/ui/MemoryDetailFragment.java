@@ -83,6 +83,9 @@ public class MemoryDetailFragment extends Fragment {
         binding.detailBack.setOnClickListener(button -> close());
         binding.detailBackToList.setOnClickListener(button -> close());
         binding.detailEdit.setOnClickListener(button -> openEditor());
+        binding.detailDelete.setOnClickListener(button -> openDeletePanel());
+        getChildFragmentManager().setFragmentResultListener(MemoryDeleteSheet.RESULT_DELETED,
+                getViewLifecycleOwner(), (key, result) -> onDeleted());
         binding.detailZoomHint.setOnClickListener(hint -> openPhotoViewer(currentPhoto));
         pager.attachToRecyclerView(binding.detailPhotos);
         binding.detailPhotos.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -247,6 +250,31 @@ public class MemoryDetailFragment extends Fragment {
         if (current == null || current.getId() != R.id.memoryDetailFragment) return;
         navController.navigate(R.id.action_memoryDetailFragment_to_memoryEditFragment,
                 MemoryEditFragment.arguments(viewModel.memoryId()));
+    }
+
+    /** Shows the delete confirmation for the memory on screen; a second tap does not open another. */
+    private void openDeletePanel() {
+        MemoryApi.Detail memory = shownMemory;
+        if (memory == null || getChildFragmentManager().findFragmentByTag(MemoryDeleteSheet.TAG) != null) return;
+        MemoryDeleteSheet.forMemory(viewModel.memoryId(), memory.title(), memory.memoryDate(),
+                memory.photos().size(), memory.coverPhotoId()).show(getChildFragmentManager(), MemoryDeleteSheet.TAG);
+    }
+
+    /**
+     * The memory is gone: the timeline refreshes and announces it (if it is on the back stack;
+     * a detail opened from the map has none and the map reloads its pins itself), then this
+     * screen closes.
+     */
+    private void onDeleted() {
+        NavController navController = NavHostFragment.findNavController(this);
+        try {
+            navController.getBackStackEntry(R.id.memoriesFragment).getSavedStateHandle()
+                    .set(MemoryDeleteSheet.RESULT_DELETED, true);
+        } catch (IllegalArgumentException notOnTheStack) {
+            Snackbar.make(requireActivity().findViewById(android.R.id.content),
+                    R.string.memory_deleted, Snackbar.LENGTH_SHORT).show();
+        }
+        close();
     }
 
     /**
