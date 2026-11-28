@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Waiting signs: the swaying logo in loading states and the spinner inside busy buttons. -->
+<resources>
+    <dimen name="loading_logo_size">72dp</dimen>
+    <dimen name="loading_button_spinner">18dp</dimen>
+    <dimen name="loading_button_spinner_track">2dp</dimen>
+</resources>

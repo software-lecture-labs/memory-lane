@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
+import com.memorylane.core.ui.ButtonProgress;
 import com.memorylane.core.ui.ErrorMessages;
 import com.memorylane.core.ui.Motion;
 import androidx.navigation.NavController;
@@ -51,6 +52,11 @@ public final class LoginFragment extends Fragment {
         viewModel.getState().observe(getViewLifecycleOwner(), this::render);
         viewModel.busy().observe(getViewLifecycleOwner(), busy -> {
             binding.loginButton.setEnabled(!busy);
+            if (busy) {
+                ButtonProgress.show(binding.loginButton, getString(R.string.login_busy));
+            } else {
+                ButtonProgress.hide(binding.loginButton);
+            }
             binding.emailInput.setEnabled(!busy);
             binding.passwordInput.setEnabled(!busy);
             // A login result arriving while the register screen is open would navigate on return.

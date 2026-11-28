@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Waiting messages shared by every screen. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <!-- Shown under a loading message that has taken a few seconds; the first line is the
+         screen's own message ("Anıların yükleniyor…"). -->
+    <string name="state_loading_slow">%1$s\nBağlantı biraz yavaş, bekliyoruz…</string>
+    <string name="login_busy">Giriş yapılıyor…</string>
+</resources>
