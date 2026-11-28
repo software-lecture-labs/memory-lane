@@ -6,6 +6,4 @@
     <color name="calendar_note_lavender">#DCCEFF</color>
     <color name="calendar_note_mint">#C9EBDD</color>
     <color name="calendar_outside_month">#4D35263F</color>
-    <!-- Butter at 45% so the card shows through, like a translucent sticky note. -->
-    <color name="calendar_reminder">#73FFE69A</color>
 </resources>

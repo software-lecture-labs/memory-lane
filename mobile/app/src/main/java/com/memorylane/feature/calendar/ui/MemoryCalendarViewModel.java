@@ -31,12 +31,17 @@ import java.util.Set;
  * month and the picked day live here so they survive rotation.
  *
  * <p>Only one load runs at a time and a generation number drops answers that arrive after the
- * session changed. A 401 is handled by the session layer (AuthInterceptor ends the session and
- * SessionNavigator leaves the screen); here it just stops loading.
+ * session changed. A 401 turns the calendar to SIGNED_OUT like the other screens; the session
+ * layer (AuthInterceptor, SessionNavigator) ends the session and leaves the screen.
  */
 public final class MemoryCalendarViewModel extends ViewModel {
-    /** Safety stop: 50 pages of 20 is far more than a personal notebook holds in this release. */
+    /**
+     * Safety stop: 50 pages of 20 (1000 memories) is far more than a personal notebook holds in
+     * this release. Past it the calendar shows a "truncated" note, like the map; a server query
+     * for one month would remove the limit and needs a contract change first.
+     */
     static final int MAX_PAGES = 50;
+    private static final int UNAUTHORIZED = 401;
 
     private final MemoryListRepository repository;
     private final Clock clock;
@@ -50,6 +55,8 @@ public final class MemoryCalendarViewModel extends ViewModel {
     private final Set<String> seen = new HashSet<>();
     /** True once a load completed for this session; a refresh then keeps month and day. */
     private boolean loadedOnce;
+    /** The last load stopped at {@link #MAX_PAGES} with more memories left on the server. */
+    private boolean truncated;
     private YearMonth month;
     @Nullable private LocalDate selected;
     private int generation;
@@ -87,6 +94,7 @@ public final class MemoryCalendarViewModel extends ViewModel {
             session = authorization;
             notesByDate.clear();
             loadedOnce = false;
+            truncated = false;
         }
         reload();
     }
@@ -132,8 +140,18 @@ public final class MemoryCalendarViewModel extends ViewModel {
 
     private void onPage(int id, int page, ApiResult<MemoryApi.Page> result) {
         if (!result.isSuccess()) {
-            publish(MemoryCalendarUiState.Status.ERROR,
-                    result.getError() != null ? result.getError() : ApiError.unexpected());
+            ApiError error = result.getError() != null ? result.getError() : ApiError.unexpected();
+            if (error.getHttpStatus() == UNAUTHORIZED) {
+                // Same as the other screens: a rejected session is "signed out", not an error,
+                // and nothing of this account stays on screen.
+                session = null;
+                notesByDate.clear();
+                loadedOnce = false;
+                truncated = false;
+                publish(MemoryCalendarUiState.Status.SIGNED_OUT, null);
+                return;
+            }
+            publish(MemoryCalendarUiState.Status.ERROR, error);
             return;
         }
         MemoryApi.Page body = result.getData();
@@ -151,6 +169,9 @@ public final class MemoryCalendarViewModel extends ViewModel {
             load(id, page + 1);
             return;
         }
+        // More pages remain after the safety stop: the calendar says so instead of silently
+        // showing part of the notebook as if it were all of it.
+        truncated = body.hasNext();
         notesByDate.clear();
         notesByDate.putAll(incoming);
         incoming.clear();
@@ -196,7 +217,7 @@ public final class MemoryCalendarViewModel extends ViewModel {
     private MemoryCalendarUiState snapshot(MemoryCalendarUiState.Status status, @Nullable ApiError error) {
         Map<LocalDate, List<CalendarNote>> copy = new HashMap<>();
         notesByDate.forEach((date, notes) -> copy.put(date, List.copyOf(notes)));
-        return new MemoryCalendarUiState(status, copy, month, selected, LocalDate.now(clock), error);
+        return new MemoryCalendarUiState(status, copy, month, selected, LocalDate.now(clock), truncated, error);
     }
 
     private void cancel() {

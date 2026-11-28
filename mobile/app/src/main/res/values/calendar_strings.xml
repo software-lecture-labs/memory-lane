@@ -10,15 +10,9 @@
         <item quantity="one">bu ay %1$d anı</item>
         <item quantity="other">bu ay %1$d anı</item>
     </plurals>
+    <string name="calendar_truncated">Takvim yalnız en yeni 1000 anını gösteriyor; daha eskileri için Anılar listesine bak.</string>
     <string name="calendar_pick_day">Bir güne dokun, o günün anıları burada açılsın.</string>
     <string name="calendar_day_empty">Bu günde anı yok.</string>
-    <!-- Reminder of memories written on this day in earlier years. -->
-    <string name="calendar_on_this_day_title">Geçmişte bugün</string>
-    <plurals name="calendar_years_ago">
-        <item quantity="one">%1$d yıl önce</item>
-        <item quantity="other">%1$d yıl önce</item>
-    </plurals>
-    <string name="calendar_on_this_day_description">%1$s bugün: %2$s. O günü açmak için dokun.</string>
     <string name="calendar_loading">Anı takvimin hazırlanıyor…</string>
     <string name="calendar_error_title">Takvim yüklenemedi</string>
     <!-- What TalkBack reads for a day with memories: "17 Ağustos Pazar, 1 anı: Bozcaada'da gün batımı". -->
