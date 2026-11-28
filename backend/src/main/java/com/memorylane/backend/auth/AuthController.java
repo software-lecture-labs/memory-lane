@@ -1,5 +1,7 @@
 package com.memorylane.backend.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,16 +43,16 @@ public class AuthController {
         return limiter.login(email, () -> service.login(email, password));
     }
 
+    // The Authorization header is read here, not taken as a @RequestHeader String: Spring logs the
+    // resolved arguments of every call at TRACE, and that line would carry the session token.
     @GetMapping("/me")
-    public AuthService.UserResponse me(
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
-        return service.me(authorization);
+    public AuthService.UserResponse me(HttpServletRequest request) {
+        return service.me(request.getHeader("Authorization"));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
-        service.logout(authorization);
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        service.logout(request.getHeader("Authorization"));
         return ResponseEntity.noContent().build();
     }
 }
