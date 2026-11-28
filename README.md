@@ -182,7 +182,25 @@ docker run --rm -e FLYWAY_USER -e FLYWAY_PASSWORD -v "${PWD}\src\main\resources\
 
 Ortak Supabase şeması 27.11.2026 itibarıyla V5'tedir (V3, V4 ve V5 bu yöntemle, önce provada denenerek uygulandı; mevcut kayıtlar korundu, V5 mevcut anılara 1 sürümünü verdi). Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
 
-## CI raporları
+## Testler ve kalite
+
+```powershell
+cd backend
+.\gradlew.bat test bootJar          # birim + entegrasyon testleri ve çalıştırılabilir JAR
+
+cd ..\mobile
+.\gradlew.bat assembleDebug lintDebug testDebugUnitTest
+```
+
+- **Backend entegrasyon testleri** gerçek PostgreSQL 17 üzerinde çalışır: Testcontainers tek bir geçici container açar, her test sınıfı Flyway ile kurulmuş şemayı kullanır. Docker yoksa bu testler yalnız yerelde atlanır (`@RequiresDocker`); CI'da (`CI` ortam değişkeni varken) hiçbir zaman atlanmaz, Docker yoksa build başarısız olur. Testlerde bağlantı havuzu küçültülmüştür (`backend/src/test/resources/config/application.properties`); her test sınıfının kendi uygulama bağlamı ortak test veritabanının bağlantı sınırını aşmasın diye.
+- **Öne çıkan testler:** transaction ve rollback (`MemoryDeleteIntegrationTest`: ara hatada anı ve fotoğraflar korunur), sahiplik ve iki hesap (`OwnershipIntegrationTest`, `TwoAccountAccessIntegrationTest`), auth (`AuthIntegrationTest`: süresi dolan ve iptal edilen token, eşzamanlı kayıt), şema kuralları (`SchemaRulesTest`), dosya temizliği (`PhotoFileCleanupIntegrationTest`).
+- **Mobil:** ViewModel, repository (MockWebServer) ve kural testleri JVM'de çalışır; Android lint uyarıları hata sayılır (`warningsAsErrors`).
+- **CI:** Her PR'da GitHub Actions *Verify* iş akışı backend ve mobil için yukarıdaki komutları çalıştırır; merge için ikisinin de geçmesi ve en az bir onay gerekir.
+- **Statik analiz:** Ders "A" notu bekler. Araç (SonarQube/SonarCloud adayı) henüz kurulmadı; durum ve kararlar [mimari belgesinde](docs/architecture.md#statik-analiz-a-hedefi). A alındığı iddia edilmez.
+
+Bir değişikliğin doğrulama sonucunun kaynağı ilgili PR açıklaması ve o commit'in GitHub Actions kontrolleridir; bu belge kalıcı kurulum bilgisini içerir.
+
+### CI raporları
 
 GitHub Actions içindeki Verify çalıştırmasının Artifacts bölümünden `backend-reports` ve `mobile-reports` raporlarına ulaşabilirsiniz. Test ve lint raporları, ilgili adım başarısız olsa da 14 gün saklanır. Derleme rapor üretemeden durursa artifact oluşmayabilir; rapor bulunmaması testlerin başarılı olduğu anlamına gelmez. Sonuç için ilgili işin durumunu ve loglarını kontrol edin.
 
