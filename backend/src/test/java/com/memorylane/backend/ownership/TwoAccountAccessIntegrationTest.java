@@ -106,6 +106,37 @@ class TwoAccountAccessIntegrationTest {
         assertEquals(200, api.get(memory(), a.token()).statusCode());
     }
 
+    @Test
+    void otherAccountCannotUploadListOrDownloadPhotos() throws Exception {
+        long filesBefore = storedFiles();
+        var missing = api.get(MISSING_MEMORY + "/photos", b.token());
+        assertEquals(404, missing.statusCode());
+
+        for (HttpResponse<String> response : List.of(
+                api.uploadPhoto(memoryOfA, JPEG, "image/jpeg", b.token()),
+                api.get(memory() + "/photos", b.token()),
+                api.get(memory() + "/photos/" + photoOfA + "/content", b.token()))) {
+            assertEquals(404, response.statusCode(), response.body());
+            assertEquals(missing.body(), response.body(), "same answer as a memory that does not exist");
+        }
+        // B's own memory with A's photo id: the photo is checked through the memory in the path.
+        UUID memoryOfB = api.createMemory(b.token(), "B'nin anısı", null, null);
+        var borrowed = api.get("/api/v1/memories/" + memoryOfB + "/photos/" + photoOfA + "/content", b.token());
+        assertEquals(404, borrowed.statusCode());
+        assertTrue(borrowed.body().contains("\"PHOTO_NOT_FOUND\""), borrowed.body());
+
+        assertEquals(1, photoRows(), "B's upload added no photo to A's memory");
+        assertEquals(filesBefore, storedFiles(), "and left no file on disk");
+        assertTrue(Files.exists(PHOTOS.resolve(fileOfA)));
+        assertEquals(200, api.get(memory() + "/photos/" + photoOfA + "/content", a.token()).statusCode());
+    }
+
+    private long storedFiles() throws IOException {
+        try (var files = Files.list(PHOTOS)) {
+            return files.filter(Files::isRegularFile).count();
+        }
+    }
+
     private String memory() {
         return "/api/v1/memories/" + memoryOfA;
     }
