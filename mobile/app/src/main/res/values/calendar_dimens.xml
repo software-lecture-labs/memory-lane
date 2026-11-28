@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory calendar sizes; shared spacing and radii stay in dimens.xml. -->
+<resources>
+    <dimen name="calendar_cell_height">58dp</dimen>
+    <dimen name="calendar_cell_radius">12dp</dimen>
+    <dimen name="calendar_cell_inset">2dp</dimen>
+    <dimen name="calendar_note_radius">4dp</dimen>
+    <!-- Notes are deliberately tiny: the day's full list opens below the grid. -->
+    <dimen name="calendar_note_text">9sp</dimen>
+    <dimen name="calendar_day_text">12sp</dimen>
+    <dimen name="calendar_more_text">8sp</dimen>
+</resources>

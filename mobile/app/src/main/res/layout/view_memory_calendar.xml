@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Memory calendar (MemoryCalendarView): month switcher, weekday row, the six-week grid and
+     the picked day's memories below it. -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:orientation="vertical"
+    tools:parentTag="android.widget.LinearLayout">
+
+    <!-- Shown only when the notebook holds more memories than the calendar reads. -->
+    <TextView
+        android:id="@+id/calendar_truncated"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/ml_space_sm"
+        android:gravity="center"
+        android:text="@string/calendar_truncated"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Note"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendar_previous"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="@dimen/ml_button_height"
+            android:layout_height="@dimen/ml_button_height"
+            android:contentDescription="@string/calendar_previous_month"
+            app:icon="@drawable/calendar_prev"
+            app:iconTint="@color/ml_plum" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/calendar_month"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Title"
+                tools:text="Haziran 2025" />
+
+            <TextView
+                android:id="@+id/calendar_month_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.MemoryLane.Note.Accent"
+                tools:text="bu ay 3 anı" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendar_next"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="@dimen/ml_button_height"
+            android:layout_height="@dimen/ml_button_height"
+            android:contentDescription="@string/calendar_next_month"
+            app:icon="@drawable/calendar_next"
+            app:iconTint="@color/ml_plum" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/calendar_weekdays"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_sm"
+        android:importantForAccessibility="noHideDescendants"
+        android:orientation="horizontal" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/calendar_days"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_xs"
+        android:nestedScrollingEnabled="false"
+        android:overScrollMode="never"
+        tools:itemCount="35"
+        tools:listitem="@layout/item_calendar_day" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ml_stroke_thin"
+        android:layout_marginTop="@dimen/ml_space_md"
+        android:background="@color/memory_card_stroke"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/calendar_selected_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_md"
+        android:accessibilityLiveRegion="polite"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Label.Bold"
+        android:textColor="@color/ml_primary"
+        tools:text="17 Ağustos 2025, Pazar" />
+
+    <LinearLayout
+        android:id="@+id/calendar_selected_notes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/calendar_selected_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ml_space_xs"
+        android:textAppearance="@style/TextAppearance.MemoryLane.Note"
+        android:visibility="gone"
+        tools:text="@string/calendar_day_empty" />
+</merge>
