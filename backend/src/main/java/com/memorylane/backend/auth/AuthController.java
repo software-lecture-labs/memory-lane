@@ -25,15 +25,17 @@ public class AuthController {
         return (String) body.get(field);
     }
 
+    // AuthRequestBody, not a plain Map: Spring logs request bodies at DEBUG/TRACE, and this type
+    // keeps the password and e-mail out of that log line.
     @PostMapping("/register")
     public ResponseEntity<AuthService.UserResponse> register(
-            @RequestBody Map<String, Object> body) {
+            @RequestBody AuthRequestBody body) {
         return ResponseEntity.status(201)
                 .body(service.register(field(body, "email"), field(body, "password")));
     }
 
     @PostMapping("/login")
-    public AuthService.LoginResponse login(@RequestBody Map<String, Object> body) {
+    public AuthService.LoginResponse login(@RequestBody AuthRequestBody body) {
         String email = AuthService.email(field(body, "email"));
         String password = field(body, "password");
         return limiter.login(email, () -> service.login(email, password));
