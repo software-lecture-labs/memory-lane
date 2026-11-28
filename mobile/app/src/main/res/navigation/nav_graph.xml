@@ -52,6 +52,9 @@
         <argument
             android:name="memoryId"
             app:argType="string" />
+        <action
+            android:id="@+id/action_memoryEditFragment_to_memoryLocationPickerFragment"
+            app:destination="@id/memoryLocationPickerFragment" />
     </fragment>
 
     <fragment

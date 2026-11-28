@@ -15,6 +15,7 @@ import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavBackStackEntry;
 import androidx.navigation.NavController;
@@ -107,6 +108,9 @@ public class MemoryEditFragment extends Fragment {
         binding.editUseLatest.setOnClickListener(button -> viewModel.useLatest());
         binding.editKeepDraft.setOnClickListener(button -> viewModel.keepDraft());
         binding.editDate.setOnClickListener(row -> openDatePicker());
+        binding.editLocationPick.setOnClickListener(button -> openLocationPicker());
+        binding.editLocationRemove.setOnClickListener(button -> viewModel.onLocationPicked(null));
+        observePickedLocation();
         addCategoryChips();
         binding.editCategories.setOnCheckedStateChangeListener((group, checked) -> {
             if (writingForm || checked.isEmpty()) return;
@@ -186,6 +190,13 @@ public class MemoryEditFragment extends Fragment {
         if (chosen != null) binding.editCategories.check(chosen.getId());
         writingForm = false;
 
+        MemoryApi.Location location = state.getLocation();
+        binding.editLocationValue.setText(location == null ? getString(R.string.memory_location_none)
+                : MemoryLabels.coordinates(location,
+                        getString(R.string.memory_direction_north), getString(R.string.memory_direction_south),
+                        getString(R.string.memory_direction_east), getString(R.string.memory_direction_west)));
+        binding.editLocationRemove.setVisibility(location == null ? View.GONE : View.VISIBLE);
+
         ApiError saveError = state.getSaveError();
         binding.editError.setText(saveError == null ? null : describe(saveError));
         binding.editError.setVisibility(saveError == null ? View.GONE : View.VISIBLE);
@@ -198,6 +209,8 @@ public class MemoryEditFragment extends Fragment {
         binding.editTitleInput.setEnabled(!saving);
         binding.editNoteInput.setEnabled(!saving);
         binding.editDate.setEnabled(!saving);
+        binding.editLocationPick.setEnabled(!saving);
+        binding.editLocationRemove.setEnabled(!saving);
         for (int i = 0; i < binding.editCategories.getChildCount(); i++) {
             binding.editCategories.getChildAt(i).setEnabled(!saving);
         }
@@ -280,6 +293,32 @@ public class MemoryEditFragment extends Fragment {
     /** NOT_FOUND: the detail behind is gone too, so return straight to the list. */
     private void backToList() {
         NavHostFragment.findNavController(this).popBackStack(R.id.memoriesFragment, false);
+    }
+
+    /** Opens the map picker (ML-15) on the draft's location. */
+    private void openLocationPicker() {
+        MemoryEditUiState state = viewModel.getState().getValue();
+        NavController navController = NavHostFragment.findNavController(this);
+        NavDestination current = navController.getCurrentDestination();
+        if (state == null || current == null || current.getId() != R.id.memoryEditFragment) return;
+        navController.navigate(R.id.action_memoryEditFragment_to_memoryLocationPickerFragment,
+                MemoryLocationPickerFragment.arguments(state.getLocation()));
+    }
+
+    /** The picker leaves {@link PickedLocation#RESULT} on this entry: a new point, or its removal. */
+    private void observePickedLocation() {
+        SavedStateHandle results;
+        try {
+            results = NavHostFragment.findNavController(this)
+                    .getBackStackEntry(R.id.memoryEditFragment).getSavedStateHandle();
+        } catch (IllegalArgumentException replacedByLogin) {
+            return;
+        }
+        results.<double[]>getLiveData(PickedLocation.RESULT).observe(getViewLifecycleOwner(), picked -> {
+            if (picked == null) return;
+            results.set(PickedLocation.RESULT, null);
+            viewModel.onLocationPicked(PickedLocation.read(picked));
+        });
     }
 
     private void openDatePicker() {

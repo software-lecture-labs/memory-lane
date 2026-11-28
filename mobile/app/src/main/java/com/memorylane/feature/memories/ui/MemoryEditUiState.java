@@ -11,7 +11,7 @@ import java.util.Objects;
 
 /**
  * What the edit screen draws. Field texts stay in the ViewModel (as on the create screen); this
- * holds the screen status, the chosen date and category, field errors, the save state and the
+ * holds the screen status, the chosen date, category and location, field errors, the save state and the
  * conflict review after a 412.
  */
 public final class MemoryEditUiState {
@@ -42,6 +42,7 @@ public final class MemoryEditUiState {
     @Nullable private final ApiError loadError;
     @Nullable private final LocalDate date;
     @NonNull private final String category;
+    @Nullable private final MemoryApi.Location location;
     private final MemoryCreateUiState.TitleError titleError;
     private final MemoryCreateUiState.DescriptionError descriptionError;
     private final MemoryCreateUiState.DateError dateError;
@@ -56,6 +57,7 @@ public final class MemoryEditUiState {
         loadError = builder.loadError;
         date = builder.date;
         category = builder.category;
+        location = builder.location;
         titleError = builder.titleError;
         descriptionError = builder.descriptionError;
         dateError = builder.dateError;
@@ -84,6 +86,7 @@ public final class MemoryEditUiState {
         builder.loadError = loadError;
         builder.date = date;
         builder.category = category;
+        builder.location = location;
         builder.titleError = titleError;
         builder.descriptionError = descriptionError;
         builder.dateError = dateError;
@@ -104,6 +107,9 @@ public final class MemoryEditUiState {
 
     /** API category code of the draft, e.g. {@code TRAVEL}; OTHER when the memory had none. */
     @NonNull public String getCategory() { return category; }
+
+    /** The draft's location (ML-15); null when the memory has none or it was removed. */
+    @Nullable public MemoryApi.Location getLocation() { return location; }
 
     public MemoryCreateUiState.TitleError getTitleError() { return titleError; }
 
@@ -131,6 +137,7 @@ public final class MemoryEditUiState {
         @Nullable ApiError loadError;
         @Nullable LocalDate date;
         @NonNull String category = MemoryLabels.DEFAULT_CATEGORY;
+        @Nullable MemoryApi.Location location;
         MemoryCreateUiState.TitleError titleError = MemoryCreateUiState.TitleError.NONE;
         MemoryCreateUiState.DescriptionError descriptionError = MemoryCreateUiState.DescriptionError.NONE;
         MemoryCreateUiState.DateError dateError = MemoryCreateUiState.DateError.NONE;

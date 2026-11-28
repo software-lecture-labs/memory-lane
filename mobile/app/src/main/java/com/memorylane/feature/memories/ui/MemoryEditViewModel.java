@@ -26,8 +26,9 @@ import java.util.Objects;
  *   <li>The form opens with a detail GET: its fields fill the form and become the starting
  *       snapshot ({@link #hasUnsavedChanges()}), its ETag is kept for the PUT's If-Match. The list
  *       is never the source of the tag.</li>
- *   <li>Emotion and location have no control on this screen; their current values are sent back
- *       unchanged, because a PUT clears every optional field it leaves out.</li>
+ *   <li>Emotion has no control on this screen; its current value is sent back unchanged, because
+ *       a PUT clears every optional field it leaves out. The location is a form field (ML-15):
+ *       chosen on the map picker or removed, and part of {@link #hasUnsavedChanges()}.</li>
  *   <li>412: the draft is kept and nothing is resent. "Son Halini Yükle" reads the latest version
  *       and its tag; the latest version is shown next to the draft and the user either takes it
  *       over or keeps the draft. Only a new tap on save writes, with the new tag.</li>
@@ -58,7 +59,6 @@ public final class MemoryEditViewModel extends ViewModel {
     @Nullable private MemoryApi.Draft base;
     @Nullable private String etag;
     @Nullable private String emotion;
-    @Nullable private MemoryApi.Location location;
 
     @Nullable private String session;
     private boolean started;
@@ -150,6 +150,16 @@ public final class MemoryEditViewModel extends ViewModel {
         if (!MemoryLabels.contains(MemoryLabels.CATEGORIES, code)) return;
         MemoryEditUiState.Builder next = edited();
         next.category = code;
+        publish(next);
+    }
+
+    /** The map picker's answer (ML-15): a point in range, or null to remove the location. */
+    public void onLocationPicked(@Nullable MemoryApi.Location picked) {
+        if (current().getStatus() != MemoryEditUiState.Status.READY || current().isSaving()) return;
+        MemoryApi.Location location = picked == null ? null : PickedLocation.fromMap(picked.latitude(), picked.longitude());
+        if (picked != null && location == null) return;
+        MemoryEditUiState.Builder next = edited();
+        next.location = location;
         publish(next);
     }
 
@@ -333,12 +343,14 @@ public final class MemoryEditViewModel extends ViewModel {
         state.setValue(MemoryEditUiState.of(MemoryEditUiState.Status.SIGNED_OUT));
     }
 
-    /** The tag for the next PUT and the values this screen cannot change come from the server. */
+    /**
+     * The tag for the next PUT and the values this screen cannot change come from the server. The
+     * draft's location is a form field and stays as it is, as the title does.
+     */
     private void keepServerVersion(Tagged<MemoryApi.Detail> tagged) {
         MemoryApi.Detail memory = tagged.value();
         etag = tagged.etag();
         emotion = blankToNull(memory.emotion());
-        location = memory.location();
         base = serverDraft(memory);
     }
 
@@ -347,6 +359,7 @@ public final class MemoryEditViewModel extends ViewModel {
         description = memory.description() == null ? "" : memory.description();
         next.date = MemoryDetailViewModel.validDate(memory);
         next.category = categoryOf(memory);
+        next.location = memory.location();
         next.titleError = MemoryCreateUiState.TitleError.NONE;
         next.descriptionError = MemoryCreateUiState.DescriptionError.NONE;
         next.dateError = MemoryCreateUiState.DateError.NONE;
@@ -358,12 +371,12 @@ public final class MemoryEditViewModel extends ViewModel {
     private MemoryApi.Draft draft(MemoryEditUiState current) {
         LocalDate date = current.getDate();
         return new MemoryApi.Draft(MemoryFormRules.strip(title), description,
-                date == null ? null : date.toString(), current.getCategory(), emotion, location);
+                date == null ? null : date.toString(), current.getCategory(), emotion, current.getLocation());
     }
 
     private MemoryApi.Draft serverDraft(MemoryApi.Detail memory) {
         return new MemoryApi.Draft(memory.title(), memory.description() == null ? "" : memory.description(),
-                memory.memoryDate(), categoryOf(memory), emotion, location);
+                memory.memoryDate(), categoryOf(memory), emotion, memory.location());
     }
 
     private static String categoryOf(MemoryApi.Detail memory) {

@@ -8,5 +8,7 @@
     <string name="memory_location_picker_none">Henüz bir nokta seçmedin.</string>
     <string name="memory_location_picker_confirm">Bu konumu kullan</string>
     <string name="memory_location_picker_remove">Konumu kaldır</string>
+    <string name="memory_location_none">Konum eklenmedi</string>
+    <string name="memory_location_remove_short">Kaldır</string>
     <string name="memory_location_picker_tiles_error">Harita yüklenemedi. Geri dönüp konumu elle yazabilir ya da boş bırakabilirsin.</string>
 </resources>
