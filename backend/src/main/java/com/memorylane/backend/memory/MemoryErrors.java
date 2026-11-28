@@ -33,6 +33,12 @@ class MemoryErrors {
         return response(409, "IDEMPOTENCY_CONFLICT", "Bu anahtar farklı bir kayıt için kullanıldı.");
     }
 
+    @ExceptionHandler(MemoryService.IdempotencyKeyRetired.class)
+    ResponseEntity<Map<String, String>> retired() {
+        return response(409, "IDEMPOTENCY_KEY_RETIRED",
+                "Bu anahtar silinmiş bir anıya aitti. Yeni bir anı için yeni bir anahtar kullanın.");
+    }
+
     @ExceptionHandler(MemoryPrecondition.Required.class)
     ResponseEntity<Map<String, String>> preconditionRequired() {
         return response(428, "PRECONDITION_REQUIRED",

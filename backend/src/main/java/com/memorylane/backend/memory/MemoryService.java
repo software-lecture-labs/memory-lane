@@ -87,6 +87,15 @@ public class MemoryService {
                 .param("longitude", input.location() == null ? null : input.location().longitude())
                 .query(UUID.class).optional();
 
+        // The key of a deleted memory is retired (V6): a late retry must not bring the memory back.
+        // Checked after the insert, so a delete that committed while this insert waited on the same
+        // key is seen too; the exception rolls the insert back.
+        boolean retired = jdbc.sql("""
+                SELECT EXISTS (SELECT 1 FROM retired_request_keys
+                               WHERE owner_id = :owner AND scope = 'MEMORY_CREATE' AND request_key = :key)
+                """).param("owner", owner).param("key", key).query(Boolean.class).single();
+        if (retired) throw new IdempotencyKeyRetired();
+
         return jdbc.sql(SUMMARY + " AND m.client_request_id = :key FOR SHARE OF m")
                 .param("owner", owner).param("key", key)
                 .query((row, number) -> {
@@ -237,4 +246,7 @@ public class MemoryService {
     }
 
     static class IdempotencyConflict extends RuntimeException {}
+
+    /** The Idempotency-Key belonged to a memory that has since been deleted. */
+    static class IdempotencyKeyRetired extends RuntimeException {}
 }
