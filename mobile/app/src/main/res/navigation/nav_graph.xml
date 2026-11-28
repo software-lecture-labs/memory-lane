@@ -83,7 +83,28 @@
     <fragment
         android:id="@+id/memoryCreateFragment"
         android:name="com.memorylane.feature.memories.ui.MemoryCreateFragment"
-        android:label="@string/memory_create_label" />
+        android:label="@string/memory_create_label">
+        <action
+            android:id="@+id/action_memoryCreateFragment_to_memoryLocationPickerFragment"
+            app:destination="@id/memoryLocationPickerFragment" />
+    </fragment>
+
+    <!-- ML-15: returns PickedLocation.RESULT to the form that opened it. -->
+    <fragment
+        android:id="@+id/memoryLocationPickerFragment"
+        android:name="com.memorylane.feature.memories.ui.MemoryLocationPickerFragment"
+        android:label="@string/memory_location_picker_title">
+        <argument
+            android:name="latitude"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
+        <argument
+            android:name="longitude"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
 
     <fragment
         android:id="@+id/mapFragment"

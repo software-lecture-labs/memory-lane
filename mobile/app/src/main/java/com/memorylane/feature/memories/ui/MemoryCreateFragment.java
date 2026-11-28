@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavBackStackEntry;
 import androidx.navigation.NavController;
@@ -33,6 +34,7 @@ import com.memorylane.R;
 import com.memorylane.core.di.AppContainer;
 import com.memorylane.core.ui.ErrorMessages;
 import com.memorylane.databinding.FragmentMemoryCreateBinding;
+import com.memorylane.feature.memories.data.MemoryApi;
 import com.memorylane.feature.photos.ui.PhotoSection;
 import com.memorylane.feature.photos.ui.PhotoSelectionViewModel;
 
@@ -110,6 +112,7 @@ public final class MemoryCreateFragment extends Fragment {
         binding.createDateCard.setOnClickListener(card -> openDatePicker());
         binding.createToday.setOnClickListener(button -> viewModel.onTodaySelected());
         binding.createSave.setOnClickListener(button -> viewModel.save(app.authorization()));
+        binding.createLocationPick.setOnClickListener(button -> openLocationPicker());
 
         // Restored before the watchers are attached, so restoring is not taken for a user edit.
         restore(binding.createTitleInput, viewModel.title());
@@ -120,6 +123,8 @@ public final class MemoryCreateFragment extends Fragment {
         onEdit(binding.createDescriptionInput, viewModel::onDescriptionChanged);
         onEdit(binding.createLatitudeInput, viewModel::onLatitudeChanged);
         onEdit(binding.createLongitudeInput, viewModel::onLongitudeChanged);
+        // After the watchers: a point from the map picker is written as if it had been typed.
+        observePickedLocation();
         // Chips are rebuilt from the ViewModel's choice on every new view, rotation included.
         addChips(binding.createCategoryGroup, MemoryLabels.CATEGORIES, viewModel.category(),
                 viewModel::onCategorySelected);
@@ -183,6 +188,38 @@ public final class MemoryCreateFragment extends Fragment {
         goBack();
     }
 
+    /** Opens the map picker (ML-15) on the typed location when it is a valid one. */
+    private void openLocationPicker() {
+        NavController navController = NavHostFragment.findNavController(this);
+        NavDestination current = navController.getCurrentDestination();
+        if (current == null || current.getId() != R.id.memoryCreateFragment) return;
+        navController.navigate(R.id.action_memoryCreateFragment_to_memoryLocationPickerFragment,
+                MemoryLocationPickerFragment.arguments(
+                        MemoryFormRules.location(viewModel.latitude(), viewModel.longitude())));
+    }
+
+    /**
+     * The picker leaves {@link PickedLocation#RESULT} on this entry. It fills the coordinate
+     * fields, so the form's own location check and draft apply to it unchanged; "Konumu kaldır"
+     * empties them.
+     */
+    private void observePickedLocation() {
+        SavedStateHandle results;
+        try {
+            results = NavHostFragment.findNavController(this)
+                    .getBackStackEntry(R.id.memoryCreateFragment).getSavedStateHandle();
+        } catch (IllegalArgumentException replacedByLogin) {
+            return;
+        }
+        results.<double[]>getLiveData(PickedLocation.RESULT).observe(getViewLifecycleOwner(), picked -> {
+            if (picked == null) return;
+            results.set(PickedLocation.RESULT, null);
+            MemoryApi.Location location = PickedLocation.read(picked);
+            binding.createLatitudeInput.setText(location == null ? "" : PickedLocation.text(location.latitude()));
+            binding.createLongitudeInput.setText(location == null ? "" : PickedLocation.text(location.longitude()));
+        });
+    }
+
     /** Leaves after the memory was created, telling the list to refresh once. */
     private void returnToList() {
         NavController navController = NavHostFragment.findNavController(this);
@@ -224,6 +261,7 @@ public final class MemoryCreateFragment extends Fragment {
         binding.createToday.setEnabled(!locked);
         binding.createLatitudeInput.setEnabled(!locked);
         binding.createLongitudeInput.setEnabled(!locked);
+        binding.createLocationPick.setEnabled(!locked);
         setChipsEnabled(binding.createCategoryGroup, !locked);
         setChipsEnabled(binding.createEmotionGroup, !locked);
         binding.createClose.setEnabled(!state.isSaving() && !uploading);
