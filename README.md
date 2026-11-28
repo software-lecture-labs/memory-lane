@@ -66,6 +66,74 @@ Fotoğraf temizliğinin zamanlamaları (`MEMORYLANE_PHOTOS_CLEANUP_RETRY_DELAY`,
 | `sdk.dir` | — | Android SDK klasörü (`ANDROID_HOME` tanımlıysa gerekmez). |
 | `memorylane.apiBaseUrl` | `http://10.0.2.2:8080/` | Backend adresi; `/` ile bitmelidir. Emülatör ve telefon için aşağıdaki [adres tablosuna](#mobil-uygulama-ve-sunucu-adresi) bakın. |
 
+## Kurulum
+
+Komutlar Windows PowerShell içindir; macOS/Linux'ta `.\gradlew.bat` yerine `./gradlew`, `copy` yerine `cp` kullanın.
+
+**1. Repoyu klonlayın ve JDK'yı kontrol edin**
+
+```powershell
+git clone https://github.com/software-lecture-labs/memory-lane.git
+cd memory-lane
+java -version   # 17 olmalı
+```
+
+**2. Veritabanını hazırlayın** (iki seçenekten biri)
+
+*A) Yerel PostgreSQL (Docker):*
+
+```powershell
+cd backend
+copy .env.example .env      # .env içinde DB_PASSWORD değerini değiştirin
+docker compose up -d
+docker compose ps           # db servisi (healthy) görünmeli
+```
+
+Docker Compose ve uygulama aynı `backend/.env` dosyasını okur; parola tek yerde tutulur. Veriler `memorylane-db-data` volume'ünde kalır.
+
+*B) Ortak Supabase veritabanı (Docker yoksa):* [Ortak PostgreSQL — Supabase](#ortak-postgresql--supabase) bölümündeki adımları izleyin.
+
+**3. Backend'i başlatın** (`backend` dizininden)
+
+```powershell
+.\gradlew.bat bootRun
+```
+
+Açılışta Flyway bekleyen migration'ları uygular; boş veritabanı bu şekilde kurulur. Sunucu `http://localhost:8080` adresinde açılır. Kontrol:
+
+```powershell
+curl.exe http://localhost:8080/api/health    # {"status":"UP","database":"UP"}
+```
+
+Veritabanına ulaşılamazsa uygulama açılmaz ve ne yapılacağını yazar; açıkken veritabanı düşerse `/api/health` 503 döner. Yerel ayarlarla çalıştırmak için `backend/config/application-local.properties.example` dosyasını aynı klasörde `application-local.properties` olarak kopyalayıp `$env:SPRING_PROFILES_ACTIVE = 'local'` ile başlatın.
+
+**4. Mobil uygulamayı çalıştırın**
+
+```powershell
+cd mobile
+copy local.properties.example local.properties   # sdk.dir ve gerekirse memorylane.apiBaseUrl
+.\gradlew.bat installDebug                        # açık emülatöre veya bağlı telefona kurar
+```
+
+Android Studio'da `mobile` klasörünü açıp **Run** ile de çalıştırabilirsiniz.
+
+## Mobil uygulama ve sunucu adresi
+
+| Cihaz | `memorylane.apiBaseUrl` | Not |
+|---|---|---|
+| Android emülatörü | `http://10.0.2.2:8080/` (varsayılan) | `10.0.2.2`, emülatörün içinden bilgisayarın `localhost`'udur; ayar gerekmez. |
+| Gerçek telefon | `http://<bilgisayarın yerel IP adresi>:8080/` | Telefon ve bilgisayar aynı Wi-Fi'de olmalı; IP'yi `ipconfig` ile bulun. Windows Güvenlik Duvarı 8080 portuna gelen bağlantıya izin vermelidir. |
+
+Düz `http` yalnız debug sürümde açıktır (`mobile/app/src/debug/AndroidManifest.xml`). Release sürüm `https://` adres ister; adres `http://` ise release build bilerek durur.
+
+## İlk deneme
+
+1. Uygulamada **Kayıt ol** ile iki hesap (A ve B) açın; şifre 15–128 karakterdir. Kayıt oturum açmaz, ardından giriş ekranına dönülür.
+2. A ile giriş yapın. **Anı Ekle** ile başlık, tarih ve isterseniz kategori, duygu, konum ve en fazla 5 fotoğrafla bir anı kaydedin; anı zaman çizelgesinde kendi yılının altında görünür.
+3. Anıya dokunup detayını, galerisini ve tam ekran fotoğrafı açın; **Anıyı Düzenle** ile değiştirin.
+4. Uygulamayı kapatıp açın: token yalnız bellekte tutulduğu için yeniden giriş istenir.
+5. **Profil → Çıkış yap** ile çıkıp B ile girin: B'nin listesinde, aramasında ve haritasında A'nın anısı görünmez.
+
 ## Veri modeli ve API
 
 Hesap, oturum, kullanıcıya özel anı ve fotoğraf işlemlerinin ortak alanları, endpointleri, hata yanıtları ve tekrar deneme kuralları [ML-03 API sözleşmesinde](docs/api-contract.md) tanımlıdır. Bu belge geliştirme sözleşmesidir; endpointlerin uygulanmış olduğunu göstermez.
@@ -90,16 +158,6 @@ Süresi dolan token, temizlik beklenmeden hemen 401 ile reddedilir. Başlangıç
 
 Mevcut geliştirme/ders demosu backend'e doğrudan bağlantı varsayar. `getRemoteAddr()` doğrudan bağlantının adresidir; reverse proxy/load balancer arkasında bütün kullanıcılar için proxy IP'si görünebilir ve IP başına 20/dakika sınırı ortak bir kotaya dönüşebilir. Bu kurulum proxy arkasında kullanıcı bazlı doğru IP sınırı sağladığı iddiasını taşımaz. Hesap başına başarısız giriş sınırı bundan bağımsız kalır. `Forwarded`/`X-Forwarded-For` başlıkları kodda doğrudan okunmaz; istemcinin yazdığı başlığa güvenilmez. Dağıtımda güvenilir proxy adresleri, backend'e doğrudan erişim ve başlıkların proxy tarafından temizlenip yeniden yazılması birlikte ele alınmalı; ancak bundan sonra uygun Spring/Tomcat forwarded-header stratejisi seçilip iki farklı istemciyle test edilmelidir. Load balancer yapılandırması bu K1 backend değişikliğine dahil değildir.
 
-## İlk sprint anı demosu (ML-07)
-
-1. Backend'i boş bir yerel PostgreSQL ile başlatın. Android uygulamasında **Anılar → Giriş yap → Kayıt ol** ile iki test hesabı (A ve B) açın; şifre 15–128 karakter olmalıdır. Kayıt oturum açmaz, başarılı kayıttan sonra giriş ekranına dönülür. Hesaplar istenirse `POST /api/v1/auth/register` ile de açılabilir; istek alanları [API sözleşmesinde](docs/api-contract.md#hesap-ve-oturum) yer alır.
-2. **Anılar → Giriş yap** ile A hesabına girin. Boş hesapta "Henüz anın yok" görünür.
-3. **Anı Ekle** ile oluşturma ekranını açın. Başlıksız veya tarihsiz kayıt alan hatası verir; tarih seçicide gelecek günler seçilemez. Başlık ve tarih girin, isterseniz **Fotoğraf ekle** ile en fazla 5 fotoğraf seçip **Kaydet**'e dokunun. Fotoğraf seçildiyse ekran fotoğraflar yüklenene kadar açık kalır ve ilerlemeyi gösterir; sonra listeye döner, liste yenilenir ve anı kendi yıl başlığının altında en üstte görünür.
-4. Uygulamayı kapatıp yeniden açın. Token süreç belleğinde olduğu için tekrar giriş gerekir; A ile girince anı sunucudan yeniden yüklenir.
-5. **Profil → Çıkış yap** ile çıkıp B hesabına girin. Anılar listesi sıfırlanır; B'nin listesinde A'nın anısı görünmez.
-
-`POST /api/v1/memories` oluşturur, `GET /api/v1/memories` hesaba ait sayfalı listeyi döndürür. Liste 20'şer kayıtla sayfalanır; "Daha fazla anı göster" sonraki sayfayı ekler. Yükleme hatası boş liste gibi gösterilmez, "Tekrar dene" ile yinelenir; 401 yanıtı oturumu kapatır. Kayıt tekrar denendiğinde aynı `Idempotency-Key` kullanılır, böylece bağlantı kopsa da anı iki kez oluşmaz. Türkçe arama ve kategori filtresi liste API'sindedir; mobil arama arayüzü ve harita kendi kartlarında uygulanır. Karta dokununca anı detayı açılır (fotoğraf galerisi ve tam ekran görüntüleyiciyle); "Anıyı Düzenle" `GET /api/v1/memories/{id}` ile alınan ETag'i `PUT` isteğinin `If-Match` başlığında gönderir; anı başka yerde değiştiyse (412) taslak korunur ve son hal gösterilir.
-
 ## Fotoğraf yükleme (ML-09)
 
 `POST /api/v1/memories/{id}/photos` tek bir JPEG/PNG dosyasını `file` adlı multipart alanında ve `Idempotency-Key` başlığıyla alır. `GET /api/v1/memories/{id}/photos` anının fotoğraflarını sırasıyla listeler, her fotoğrafın `contentUrl` adresi dosyayı yalnız anının sahibine döndürür. Kurallar ve hata kodları [API sözleşmesindedir](docs/api-contract.md#fotoğraf-endpointleri-ve-yanıtı).
@@ -123,50 +181,6 @@ docker run --rm -e FLYWAY_USER -e FLYWAY_PASSWORD -v "${PWD}\src\main\resources\
 ```
 
 Ortak Supabase şeması 27.11.2026 itibarıyla V5'tedir (V3, V4 ve V5 bu yöntemle, önce provada denenerek uygulandı; mevcut kayıtlar korundu, V5 mevcut anılara 1 sürümünü verdi). Otomatik entegrasyon testleri CI'da ayrı PostgreSQL kullanır.
-
-## İlk kurulum (yerel Docker seçeneği)
-
-1. Repoyu klonlayın, JDK 17 kurun ve `java -version` ile kontrol edin.
-2. Android Studio ile Android SDK Platform 35 kurun. Lisanslar kabul edilmişse Gradle eksik SDK bileşenlerini de indirebilir.
-3. `mobile/local.properties.example` dosyasını `mobile/local.properties` olarak kopyalayıp Windows/macOS/Linux için kendi SDK yolunuzu girin veya `ANDROID_HOME` tanımlayın. Uygulama emülatörde varsayılan olarak `http://10.0.2.2:8080/` adresine bağlanır; gerçek telefonda aynı dosyaya `memorylane.apiBaseUrl=http://<bilgisayarın yerel IP adresi>:8080/` yazın.
-4. Backend PostgreSQL gerektirir. Docker Desktop kurun, ardından `backend/.env.example` dosyasını `backend/.env` olarak kopyalayıp `DB_PASSWORD` değerini değiştirin ve `backend` dizininde `docker compose up -d` çalıştırın. `docker compose ps` çıktısında `(healthy)` görünmelidir. Uygulama `backend` dizininden çalıştırıldığında aynı `.env` dosyasını kendisi okur; şifre tek yerde tutulur. Gerçek ortam değişkenleri `.env` değerlerinin önüne geçer. Şifrenin varsayılanı yoktur.
-5. Backend diğer ayarlarda varsayılanlarla çalışır. Yerel değişiklik gerekiyorsa `backend/config/application-local.properties.example` dosyasını aynı dizinde `application-local.properties` olarak kopyalayın. Bu dosya kaynak klasörlerinin dışındadır.
-
-PowerShell, repo kökünden:
-
-```powershell
-cd backend
-docker compose up -d
-.\gradlew.bat test bootJar
-# Yalnızca harici yerel ayarları kullanmak istediğinizde:
-$env:SPRING_PROFILES_ACTIVE = 'local'
-.\gradlew.bat bootRun
-```
-
-Komutları backend dizininden çalıştırın. Farklı çalışma dizininde harici config konumunu `SPRING_CONFIG_ADDITIONAL_LOCATION` ile belirtin. Local profil etkin değilse `application-local.properties` okunmaz. Gerçek parolaları örneğe yazmayın; ortam değişkenleri kullanın.
-
-Sunucu varsayılan olarak 8080 portunda açılır. Açılışta Flyway bekleyen migration'ları uygular; boş veritabanı bu şekilde kurulur. `GET http://localhost:8080/api/health` veritabanı erişilebilirse 200 döner. Veritabanı kapalıysa uygulama açılmaz ve ne yapılacağını yazar. Veritabanı testleri Docker ile tek bir geçici PostgreSQL container'ı açar. Docker yoksa bu testler yalnızca yerelde atlanır; CI'da (`CI` ortam değişkeni varken) hiçbir zaman atlanmaz, Docker yoksa build başarısız olur. Gradle 8.14.3, JDK 25 ile çalışmaz; `JAVA_HOME` JDK 17'yi göstermelidir.
-
-Mobil için tekrar repo kökünden başlayın:
-
-```powershell
-cd mobile
-.\gradlew.bat assembleDebug lintDebug testDebugUnitTest
-```
-
-macOS/Linux üzerinde `gradlew.bat` yerine `./gradlew` kullanın. Backend wrapper Gradle 8.14.3, mobil wrapper Gradle 8.9 indirir ve SHA-256 doğrular; global Gradle kurulumu gerekmez. Build'ler bağımsızdır; yalnızca çalıştırdığınız modülün araçları gerekir.
-
-Hedef mimaride anıların asıl kaydı backend'de tutulacak; mobil oturum anahtarları yedeklere dahil edilmeyecek. Bu veri saklama ve senkronizasyon akışı henüz uygulanmadı; ayrıntılar mimari belgesindedir.
-
-Mobil uygulama Anılar sekmesiyle açılır; sekme oturum açıksa anıları yıllara göre gruplanmış kartlarla listeler, yeni anı oluşturma ekranına geçirir. Fotoğraflar oluşturma ekranında seçilir ve anı kaydedildikten sonra yüklenir. Profil sekmesi oturumu (giriş/çıkış) ve `GET /api/health` sonucunu gösterir. Sunucu kapalıysa veya adres yanlışsa bağlantı hatası, veritabanı kapalıysa veritabanı hatası "Tekrar dene" ile gösterilir. Giriş ekranındaki **Kayıt ol** bağlantısı kayıt ekranını açar; giriş, kayıt ve anı oluşturma ekranlarında alt menü gizlenir. Mobil mimari ve ortak bileşenler [mimari belgesinde](docs/architecture.md#mobil-mimari-ml-28) anlatılır.
-
-SDK yolları, parolalar, `.env`, imzalama anahtarları ve yerel ayarlar commitlenmez. Yanlışlıkla classpath altına konan application-local.properties/yml/yaml dosyaları da paketlemeden dışlanır.
-
-Ayrıntılar: [mimari](docs/architecture.md), [Git çalışma biçimi](docs/git-workflow.md). Anlık doğrulama sonuçlarının kaynağı ilgili PR açıklaması ve o commit için GitHub Actions kontrolleridir; repodaki belgeler kalıcı kurulum bilgilerini içerir.
-
-## Veritabanı ve profiller
-
-Backend her profilde PostgreSQL'e bağlanır ve açılışta Flyway migration'larını uygular; ayrı bir `database` profili yoktur. Bağlantı bilgileri yukarıdaki kurulum adımında anlatılan `backend/.env` dosyasından veya ortam değişkenlerinden gelir. Harici yerel ayarlarla çalıştırmak için backend dizininde: `.\gradlew.bat bootRun --args="--spring.profiles.active=local --spring.config.additional-location=optional:file:./config/"`.
 
 ## CI raporları
 
