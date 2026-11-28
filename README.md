@@ -28,6 +28,44 @@ Kapsam dışı: şifre sıfırlama, profil düzenleme, e-posta doğrulama, sosya
 
 Görev dağılımı: K1 hesap API'si ve anı oluşturma; K2 kayıt/giriş mobil ekranları ve fotoğraflar; K3 mobil oturum, liste, detay, düzenleme ve arama; K4 veritabanı altyapısı, sahiplik, harita, silme ve transaction.
 
+## Önkoşullar
+
+| Araç | Sürüm | Ne için |
+|---|---|---|
+| JDK | **17** (ör. Eclipse Temurin 17) | Backend ve mobil derleme. Gradle 8.14.3 JDK 25 ile çalışmaz; `JAVA_HOME` JDK 17'yi göstermelidir. |
+| Android Studio + Android SDK Platform 35 | Güncel Android Studio | Yalnız mobil uygulama için; emülatör de buradan kurulur. |
+| Docker Desktop | Güncel | Yerel PostgreSQL 17 ve backend entegrasyon testleri. Docker yoksa ortak Supabase veritabanı kullanılabilir; entegrasyon testleri yerelde atlanır, CI'da çalışır. |
+| Git | Güncel | Repo. |
+
+Gradle ayrıca kurulmaz: backend wrapper Gradle 8.14.3, mobil wrapper Gradle 8.9 indirir ve SHA-256 ile doğrular. Backend ve mobil build'leri bağımsızdır; yalnız çalıştırdığınız tarafın araçları gerekir.
+
+## Yapılandırma
+
+Kişiye özel ayarlar ve parolalar repoya girmez. `backend/.env`, `mobile/local.properties`, `backend/config/application-local.properties`, imzalama anahtarları ve SDK yolları `.gitignore` ile dışarıdadır; repoda yalnız parolasız örnekleri (`*.example`) vardır.
+
+**Backend** (`backend/.env` dosyası veya gerçek ortam değişkenleri; ortam değişkenleri `.env` değerlerinin önüne geçer):
+
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `DB_PASSWORD` | *(yok, zorunlu)* | PostgreSQL parolası. Varsayılanı yoktur. |
+| `DB_HOST`, `DB_PORT` | `127.0.0.1`, `5432` | Veritabanı adresi. |
+| `DB_NAME`, `DB_USER` | `memory_lane`, `memory_lane` | Veritabanı ve kullanıcı adı. |
+| `SPRING_DATASOURCE_URL`, `..._USERNAME`, `..._PASSWORD` | *(yukarıdakilerden oluşur)* | Tam JDBC adresi gerektiğinde (ör. Supabase, TLS parametreleriyle). |
+| `SERVER_PORT` | `8080` | API portu. |
+| `SPRING_FLYWAY_ENABLED` | `true` | Açılışta migration uygulanması. Ortak Supabase bağlantısında `false`'tur (aşağıda). |
+| `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE` | `10` | Bağlantı havuzu boyutu. |
+| `MEMORYLANE_PHOTOS_DIRECTORY` | `storage/photos` | Fotoğraf dosyalarının klasörü (backend dizinine göre). |
+| `SPRING_PROFILES_ACTIVE` | *(boş)* | `local` verilirse `backend/config/application-local.properties` okunur. |
+
+Fotoğraf temizliğinin zamanlamaları (`MEMORYLANE_PHOTOS_CLEANUP_RETRY_DELAY`, `..._ORPHAN_SWEEP_DELAY`, `..._QUARANTINE_LIFETIME`) ve auth ayarları da değiştirilebilir; varsayılanlar `backend/src/main/resources/application.properties` içindedir.
+
+**Mobil** (`mobile/local.properties`, `mobile/local.properties.example` dosyasından kopyalanır):
+
+| Anahtar | Varsayılan | Açıklama |
+|---|---|---|
+| `sdk.dir` | — | Android SDK klasörü (`ANDROID_HOME` tanımlıysa gerekmez). |
+| `memorylane.apiBaseUrl` | `http://10.0.2.2:8080/` | Backend adresi; `/` ile bitmelidir. Emülatör ve telefon için aşağıdaki [adres tablosuna](#mobil-uygulama-ve-sunucu-adresi) bakın. |
+
 ## Veri modeli ve API
 
 Hesap, oturum, kullanıcıya özel anı ve fotoğraf işlemlerinin ortak alanları, endpointleri, hata yanıtları ve tekrar deneme kuralları [ML-03 API sözleşmesinde](docs/api-contract.md) tanımlıdır. Bu belge geliştirme sözleşmesidir; endpointlerin uygulanmış olduğunu göstermez.
