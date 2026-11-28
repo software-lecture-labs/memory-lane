@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Touch area around a tap that still hits a pin; larger than the pin for fingers. -->
+    <dimen name="map_pin_touch">24dp</dimen>
+    <dimen name="map_fit_padding">64dp</dimen>
+    <dimen name="map_card_cover">72dp</dimen>
+    <!-- Map logo and OpenStreetMap attribution sit below the memory count chip. -->
+    <dimen name="map_attribution_top">60dp</dimen>
+    <dimen name="map_notice_top">64dp</dimen>
+</resources>

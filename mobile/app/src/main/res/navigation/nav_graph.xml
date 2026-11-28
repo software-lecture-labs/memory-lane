@@ -88,7 +88,14 @@
     <fragment
         android:id="@+id/mapFragment"
         android:name="com.memorylane.feature.map.ui.MapFragment"
-        android:label="@string/tab_map" />
+        android:label="@string/tab_map">
+        <action
+            android:id="@+id/action_mapFragment_to_memoryDetailFragment"
+            app:destination="@id/memoryDetailFragment" />
+        <action
+            android:id="@+id/action_mapFragment_to_memoryCreateFragment"
+            app:destination="@id/memoryCreateFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/profileFragment"

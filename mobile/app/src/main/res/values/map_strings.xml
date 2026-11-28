@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <!-- Map tab (ML-16) -->
+    <string name="map_title">Harita</string>
+    <string name="map_loading">Harita yükleniyor…</string>
+    <plurals name="map_count">
+        <item quantity="one">Haritada kayıtlı %d anın var</item>
+        <item quantity="other">Haritada kayıtlı %d anın var</item>
+    </plurals>
+    <string name="map_count_truncated">Haritada ilk %d anın gösteriliyor</string>
+    <string name="map_empty_title">Haritada henüz anı yok</string>
+    <string name="map_empty_message">Bir anıya konum eklediğinde burada pin olarak görünecek.</string>
+    <string name="map_error_title">Anılar yüklenemedi</string>
+    <string name="map_tiles_error">Harita görüntüsü yüklenemedi; internet bağlantını kontrol et.</string>
+    <string name="map_zoom_in">Yakınlaş</string>
+    <string name="map_zoom_out">Uzaklaş</string>
+    <string name="map_open_detail">Anı detayına git</string>
+    <string name="map_card_date_pattern" translatable="false">d MMMM yyyy</string>
+    <string name="map_add">Anı Ekle</string>
+    <string name="map_add_description">Yeni anı ekle</string>
+</resources>
