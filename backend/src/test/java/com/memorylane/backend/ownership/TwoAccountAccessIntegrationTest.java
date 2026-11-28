@@ -154,6 +154,39 @@ class TwoAccountAccessIntegrationTest {
         assertTrue(api.get("/api/v1/memories/map" + search, b.token()).body().contains("\"returned\":0"));
     }
 
+    @Test
+    void everyProtectedEndpointRefusesMissingForgedAndSignedOutTokens() throws Exception {
+        var signedOut = api.registerAndLogin().token();
+        assertEquals(204, api.send("POST", "/api/v1/auth/logout", null, signedOut).statusCode());
+        Map<String, Object> before = memoryRow();
+        long filesBefore = storedFiles();
+        String body = "{\"title\":\"Yetkisiz\",\"memoryDate\":\"2026-01-02\"}";
+
+        for (String token : new String[] {null, "uydurma-" + UUID.randomUUID(), signedOut}) {
+            for (HttpResponse<String> response : List.of(
+                    api.get("/api/v1/auth/me", token),
+                    api.get("/api/v1/memories", token),
+                    api.get("/api/v1/memories/map", token),
+                    api.send("POST", "/api/v1/memories", body, token,
+                            Map.of("Idempotency-Key", UUID.randomUUID().toString())),
+                    api.get(memory(), token),
+                    api.send("PUT", memory(), body, token),
+                    api.send("DELETE", memory(), null, token),
+                    api.get(memory() + "/photos", token),
+                    api.uploadPhoto(memoryOfA, JPEG, "image/jpeg", token),
+                    api.get(memory() + "/photos/" + photoOfA + "/content", token))) {
+                String request = response.request().method() + " " + response.request().uri().getPath();
+                assertEquals(401, response.statusCode(), request);
+                assertTrue(response.body().contains("\"INVALID_SESSION\""), request + " " + response.body());
+                assertEquals("Bearer", response.headers().firstValue("WWW-Authenticate").orElse(""), request);
+            }
+        }
+
+        assertEquals(before, memoryRow(), "A's memory is unchanged");
+        assertEquals(1, photoRows());
+        assertEquals(filesBefore, storedFiles(), "no upload reached the disk");
+    }
+
     private long storedFiles() throws IOException {
         try (var files = Files.list(PHOTOS)) {
             return files.filter(Files::isRegularFile).count();
