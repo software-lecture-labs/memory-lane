@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Profile tab: owner card, account and app settings rows. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="tr">
+    <string name="profile_guest">Misafir</string>
+    <string name="profile_owner_note">anı defterinin sahibi</string>
+    <string name="profile_section_account">Hesap</string>
+    <string name="profile_section_app">Uygulama</string>
+    <string name="profile_email_label">E-posta</string>
+    <string name="profile_session_value">Bu cihazda açık. Uygulama kapanınca yeniden giriş istenir.</string>
+    <string name="profile_server_retry">Tekrar denemek için dokun.</string>
+    <string name="profile_version_label">Sürüm</string>
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Profile tab sizes; shared spacing and radii stay in dimens.xml. -->
+<resources>
+    <dimen name="profile_avatar_size">80dp</dimen>
+    <dimen name="profile_avatar_ring">3dp</dimen>
+    <dimen name="profile_avatar_text">32sp</dimen>
+    <!-- The app mark pinned to the avatar's corner. -->
+    <dimen name="profile_avatar_badge">30dp</dimen>
+    <!-- Negative: the mark sits on the ring, past the initial, like a sticker on the corner. -->
+    <dimen name="profile_avatar_badge_offset">-8dp</dimen>
+    <dimen name="profile_avatar_badge_room">8dp</dimen>
+    <dimen name="profile_tape_width">72dp</dimen>
+    <dimen name="profile_tape_height">14dp</dimen>
+    <!-- Settings rows: 56dp touch height, 24dp icon, text starts after icon + gap. -->
+    <dimen name="profile_row_min_height">56dp</dimen>
+    <dimen name="profile_row_icon">24dp</dimen>
+    <dimen name="profile_row_divider_inset">56dp</dimen>
+</resources>

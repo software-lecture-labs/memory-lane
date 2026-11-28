@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings rows on the profile tab: icon, label and value, 56dp tall, divided by an inset rule
+     that starts where the text starts. -->
+<resources>
+    <style name="Widget.MemoryLane.ProfileRow" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">@dimen/profile_row_min_height</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">@dimen/ml_space_md</item>
+        <item name="android:paddingEnd">@dimen/ml_space_md</item>
+        <item name="android:paddingTop">@dimen/ml_space_sm</item>
+        <item name="android:paddingBottom">@dimen/ml_space_sm</item>
+    </style>
+
+    <style name="Widget.MemoryLane.ProfileRow.Icon" parent="">
+        <item name="android:layout_width">@dimen/profile_row_icon</item>
+        <item name="android:layout_height">@dimen/profile_row_icon</item>
+        <item name="tint">@color/ml_plum_muted</item>
+    </style>
+
+    <style name="Widget.MemoryLane.ProfileRow.Texts" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">@dimen/ml_space_md</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="Widget.MemoryLane.ProfileRow.Label" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Label.Bold</item>
+    </style>
+
+    <style name="Widget.MemoryLane.ProfileRow.Value" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">@style/TextAppearance.MemoryLane.Body.Muted</item>
+    </style>
+
+    <style name="Widget.MemoryLane.ProfileRow.Divider" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/ml_stroke_thin</item>
+        <item name="android:layout_marginStart">@dimen/profile_row_divider_inset</item>
+        <item name="android:background">@color/memory_card_stroke</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+</resources>
